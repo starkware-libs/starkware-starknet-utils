@@ -1,0 +1,13 @@
+{
+  "name": "@contracts/commons",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "scarb build",
+    "dev": "scarb cairo-run",
+    "format": "pnpm sort-package-json && scarb fmt",
+    "test": "scarb cairo-test"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

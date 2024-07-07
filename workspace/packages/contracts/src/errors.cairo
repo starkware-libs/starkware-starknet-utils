@@ -10,7 +10,6 @@ pub mod ERC20Errors {
 }
 
 
-
 pub mod AccessErrors {
     pub const INVALID_MINTER: felt252 = 'INVALID_MINTER_ADDRESS';
     pub const INVALID_TOKEN: felt252 = 'INVALID_TOKEN_ADDRESS';

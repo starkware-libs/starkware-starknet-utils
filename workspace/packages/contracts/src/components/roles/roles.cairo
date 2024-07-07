@@ -1,6 +1,5 @@
 #[starknet::component]
 pub mod RolesComponent {
-
     use core::num::traits::Zero;
 
     use contracts_commons::components::roles::interface::{

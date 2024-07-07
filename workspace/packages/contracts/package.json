@@ -6,7 +6,8 @@
     "build": "scarb build",
     "dev": "scarb cairo-run",
     "format": "pnpm sort-package-json && scarb fmt",
-    "test": "scarb cairo-test"
+    "lint": "scarb fmt --check",
+    "test": "snforge test"
   },
   "dependencies": {},
   "devDependencies": {}

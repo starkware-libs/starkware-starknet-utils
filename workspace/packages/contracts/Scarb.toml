@@ -9,4 +9,7 @@ edition = "2023_11"
 starknet.workspace = true
 openzeppelin.workspace = true
 
+[dev-dependencies]
+snforge_std.workspace = true
+
 [lib]

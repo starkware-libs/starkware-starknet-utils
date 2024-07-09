@@ -47,8 +47,8 @@ pub mod RolesComponent {
     use openzeppelin::access::accesscontrol::AccessControlComponent::InternalTrait as AccessInternalTrait;
     use openzeppelin::introspection::src5::SRC5Component;
 
-    #[embeddable_as(Roles)]
-    pub impl RolesImpl<
+    #[embeddable_as(RolesImpl)]
+    pub impl Roles<
         TContractState,
         +HasComponent<TContractState>,
         +Drop<TContractState>,
@@ -296,19 +296,17 @@ pub mod RolesComponent {
                 self.emit(event);
             }
         }
-        //
-        // WARNING
-        // The following internal method is unprotected and should not be used outside of a
-        // contract's constructor.
-        //
-        // TODO -  This function should be under initialize function under roles contract.
 
-        fn _initialize_roles(ref self: ComponentState<TContractState>) {
+        // WARNING
+        // The following internal method is unprotected and should only be used from the containing 
+        // contract's constructor (or, in context of tests, from the setup method).
+        // It should be called after the initialization of the access_control component.
+        fn initializer(ref self: ComponentState<TContractState>) {
             let mut access_comp = get_dep_component_mut!(ref self, Access);
-            let provisional_governance_admin = get_caller_address();
+            let governance_admin = get_caller_address();
             let un_initialized = access_comp.get_role_admin(role: GOVERNANCE_ADMIN) == 0;
             assert(un_initialized, ALREADY_INITIALIZED);
-            access_comp._grant_role(role: GOVERNANCE_ADMIN, account: provisional_governance_admin);
+            access_comp._grant_role(role: GOVERNANCE_ADMIN, account: governance_admin);
             access_comp._set_role_admin(role: APP_GOVERNOR, admin_role: APP_ROLE_ADMIN);
             access_comp._set_role_admin(role: APP_ROLE_ADMIN, admin_role: GOVERNANCE_ADMIN);
             access_comp._set_role_admin(role: GOVERNANCE_ADMIN, admin_role: GOVERNANCE_ADMIN);
@@ -316,7 +314,7 @@ pub mod RolesComponent {
             access_comp._set_role_admin(role: TOKEN_ADMIN, admin_role: APP_ROLE_ADMIN);
             access_comp._set_role_admin(role: UPGRADE_GOVERNOR, admin_role: GOVERNANCE_ADMIN);
 
-            access_comp._grant_role(role: SECURITY_ADMIN, account: provisional_governance_admin);
+            access_comp._grant_role(role: SECURITY_ADMIN, account: governance_admin);
             access_comp._set_role_admin(role: SECURITY_ADMIN, admin_role: SECURITY_ADMIN);
             access_comp._set_role_admin(role: SECURITY_AGENT, admin_role: SECURITY_ADMIN);
         }

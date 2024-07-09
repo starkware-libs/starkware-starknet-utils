@@ -12,4 +12,7 @@ openzeppelin.workspace = true
 [dev-dependencies]
 snforge_std.workspace = true
 
+[scripts]
+test = "snforge test"
+
 [lib]

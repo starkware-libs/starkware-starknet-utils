@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "build": "scarb build",
+    "clean": "scarb clean && snforge clean-cache",
     "dev": "scarb cairo-run",
     "format": "pnpm sort-package-json && scarb fmt",
     "lint": "scarb fmt --check",
-    "test": "snforge test"
+    "test": "scarb test"
   },
   "dependencies": {},
   "devDependencies": {}

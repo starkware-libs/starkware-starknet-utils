@@ -1,6 +1,5 @@
 mod ReplaceabilityTests {
     use contracts_commons::components::replaceability::ReplaceabilityComponent;
-    use contracts_commons::components::replaceability::interface::ImplementationData;
     use contracts_commons::components::replaceability::interface::ImplementationAdded;
     use contracts_commons::components::replaceability::interface::ImplementationRemoved;
     use contracts_commons::components::replaceability::interface::ImplementationReplaced;

@@ -3,10 +3,5 @@ pub const HOUR: u64 = 60 * MINUTE;
 pub const DAY: u64 = 24 * HOUR;
 pub const WEEK: u64 = 7 * DAY;
 
-pub fn NAME() -> ByteArray nopanic {
-    "NAME"
-}
-
-pub fn SYMBOL() -> ByteArray nopanic {
-    "SYMBOL"
-}
+pub const NAME: felt252 = 'NAME';
+pub const SYMBOL: felt252 = 'SYMBOL';

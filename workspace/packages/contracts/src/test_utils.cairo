@@ -1,5 +1,4 @@
 use contracts_commons::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use contracts_commons::constants::{NAME, SYMBOL};
 use contracts_commons::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{CheatSpan, cheat_account_contract_address, cheat_caller_address};
@@ -102,6 +101,8 @@ pub fn check_identity(
 /// It includes the initial supply of tokens and the owner's address.
 #[derive(Drop, Copy)]
 pub struct TokenConfig {
+    pub name: felt252,
+    pub symbol: felt252,
     pub initial_supply: u256,
     pub owner: ContractAddress,
 }
@@ -118,8 +119,8 @@ pub struct TokenState {
 pub impl TokenImpl of TokenTrait {
     fn deploy(self: TokenConfig) -> TokenState {
         let mut calldata = ArrayTrait::new();
-        NAME().serialize(ref calldata);
-        SYMBOL().serialize(ref calldata);
+        format!("{}", self.name).serialize(ref calldata);
+        format!("{}", self.name).serialize(ref calldata);
         self.initial_supply.serialize(ref calldata);
         self.owner.serialize(ref calldata);
         let token_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();

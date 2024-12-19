@@ -137,19 +137,19 @@ pub trait Abs<T, S> {
     fn abs(self: T) -> S;
 }
 
-pub impl AbsImplI8 of Abs<i8, u8> {
+pub(crate) impl AbsImplI8 of Abs<i8, u8> {
     fn abs(self: i8) -> u8 {
         abs(self)
     }
 }
 
-pub impl AbsImplI16 of Abs<i16, u16> {
+pub(crate) impl AbsImplI16 of Abs<i16, u16> {
     fn abs(self: i16) -> u16 {
         abs(self)
     }
 }
 
-pub impl AbsImplI32 of Abs<i32, u32> {
+pub(crate) impl AbsImplI32 of Abs<i32, u32> {
     fn abs(self: i32) -> u32 {
         abs(self)
     }
@@ -161,7 +161,7 @@ pub impl AbsImplI64 of Abs<i64, u64> {
     }
 }
 
-pub impl AbsImplI128 of Abs<i128, u128> {
+pub(crate) impl AbsImplI128 of Abs<i128, u128> {
     fn abs(self: i128) -> u128 {
         abs(self)
     }

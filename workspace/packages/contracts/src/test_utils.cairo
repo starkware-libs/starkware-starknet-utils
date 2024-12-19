@@ -99,10 +99,10 @@ pub fn check_identity(
 
 /// The `TokenConfig` struct is used to configure the initial settings for a token contract.
 /// It includes the initial supply of tokens and the owner's address.
-#[derive(Drop, Copy)]
+#[derive(Drop)]
 pub struct TokenConfig {
-    pub name: felt252,
-    pub symbol: felt252,
+    pub name: ByteArray,
+    pub symbol: ByteArray,
     pub initial_supply: u256,
     pub owner: ContractAddress,
 }
@@ -119,8 +119,8 @@ pub struct TokenState {
 pub impl TokenImpl of TokenTrait {
     fn deploy(self: TokenConfig) -> TokenState {
         let mut calldata = ArrayTrait::new();
-        format!("{}", self.name).serialize(ref calldata);
-        format!("{}", self.name).serialize(ref calldata);
+        self.name.serialize(ref calldata);
+        self.symbol.serialize(ref calldata);
         self.initial_supply.serialize(ref calldata);
         self.owner.serialize(ref calldata);
         let token_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();

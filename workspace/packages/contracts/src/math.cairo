@@ -1,8 +1,6 @@
 use core::num::traits::WideMul;
 use core::num::traits::one::One;
 use core::num::traits::zero::Zero;
-pub const MAX_U64: u64 = 18446744073709551615;
-pub const MAX_U128: u128 = 340282366920938463463374607431768211455;
 
 
 pub fn have_same_sign(a: i64, b: i64) -> bool {
@@ -273,13 +271,11 @@ impl FractionPartialOrd of PartialOrd<Fraction> {
 
 #[cfg(test)]
 mod tests {
+    use contracts_commons::constants::{MAX_U128, MAX_U64};
     use core::num::traits::one::One;
     use core::num::traits::zero::Zero;
     use super::Abs;
     use super::{Fraction, FractionTrait};
-
-
-    use super::{MAX_U128, MAX_U64};
     use super::{mul_wide_and_ceil_div, mul_wide_and_div, wide_abs_diff};
     const TEST_NUM: u64 = 100000000000;
 

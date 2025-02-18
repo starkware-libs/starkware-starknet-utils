@@ -22,13 +22,10 @@ jobs:
 
       - name: Update PR
         run: |
-          if [ git diff --exit-code ]; then
-            echo "No changes to commit"
-            exit 0
+          if [ "git diff --exit-code" ]; then
+            echo "PR is not formatted."
+            exit 1
           fi
-          git config --global user.username "starknetapps-bot"
-          git config --global user.email "starknetapps.bot@starkware.co"
-          git commit -am "Format code" && git push origin HEAD
 
   test:
     runs-on: ubuntu-latest
@@ -57,6 +54,14 @@ jobs:
 
       - name: Install cairo-coverage
         run: curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
+
+      - name: Add necessary debug flags
+        run: echo "
+          [profile.dev.cairo]
+          unstable-add-statements-functions-debug-info = true
+          unstable-add-statements-code-locations-debug-info = true
+          inlining-strategy = "avoid"
+          " >> Cargo.toml
 
       - name: Run tests with coverage
         run: scarb test --coverage

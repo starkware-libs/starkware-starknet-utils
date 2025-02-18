@@ -3,7 +3,7 @@ name: Post Pull Request
 on:
   push:
     branches:
-      - dev
+      - arad/ci-test
 
 jobs:
   create-tag:

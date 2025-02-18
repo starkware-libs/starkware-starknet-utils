@@ -1,0 +1,39 @@
+name: Post Pull Request
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate tag name
+        id: generate_tag
+        run: |
+          VERSION=$(grep -m 1 '^version' Scarb.toml | cut -d '"' -f 2)
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from scarb.toml"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version $VERSION"
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.USER_TOKEN }}
+          TAG: ${{ steps.generate_tag.outputs.VERSION }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+            exit 0
+          fi
+          echo "Creating tag $TAG"
+          git config --global user.username "starknetapps-bot"
+          git config --global user.email "starknetapps.bot@starkware.co"
+          git tag "$TAG"
+          git push origin "$TAG"

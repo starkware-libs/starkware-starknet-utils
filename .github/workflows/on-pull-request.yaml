@@ -59,8 +59,6 @@ jobs:
       - name: Add necessary debug flags
         run: printf "\n[profile.dev.cairo]\nunstable-add-statements-functions-debug-info = true\nunstable-add-statements-code-locations-debug-info = true\ninlining-strategy = \"avoid\"\n" >> Scarb.toml
 
-      - run: cat Scarb.toml
-
       - name: Run coverage
         run: snforge test --coverage
 

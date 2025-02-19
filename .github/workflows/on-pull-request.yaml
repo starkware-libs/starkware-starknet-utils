@@ -41,34 +41,34 @@ jobs:
     - name: Test Cairo
       run: scarb test
 
-  coverage:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install scarb
-        run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
-
-      - name: Install cairo-coverage
-        run: curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
-
-      - name: Add necessary debug flags
-        run: echo "
-          [profile.dev.cairo]
-          unstable-add-statements-functions-debug-info = true
-          unstable-add-statements-code-locations-debug-info = true
-          inlining-strategy = "avoid"
-          " >> Cargo.toml
-
-      - name: Run tests with coverage
-        run: scarb test --coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage/coverage.lcov
-
-        token: ${{ secrets.CODECOV_TOKEN }}
+  # coverage:
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Install scarb
+  #       run: |
+  #         curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
+  #         export PATH="$HOME/.local/bin:$PATH"
+  #
+  #     - name: Install cairo-coverage
+  #       run: curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
+  #
+  #     - name: Add necessary debug flags
+  #       run: echo "
+  #         [profile.dev.cairo]
+  #         unstable-add-statements-functions-debug-info = true
+  #         unstable-add-statements-code-locations-debug-info = true
+  #         inlining-strategy = "avoid"
+  #         " >> Cargo.toml
+  #
+  #     - name: Run tests with coverage
+  #       run: scarb test --coverage
+  #
+  #     - name: Upload coverage
+  #       uses: codecov/codecov-action@v4
+  #       with:
+  #         files: coverage/coverage.lcov
+  #
+  #       token: ${{ secrets.CODECOV_TOKEN }}

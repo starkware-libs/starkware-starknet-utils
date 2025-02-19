@@ -67,9 +67,9 @@ jobs:
           unstable-add-statements-functions-debug-info = true\n
           unstable-add-statements-code-locations-debug-info = true\n
           inlining-strategy = "avoid"\n
-          " >> Cargo.toml
+          " >> Scarb.toml
 
-      - run: cat Cargo.toml
+      - run: cat Scarb.toml
 
       - name: Run coverage
         run: snforge test --coverage

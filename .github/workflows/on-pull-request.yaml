@@ -31,12 +31,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install scarb
-      run: |
-        curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
-        export PATH="$HOME/.local/bin:$PATH"
+      - name: Install scarb
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
 
-    - name: Run test
-      run: scarb test
+      - name: Run test
+        run: scarb test

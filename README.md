@@ -22,9 +22,8 @@
 - [Disclaimer](#disclaimer)
 - [Dependencies](#dependencies)
 - [Installation](#installation)
-- [Implementation specification](#implementation-specification)
 - [Getting help](#getting-help)
-- [Help make Staking better!](#help-make-staking-better)
+- [Help make Utils better!](#help-make-utils-better)
 - [Contributing](#contributing)
 - [Security](#security)
 
@@ -36,25 +35,17 @@ This repo holds the implementation of the Starknet apps common library (starknet
 This is a work in progress.
 
 ## Dependencies
+
 The project is built with [Scarb](https://docs.swmansion.com/scarb/) and [Starknet foundry](https://foundry-rs.github.io/starknet-foundry/index.html).
 
 ## Installation
-TODO: Rewrite
 
-Clone the repo and from within the projects root folder run:
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-nvm install 20
-curl -fsSL https://get.pnpm.io/install.sh | sh -
-pnpm install turbo --global
-pnpm install
+To use this package in your project, add the following to your `Scarb.toml` file:
+```toml
+[dependencies]
+starknet_utils = { git = "https://github.com/starkware-libs/starkware-starknet-utils" version = SOME_VERSION }
+...other dependencies...
 ```
-
-## Implementation specification
-TODO: Remove?
-
-Specs document found [here](docs/spec.md)
-
 
 ## Getting help
 
@@ -63,10 +54,9 @@ Reach out to the maintainer at any of the following:
 - Contact options listed on this [GitHub profile](https://github.com/starkware-libs)
 
 ## Help make Starknet Utils better!
-
-If you want to say thank you or support the active development of Starknet Staking:
+If you want to say thank you or support the active development of Starknet Utils:
 - Add a GitHub Star to the project.
-- Tweet about Starknet Staking.
+- Tweet about Starknet Utils.
 - Write interesting articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com), or your personal blog.
 
 ## Contributing

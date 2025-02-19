@@ -22,4 +22,9 @@ mod tests {
     fn it_works() {
         assert(fib(16) == 987, 'it works!');
     }
+
+    #[test]
+    fn another_test() {
+        assert(fib(10) == 55, 'it works!');
+    }
 }

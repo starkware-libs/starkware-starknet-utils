@@ -40,3 +40,32 @@ jobs:
 
       - name: Run test
         run: scarb test
+
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: codecov/codecov-action@v5.3.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/coverage.lcov
+
+      - name: Install scarb
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+
+      - name: Install cairo-coverage
+        run: curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
+
+      - name: Add necessary debug flags
+        run: echo "
+          [profile.dev.cairo]
+          unstable-add-statements-functions-debug-info = true
+          unstable-add-statements-code-locations-debug-info = true
+          inlining-strategy = "avoid"
+          " >> Cargo.toml
+
+      - name: Run coverage
+        run: scarb test --coverage

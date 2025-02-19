@@ -69,5 +69,7 @@ jobs:
           inlining-strategy = "avoid"\n
           " >> Cargo.toml
 
+      - run: cat Cargo.toml
+
       - name: Run coverage
         run: snforge test --coverage

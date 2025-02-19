@@ -51,14 +51,19 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/coverage.lcov
 
+      # - name: Install scarb
+      #   run: |
+      #     curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
+      #     export PATH="$HOME/.local/bin:$PATH"
+      #
+      # - name: Install cairo-coverage
+      #   run: |
+      #     curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
+
       - name: Install scarb
         run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.starkup.dev | sh
           export PATH="$HOME/.local/bin:$PATH"
-
-      - name: Install cairo-coverage
-        run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
 
       - name: Add necessary debug flags
         run: echo "

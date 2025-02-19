@@ -46,24 +46,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: foundry-rs/setup-snfoundry@v3
       - uses: codecov/codecov-action@v5.3.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/coverage.lcov
 
-      # - name: Install scarb
-      #   run: |
-      #     curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
-      #     export PATH="$HOME/.local/bin:$PATH"
-      #
-      # - name: Install cairo-coverage
-      #   run: |
-      #     curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
-
       - name: Install scarb
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.starkup.dev | sh
+          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
           export PATH="$HOME/.local/bin:$PATH"
+
+      - name: Install cairo-coverage
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
 
       - name: Add necessary debug flags
         run: echo "

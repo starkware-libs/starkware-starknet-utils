@@ -20,7 +20,7 @@ jobs:
       - name: Format code
         run: scarb fmt
 
-      - name: Update PR
+      - name: Check if there's a difference
         run: |
           if [ "git diff --exit-code" ]; then
             echo "PR is not formatted."
@@ -38,5 +38,5 @@ jobs:
         curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
         export PATH="$HOME/.local/bin:$PATH"
 
-    - name: Test Cairo
+    - name: Run test
       run: scarb test

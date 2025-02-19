@@ -22,7 +22,7 @@ jobs:
 
       - name: Check if there's a difference
         run: |
-          if [ "git diff --exit-code" ]; then
+          if [ -n "$(git diff)" ]; then
             echo "PR is not formatted."
             exit 1
           fi

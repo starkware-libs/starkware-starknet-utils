@@ -23,7 +23,7 @@
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Getting help](#getting-help)
-- [Help make Utils better!](#help-make-utils-better)
+- [Help make Utils better!](#help-make-starknet-utils-better)
 - [Contributing](#contributing)
 - [Security](#security)
 

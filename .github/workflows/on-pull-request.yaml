@@ -47,11 +47,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/setup-snfoundry@v3
-      - uses: codecov/codecov-action@v5.3.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/coverage.lcov
-
       - name: Install scarb
         run: |
           curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
@@ -68,3 +63,9 @@ jobs:
 
       - name: Run coverage
         run: snforge test --coverage
+
+      - uses: codecov/codecov-action@v5.3.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/coverage.lcov
+

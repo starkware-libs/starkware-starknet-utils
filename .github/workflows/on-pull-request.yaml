@@ -69,4 +69,4 @@ jobs:
           " >> Cargo.toml
 
       - name: Run coverage
-        run: scarb test --coverage
+        run: snforge test --coverage

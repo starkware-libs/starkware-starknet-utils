@@ -10,9 +10,3 @@ cairo_test = "2.9.2"
 snforge_std = "0.37.0"
 
 [dependencies]
-test
-test
-test
-test
-tester
-tester

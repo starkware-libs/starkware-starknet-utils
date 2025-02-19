@@ -3,7 +3,7 @@ name: Pull Request Integration
 on:
   pull_request:
     branches:
-      - arac/ci-actions
+      - arac/ci-coverage
 
 jobs:
   format:

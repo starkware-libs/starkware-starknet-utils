@@ -3,7 +3,7 @@ name: Pull Request Integration
 on:
   pull_request:
     branches:
-      - main
+      - arac/ci-actions
 
 jobs:
   format:

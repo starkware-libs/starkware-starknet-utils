@@ -62,7 +62,7 @@ jobs:
           curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
 
       - name: Add necessary debug flags
-        run: echo "\n
+        run: printf "\n
           [profile.dev.cairo]\n
           unstable-add-statements-functions-debug-info = true\n
           unstable-add-statements-code-locations-debug-info = true\n

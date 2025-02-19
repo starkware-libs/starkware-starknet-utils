@@ -62,11 +62,11 @@ jobs:
           curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
 
       - name: Add necessary debug flags
-        run: echo "
-          [profile.dev.cairo]
-          unstable-add-statements-functions-debug-info = true
-          unstable-add-statements-code-locations-debug-info = true
-          inlining-strategy = "avoid"
+        run: echo "\n
+          [profile.dev.cairo]\n
+          unstable-add-statements-functions-debug-info = true\n
+          unstable-add-statements-code-locations-debug-info = true\n
+          inlining-strategy = "avoid"\n
           " >> Cargo.toml
 
       - name: Run coverage

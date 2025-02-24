@@ -24,7 +24,6 @@
 - [Installation](#installation)
 - [Getting help](#getting-help)
 - [Help make Utils better!](#help-make-starknet-utils-better)
-- [Contributing](#contributing)
 - [Security](#security)
 
 
@@ -58,11 +57,6 @@ If you want to say thank you or support the active development of Starknet Utils
 - Add a GitHub Star to the project.
 - Tweet about Starknet Utils.
 - Write interesting articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com), or your personal blog.
-
-## Contributing
-Thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make benefit everybody else and are greatly appreciated.
-
-Please read our [contribution guidelines](https://github.com/starkware-libs/starkware-starknet-utils/blob/main/docs/CONTRIBUTING.md), and thank you for being involved!
 
 ## Security
 Starknet Utils follows good practices of security, but 100% security cannot be assured. Starknet Utils is provided "as is" without any warranty. Use at your own risk.

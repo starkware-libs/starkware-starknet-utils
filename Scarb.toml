@@ -1,0 +1,26 @@
+[package]
+name = "contracts_commons"
+version = "0.1.0"
+edition = "2024_07"
+
+[dependencies]
+starknet = "2.9.2"
+openzeppelin = "0.20.0"
+
+[dev-dependencies]
+assert_macros = "2.9.2"
+snforge_std = "0.34.0"
+openzeppelin_testing = "0.20.0"
+
+[scripts]
+test = "SNFORGE_BACKTRACE=1 snforge test"
+
+[lib]
+
+[[target.starknet-contract]]
+
+[[test]]
+name = "contracts_commons_unittest"
+
+[tool.fmt]
+sort-module-level-items = true

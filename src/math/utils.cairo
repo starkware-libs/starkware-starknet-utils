@@ -52,7 +52,7 @@ pub fn ceil_of_division<T, +Sub<T>, +Add<T>, +One<T>, +Div<T>, +Copy<T>, +Drop<T
 
 #[cfg(test)]
 mod tests {
-    use contracts_commons::constants::{MAX_U128, MAX_U64};
+    use starkware_utils::constants::{MAX_U128, MAX_U64};
     use super::*;
     const TEST_NUM: u64 = 100000000000;
 

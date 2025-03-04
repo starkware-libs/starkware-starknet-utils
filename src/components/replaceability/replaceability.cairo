@@ -1,12 +1,5 @@
 #[starknet::component]
 pub(crate) mod ReplaceabilityComponent {
-    use starkware_utils::components::replaceability::errors::ReplaceErrors;
-    use starkware_utils::components::replaceability::interface::{
-        EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION, IReplaceable, ImplementationAdded,
-        ImplementationData, ImplementationFinalized, ImplementationRemoved, ImplementationReplaced,
-    };
-    use starkware_utils::components::roles::RolesComponent;
-    use starkware_utils::components::roles::RolesComponent::InternalTrait;
     use core::num::traits::Zero;
     use core::poseidon;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
@@ -18,6 +11,13 @@ pub(crate) mod ReplaceabilityComponent {
     use starknet::storage::StoragePointerReadAccess;
     use starknet::storage::StoragePointerWriteAccess;
     use starknet::syscalls::{library_call_syscall, replace_class_syscall};
+    use starkware_utils::components::replaceability::errors::ReplaceErrors;
+    use starkware_utils::components::replaceability::interface::{
+        EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION, IReplaceable, ImplementationAdded,
+        ImplementationData, ImplementationFinalized, ImplementationRemoved, ImplementationReplaced,
+    };
+    use starkware_utils::components::roles::RolesComponent;
+    use starkware_utils::components::roles::RolesComponent::InternalTrait;
 
 
     #[storage]

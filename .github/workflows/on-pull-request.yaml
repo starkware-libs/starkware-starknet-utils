@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.9.2"
 
       - name: Check formatting
         run: |
@@ -25,6 +27,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: foundry-rs/setup-snfoundry@v3
       - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.9.2"
 
       - name: Run test
         run: scarb test
@@ -36,6 +40,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: foundry-rs/setup-snfoundry@v3
       - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.9.2"
 
       - name: Install cairo-coverage
         run: |

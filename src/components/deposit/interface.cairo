@@ -1,5 +1,5 @@
-use contracts_commons::types::HashType;
-use contracts_commons::types::time::time::{TimeDelta, Timestamp};
+use starkware-utils::types::HashType;
+use starkware-utils::types::time::time::{TimeDelta, Timestamp};
 use core::starknet::storage_access::StorePacking;
 use starknet::ContractAddress;
 

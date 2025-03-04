@@ -1,7 +1,7 @@
 // A dummy contract used for testing EIC.
 #[starknet::contract]
 pub(crate) mod EICTestContract {
-    use contracts_commons::components::replaceability::interface::IEICInitializable;
+    use starkware-utils::components::replaceability::interface::IEICInitializable;
     use starknet::storage::StoragePointerReadAccess;
     use starknet::storage::StoragePointerWriteAccess;
 

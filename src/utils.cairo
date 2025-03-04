@@ -1,7 +1,7 @@
-use contracts_commons::errors::assert_with_byte_array;
-use contracts_commons::math::fraction::FractionTrait;
-use contracts_commons::types::time::time::{Time, Timestamp};
-use contracts_commons::types::{HashType, PublicKey, Signature};
+use starkware-utils::errors::assert_with_byte_array;
+use starkware-utils::math::fraction::FractionTrait;
+use starkware-utils::types::time::time::{Time, Timestamp};
+use starkware-utils::types::{HashType, PublicKey, Signature};
 use openzeppelin::account::utils::is_valid_stark_signature;
 use starknet::Store;
 use starknet::storage::StoragePointerReadAccess;

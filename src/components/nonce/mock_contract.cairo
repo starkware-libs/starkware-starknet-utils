@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub mod NonceMock {
-    use contracts_commons::components::nonce::NonceComponent;
+    use starkware-utils::components::nonce::NonceComponent;
 
     component!(path: NonceComponent, storage: nonce, event: NonceEvent);
 

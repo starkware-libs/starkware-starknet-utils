@@ -1,16 +1,16 @@
 [package]
-name = "contracts_commons"
+name = "starkware_utils"
 version = "0.1.0"
 edition = "2024_07"
 
 [dependencies]
-starknet.workspace = true
-openzeppelin.workspace = true
+starknet = "2.9.2"
+openzeppelin = "0.20.0"
 
 [dev-dependencies]
-assert_macros.workspace = true
-snforge_std.workspace = true
-openzeppelin_testing.workspace = true
+assert_macros = "2.9.2"
+snforge_std = "0.34.0"
+openzeppelin_testing = "0.20.0"
 
 [scripts]
 test = "SNFORGE_BACKTRACE=1 snforge test"

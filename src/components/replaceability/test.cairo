@@ -1,6 +1,6 @@
 mod ReplaceabilityTests {
-    use starkware-utils::components::replaceability;
-    use starkware-utils::test_utils::cheat_caller_address_once;
+    use starknet_utils::components::replaceability;
+    use starknet_utils::test_utils::cheat_caller_address_once;
     use core::num::traits::zero::Zero;
     use replaceability::ReplaceabilityComponent;
     use replaceability::ReplaceabilityComponent::InternalReplaceabilityTrait;

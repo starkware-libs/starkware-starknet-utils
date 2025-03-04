@@ -1,4 +1,4 @@
-use starkware-utils::trace::mock::{IMockTrace, MockTrace};
+use starknet_utils::trace::mock::{IMockTrace, MockTrace};
 
 fn CONTRACT_STATE() -> MockTrace::ContractState {
     MockTrace::contract_state_for_testing()

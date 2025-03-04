@@ -1,5 +1,5 @@
-use starkware-utils::components::roles;
-use starkware-utils::event_test_utils::panic_with_event_details;
+use starknet_utils::components::roles;
+use starknet_utils::event_test_utils::panic_with_event_details;
 use roles::interface as RolesInterface;
 use roles::mock_contract::MockContract;
 use roles::roles::RolesComponent::Event as RolesEvent;

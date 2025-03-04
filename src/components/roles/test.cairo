@@ -1,10 +1,10 @@
-use starkware-utils::components::roles;
-use starkware-utils::components::roles::errors::AccessErrors;
-use starkware-utils::components::roles::test_utils;
-use starkware-utils::components::roles::test_utils::Constants;
-use starkware-utils::errors::Describable;
-use starkware-utils::event_test_utils::assert_number_of_events;
-use starkware-utils::test_utils::{
+use starknet_utils::components::roles;
+use starknet_utils::components::roles::errors::AccessErrors;
+use starknet_utils::components::roles::test_utils;
+use starknet_utils::components::roles::test_utils::Constants;
+use starknet_utils::errors::Describable;
+use starknet_utils::event_test_utils::assert_number_of_events;
+use starknet_utils::test_utils::{
     assert_panic_with_error, assert_panic_with_felt_error, cheat_caller_address_once,
 };
 use core::num::traits::zero::Zero;

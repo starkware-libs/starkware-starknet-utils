@@ -1,11 +1,11 @@
-use starkware-utils::components::replaceability::ReplaceabilityComponent;
-use starkware-utils::components::replaceability::interface::{
+use starknet_utils::components::replaceability::ReplaceabilityComponent;
+use starknet_utils::components::replaceability::interface::{
     EICData, IReplaceableDispatcher, ImplementationData, ImplementationFinalized,
     ImplementationReplaced,
 };
-use starkware-utils::components::replaceability::mock::ReplaceabilityMock;
-use starkware-utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use starkware-utils::test_utils::cheat_caller_address_once;
+use starknet_utils::components::replaceability::mock::ReplaceabilityMock;
+use starknet_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starknet_utils::test_utils::cheat_caller_address_once;
 use snforge_std::cheatcodes::events::{Event, Events, is_emitted};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, load};
 use starknet::ContractAddress;

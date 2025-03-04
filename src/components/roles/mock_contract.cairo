@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod MockContract {
-    use starkware-utils::components::roles::RolesComponent;
-    use starkware-utils::components::roles::RolesComponent::InternalTrait as RolesInternalTrait;
+    use starknet_utils::components::roles::RolesComponent;
+    use starknet_utils::components::roles::RolesComponent::InternalTrait as RolesInternalTrait;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::ContractAddress;

@@ -8,8 +8,8 @@ pub(crate) mod RolesComponent {
         TOKEN_ADMIN, TokenAdminAdded, TokenAdminRemoved, UPGRADE_GOVERNOR, UpgradeGovernorAdded,
         UpgradeGovernorRemoved,
     };
-    use starkware-utils::components::roles::errors::AccessErrors;
-    use starkware-utils::components::roles::interface as RolesInterface;
+    use starknet_utils::components::roles::errors::AccessErrors;
+    use starknet_utils::components::roles::interface as RolesInterface;
     use core::num::traits::Zero;
     use starknet::{ContractAddress, get_caller_address};
 

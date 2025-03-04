@@ -1,4 +1,4 @@
-use starkware-utils::trace::errors::TraceErrors;
+use starknet_utils::trace::errors::TraceErrors;
 use core::num::traits::Zero;
 use openzeppelin::utils::math::average;
 use starknet::storage::{Mutable, MutableVecTrait, StorageAsPath, StoragePath, Vec, VecTrait};

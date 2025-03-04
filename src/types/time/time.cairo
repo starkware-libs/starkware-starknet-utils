@@ -1,5 +1,5 @@
-use starkware-utils::constants::{DAY, MAX_U64, WEEK};
-use starkware-utils::types::time::errors::TimeErrors;
+use starknet_utils::constants::{DAY, MAX_U64, WEEK};
+use starknet_utils::types::time::errors::TimeErrors;
 use core::traits::Into;
 
 pub type Seconds = u64;
@@ -120,7 +120,7 @@ pub impl TimeImpl of Time {
 
 #[cfg(test)]
 mod tests {
-    use starkware-utils::constants::{DAY, WEEK};
+    use starknet_utils::constants::{DAY, WEEK};
     use core::num::traits::zero::Zero;
     use snforge_std::start_cheat_block_timestamp_global;
     use super::{MAX_U64, Time, TimeDelta, Timestamp};

@@ -1,4 +1,4 @@
-use starkware-utils::types::{HashType, PublicKey};
+use starknet_utils::types::{HashType, PublicKey};
 use core::hash::{HashStateExTrait, HashStateTrait};
 use core::poseidon::PoseidonTrait;
 use openzeppelin::utils::snip12::{SNIP12Metadata, StarknetDomain, StructHash};

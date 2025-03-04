@@ -1,4 +1,4 @@
-use starkware-utils::errors::{Describable, ErrorDisplay};
+use starknet_utils::errors::{Describable, ErrorDisplay};
 
 #[derive(Drop)]
 pub(crate) enum TimeErrors {

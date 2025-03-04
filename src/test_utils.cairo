@@ -1,5 +1,5 @@
-use starkware-utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use starkware-utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
+use starknet_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starknet_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use core::fmt::Debug;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::byte_array::try_deserialize_bytearray_error;

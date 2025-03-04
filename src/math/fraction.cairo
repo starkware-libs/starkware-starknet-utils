@@ -1,4 +1,4 @@
-use starkware-utils::math::abs::Abs;
+use starknet_utils::math::abs::Abs;
 use core::num::traits::{One, WideMul, Zero};
 
 pub impl FractionTraitI128U128 = FractionImpl<i128, u128>;

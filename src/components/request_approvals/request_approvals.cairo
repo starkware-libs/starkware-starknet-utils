@@ -1,12 +1,12 @@
 #[starknet::component]
 pub(crate) mod RequestApprovalsComponent {
-    use starkware-utils::components::request_approvals::errors;
-    use starkware-utils::components::request_approvals::interface::{
+    use starknet_utils::components::request_approvals::errors;
+    use starknet_utils::components::request_approvals::interface::{
         IRequestApprovals, RequestStatus,
     };
-    use starkware-utils::message_hash::OffchainMessageHash;
-    use starkware-utils::types::{HashType, PublicKey, Signature};
-    use starkware-utils::utils::validate_stark_signature;
+    use starknet_utils::message_hash::OffchainMessageHash;
+    use starknet_utils::types::{HashType, PublicKey, Signature};
+    use starknet_utils::utils::validate_stark_signature;
     use core::num::traits::Zero;
     use core::panic_with_felt252;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};

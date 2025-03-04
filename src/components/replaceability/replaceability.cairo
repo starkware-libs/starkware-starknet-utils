@@ -1,12 +1,12 @@
 #[starknet::component]
 pub(crate) mod ReplaceabilityComponent {
-    use starkware-utils::components::replaceability::errors::ReplaceErrors;
-    use starkware-utils::components::replaceability::interface::{
+    use starknet_utils::components::replaceability::errors::ReplaceErrors;
+    use starknet_utils::components::replaceability::interface::{
         EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION, IReplaceable, ImplementationAdded,
         ImplementationData, ImplementationFinalized, ImplementationRemoved, ImplementationReplaced,
     };
-    use starkware-utils::components::roles::RolesComponent;
-    use starkware-utils::components::roles::RolesComponent::InternalTrait;
+    use starknet_utils::components::roles::RolesComponent;
+    use starknet_utils::components::roles::RolesComponent::InternalTrait;
     use core::num::traits::Zero;
     use core::poseidon;
     use openzeppelin::access::accesscontrol::AccessControlComponent;

@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+      - uses: foundry-rs/setup-snfoundry@v3
       - name: Install scarb
         run: |
           curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh

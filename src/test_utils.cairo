@@ -1,5 +1,3 @@
-use starknet_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use starknet_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use core::fmt::Debug;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::byte_array::try_deserialize_bytearray_error;
@@ -9,6 +7,8 @@ use snforge_std::{
     start_cheat_block_number_global,
 };
 use starknet::ContractAddress;
+use starknet_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starknet_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 
 
 pub fn set_account_as_security_admin(

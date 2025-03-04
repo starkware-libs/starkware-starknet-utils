@@ -1,5 +1,5 @@
-use starknet_utils::math::abs::Abs;
 use core::num::traits::{One, WideMul, Zero};
+use starknet_utils::math::abs::Abs;
 
 pub impl FractionTraitI128U128 = FractionImpl<i128, u128>;
 

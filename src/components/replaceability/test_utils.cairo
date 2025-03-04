@@ -1,3 +1,7 @@
+use snforge_std::cheatcodes::events::{Event, Events, is_emitted};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, load};
+use starknet::ContractAddress;
+use starknet::class_hash::ClassHash;
 use starknet_utils::components::replaceability::ReplaceabilityComponent;
 use starknet_utils::components::replaceability::interface::{
     EICData, IReplaceableDispatcher, ImplementationData, ImplementationFinalized,
@@ -6,10 +10,6 @@ use starknet_utils::components::replaceability::interface::{
 use starknet_utils::components::replaceability::mock::ReplaceabilityMock;
 use starknet_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starknet_utils::test_utils::cheat_caller_address_once;
-use snforge_std::cheatcodes::events::{Event, Events, is_emitted};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, load};
-use starknet::ContractAddress;
-use starknet::class_hash::ClassHash;
 
 pub(crate) mod Constants {
     use starknet::class_hash::class_hash_const;

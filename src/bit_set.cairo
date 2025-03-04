@@ -1,4 +1,4 @@
-use contracts_commons::bit_mask::{BitMask, PowOfTwo};
+use starkware_utils::bit_mask::{BitMask, PowOfTwo};
 use core::iter::{IntoIterator, Iterator};
 use core::num::traits::zero::Zero;
 use core::num::traits::{BitSize, Bounded};

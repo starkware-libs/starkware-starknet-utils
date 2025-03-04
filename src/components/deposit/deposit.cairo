@@ -1,10 +1,10 @@
 #[starknet::component]
 pub(crate) mod Deposit {
-    use contracts_commons::components::deposit::interface::{DepositStatus, IDeposit};
-    use contracts_commons::components::deposit::{errors, events};
-    use contracts_commons::types::HashType;
-    use contracts_commons::types::time::time::{Time, TimeDelta};
-    use contracts_commons::utils::{AddToStorage, SubFromStorage};
+    use starkware_utils::components::deposit::interface::{DepositStatus, IDeposit};
+    use starkware_utils::components::deposit::{errors, events};
+    use starkware_utils::types::HashType;
+    use starkware_utils::types::time::time::{Time, TimeDelta};
+    use starkware_utils::utils::{AddToStorage, SubFromStorage};
     use core::hash::{HashStateExTrait, HashStateTrait};
     use core::num::traits::Zero;
     use core::panic_with_felt252;

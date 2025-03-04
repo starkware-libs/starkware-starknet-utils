@@ -1,8 +1,8 @@
 #[starknet::component]
 pub(crate) mod PausableComponent {
     use RolesComponent::InternalTrait as RolesInternalTrait;
-    use contracts_commons::components::pausable::interface::IPausable;
-    use contracts_commons::components::roles::RolesComponent;
+    use starkware_utils::components::pausable::interface::IPausable;
+    use starkware_utils::components::roles::RolesComponent;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};

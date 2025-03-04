@@ -11,21 +11,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
 
-      - name: Install scarb
+      - name: Check formatting
         run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
-
-      - name: Format code
-        run: scarb fmt
-
-      - name: Check if there's a difference
-        run: |
-          if [ -n "$(git diff)" ]; then
-            echo "PR is not formatted."
-            exit 1
-          fi
+          scarb fmt --check
+          exit $?
 
   test:
     runs-on: ubuntu-latest
@@ -33,10 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/setup-snfoundry@v3
-      - name: Install scarb
-        run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
+      - uses: software-mansion/setup-scarb@v1
 
       - name: Run test
         run: scarb test
@@ -47,10 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/setup-snfoundry@v3
-      - name: Install scarb
-        run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/scarb/main/install.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
+      - uses: software-mansion/setup-scarb@v1
 
       - name: Install cairo-coverage
         run: |

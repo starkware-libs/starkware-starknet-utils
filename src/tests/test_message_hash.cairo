@@ -1,5 +1,5 @@
-use contracts_commons::message_hash::OffchainMessageHash;
-use contracts_commons::types::HashType;
+use starkware_utils::message_hash::OffchainMessageHash;
+use starkware_utils::types::HashType;
 use core::hash::{HashStateExTrait, HashStateTrait};
 use core::poseidon::{PoseidonTrait, poseidon_hash_span};
 use openzeppelin::utils::cryptography::snip12::{

@@ -24,3 +24,8 @@ name = "contracts_commons_unittest"
 
 [tool.fmt]
 sort-module-level-items = true
+
+[profile.dev.cairo]
+unstable-add-statements-code-locations-debug-info = true
+unstable-add-statements-functions-debug-info = true
+inlining-strategy = "avoid"

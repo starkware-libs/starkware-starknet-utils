@@ -23,8 +23,6 @@
 - [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Getting help](#getting-help)
-- [Help make Utils better!](#help-make-starknet-utils-better)
-- [Contributing](#contributing)
 - [Security](#security)
 
 
@@ -52,12 +50,6 @@ starknet_utils = { git = "https://github.com/starkware-libs/starkware-starknet-u
 Reach out to the maintainer at any of the following:
 - [GitHub Discussions](https://github.com/starkware-libs/starkware-starknet-utils/discussions)
 - Contact options listed on this [GitHub profile](https://github.com/starkware-libs)
-
-## Help make Starknet Utils better!
-If you want to say thank you or support the active development of Starknet Utils:
-- Add a GitHub Star to the project.
-- Tweet about Starknet Utils.
-- Write interesting articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com), or your personal blog.
 
 ## Security
 Starknet Utils follows good practices of security, but 100% security cannot be assured. Starknet Utils is provided "as is" without any warranty. Use at your own risk.

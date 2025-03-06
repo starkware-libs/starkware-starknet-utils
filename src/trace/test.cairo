@@ -118,3 +118,27 @@ fn test_is_empty() {
 
     assert!(!mock_trace.is_empty());
 }
+
+#[test]
+fn test_at() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+
+    let (key, value) = mock_trace.at(0);
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+
+    let (key, value) = mock_trace.at(1);
+    assert_eq!(key, 200);
+    assert_eq!(value, 2000);
+}
+
+#[test]
+#[should_panic(expected: "Index out of bounds")]
+fn test_at_out_of_bounds() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.at(0);
+}

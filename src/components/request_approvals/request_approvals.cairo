@@ -76,7 +76,7 @@ pub(crate) mod RequestApprovalsComponent {
                 RequestStatus::NOT_REGISTERED => panic_with_felt252(errors::REQUEST_NOT_REGISTERED),
                 RequestStatus::PROCESSED => panic_with_felt252(errors::REQUEST_ALREADY_PROCESSED),
                 RequestStatus::PENDING => {},
-            };
+            }
             self.approved_requests.write(request_hash, RequestStatus::PROCESSED);
             request_hash
         }

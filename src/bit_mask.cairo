@@ -1517,7 +1517,7 @@ mod tests {
             if power < BitSize::<u8>::bits() {
                 expected *= 2;
             }
-        };
+        }
         assert_eq!(PowOfTwo::<u8>::two_to_the(power), Result::Err('Invalid power'));
     }
 
@@ -1531,7 +1531,7 @@ mod tests {
             if power < BitSize::<u16>::bits() {
                 expected *= 2;
             }
-        };
+        }
         assert_eq!(PowOfTwo::<u16>::two_to_the(power), Result::Err('Invalid power'));
     }
 
@@ -1545,7 +1545,7 @@ mod tests {
             if power < BitSize::<u32>::bits() {
                 expected *= 2;
             }
-        };
+        }
         assert_eq!(PowOfTwo::<u32>::two_to_the(power), Result::Err('Invalid power'));
     }
 
@@ -1559,7 +1559,7 @@ mod tests {
             if power < BitSize::<u64>::bits() {
                 expected *= 2;
             }
-        };
+        }
         assert_eq!(PowOfTwo::<u64>::two_to_the(power), Result::Err('Invalid power'));
     }
 
@@ -1573,7 +1573,7 @@ mod tests {
             if power < BitSize::<u128>::bits() {
                 expected *= 2;
             }
-        };
+        }
         assert_eq!(PowOfTwo::<u128>::two_to_the(power), Result::Err('Invalid power'));
     }
 
@@ -1584,7 +1584,7 @@ mod tests {
             let mut expected: u8 = Bounded::MAX - PowOfTwo::two_to_the(index).unwrap();
             assert_eq!(BitMask::inverse_bit_mask(index).unwrap(), expected);
             index += 1;
-        };
+        }
         assert_eq!(BitMask::<u8>::inverse_bit_mask(index), Result::Err('Invalid index'));
     }
 
@@ -1595,7 +1595,7 @@ mod tests {
             let mut expected: u16 = Bounded::MAX - PowOfTwo::two_to_the(index).unwrap();
             assert_eq!(BitMask::inverse_bit_mask(index).unwrap(), expected);
             index += 1;
-        };
+        }
         assert_eq!(BitMask::<u16>::inverse_bit_mask(index), Result::Err('Invalid index'));
     }
 
@@ -1606,7 +1606,7 @@ mod tests {
             let mut expected: u32 = Bounded::MAX - PowOfTwo::two_to_the(index).unwrap();
             assert_eq!(BitMask::inverse_bit_mask(index).unwrap(), expected);
             index += 1;
-        };
+        }
         assert_eq!(BitMask::<u32>::inverse_bit_mask(index), Result::Err('Invalid index'));
     }
 
@@ -1617,7 +1617,7 @@ mod tests {
             let mut expected: u64 = Bounded::MAX - PowOfTwo::two_to_the(index).unwrap();
             assert_eq!(BitMask::inverse_bit_mask(index).unwrap(), expected);
             index += 1;
-        };
+        }
         assert_eq!(BitMask::<u64>::inverse_bit_mask(index), Result::Err('Invalid index'));
     }
 
@@ -1628,7 +1628,7 @@ mod tests {
             let mut expected: u128 = Bounded::MAX - PowOfTwo::two_to_the(index).unwrap();
             assert_eq!(BitMask::inverse_bit_mask(index).unwrap(), expected);
             index += 1;
-        };
+        }
         assert_eq!(BitMask::<u128>::inverse_bit_mask(index), Result::Err('Invalid index'));
     }
 }

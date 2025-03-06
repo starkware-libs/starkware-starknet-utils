@@ -2,38 +2,37 @@ use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 use starknet::{ContractAddress, SyscallResultTrait};
 
 pub(crate) mod Constants {
-    use starknet::contract_address_const;
     use super::ContractAddress;
 
     pub(crate) fn WRONG_ADMIN() -> ContractAddress {
-        contract_address_const::<'WRONG_ADMIN'>()
+        'WRONG_ADMIN'.try_into().unwrap()
     }
     pub(crate) fn INITIAL_ROOT_ADMIN() -> ContractAddress {
-        contract_address_const::<'INITIAL_ROOT_ADMIN'>()
+        'INITIAL_ROOT_ADMIN'.try_into().unwrap()
     }
     pub(crate) fn GOVERNANCE_ADMIN() -> ContractAddress {
-        contract_address_const::<'GOVERNANCE_ADMIN'>()
+        'GOVERNANCE_ADMIN'.try_into().unwrap()
     }
     pub(crate) fn SECURITY_ADMIN() -> ContractAddress {
-        contract_address_const::<'SECURITY_ADMIN'>()
+        'SECURITY_ADMIN'.try_into().unwrap()
     }
     pub(crate) fn APP_ROLE_ADMIN() -> ContractAddress {
-        contract_address_const::<'APP_ROLE_ADMIN'>()
+        'APP_ROLE_ADMIN'.try_into().unwrap()
     }
     pub(crate) fn APP_GOVERNOR() -> ContractAddress {
-        contract_address_const::<'APP_GOVERNOR'>()
+        'APP_GOVERNOR'.try_into().unwrap()
     }
     pub(crate) fn OPERATOR() -> ContractAddress {
-        contract_address_const::<'OPERATOR'>()
+        'OPERATOR'.try_into().unwrap()
     }
     pub(crate) fn TOKEN_ADMIN() -> ContractAddress {
-        contract_address_const::<'TOKEN_ADMIN'>()
+        'TOKEN_ADMIN'.try_into().unwrap()
     }
     pub(crate) fn UPGRADE_GOVERNOR() -> ContractAddress {
-        contract_address_const::<'UPGRADE_GOVERNOR'>()
+        'UPGRADE_GOVERNOR'.try_into().unwrap()
     }
     pub(crate) fn SECURITY_AGENT() -> ContractAddress {
-        contract_address_const::<'SECURITY_AGENT'>()
+        'SECURITY_AGENT'.try_into().unwrap()
     }
 }
 

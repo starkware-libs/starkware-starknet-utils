@@ -12,35 +12,33 @@ use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDisp
 use starkware_utils::test_utils::cheat_caller_address_once;
 
 pub(crate) mod Constants {
-    use starknet::class_hash::class_hash_const;
-    use starknet::contract_address_const;
     use super::{ContractAddress, ImplementationData};
 
     pub(crate) const DEFAULT_UPGRADE_DELAY: u64 = 12345;
     pub(crate) const EIC_UPGRADE_DELAY_ADDITION: u64 = 5;
 
     pub(crate) fn CALLER_ADDRESS() -> ContractAddress {
-        contract_address_const::<'CALLER_ADDRESS'>()
+        'CALLER_ADDRESS'.try_into().unwrap()
     }
 
     pub(crate) fn GOVERNANCE_ADMIN() -> ContractAddress {
-        contract_address_const::<'GOVERNANCE_ADMIN'>()
+        'GOVERNANCE_ADMIN'.try_into().unwrap()
     }
 
     pub(crate) fn DUMMY_FINAL_IMPLEMENTATION_DATA() -> ImplementationData {
         ImplementationData {
-            impl_hash: class_hash_const::<0>(), eic_data: Option::None(()), final: true,
+            impl_hash: 0.try_into().unwrap(), eic_data: Option::None(()), final: true,
         }
     }
 
     pub(crate) fn DUMMY_NONFINAL_IMPLEMENTATION_DATA() -> ImplementationData {
         ImplementationData {
-            impl_hash: class_hash_const::<0>(), eic_data: Option::None(()), final: false,
+            impl_hash: 0.try_into().unwrap(), eic_data: Option::None(()), final: false,
         }
     }
 
     pub(crate) fn NOT_UPGRADE_GOVERNOR_ACCOUNT() -> ContractAddress {
-        contract_address_const::<'NOT_UPGRADE_GOVERNOR_ACCOUNT'>()
+        'NOT_UPGRADE_GOVERNOR_ACCOUNT'.try_into().unwrap()
     }
 }
 

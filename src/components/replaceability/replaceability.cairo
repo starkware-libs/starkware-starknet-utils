@@ -5,11 +5,10 @@ pub(crate) mod ReplaceabilityComponent {
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::get_block_timestamp;
-    use starknet::storage::Map;
-    use starknet::storage::StorageMapReadAccess;
-    use starknet::storage::StorageMapWriteAccess;
-    use starknet::storage::StoragePointerReadAccess;
-    use starknet::storage::StoragePointerWriteAccess;
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use starknet::syscalls::{library_call_syscall, replace_class_syscall};
     use starkware_utils::components::replaceability::errors::ReplaceErrors;
     use starkware_utils::components::replaceability::interface::{
@@ -153,7 +152,7 @@ pub(crate) mod ReplaceabilityComponent {
                     assert!(res.is_ok(), "{}", ReplaceErrors::EIC_LIB_CALL_FAILED);
                 },
                 Option::None(()) => {},
-            };
+            }
 
             // Replace the class hash.
             let result = replace_class_syscall(implementation_data.impl_hash);

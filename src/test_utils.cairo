@@ -10,7 +10,6 @@ use starknet::ContractAddress;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 
-
 pub fn set_account_as_security_admin(
     contract: ContractAddress, account: ContractAddress, governance_admin: ContractAddress,
 ) {
@@ -83,8 +82,8 @@ pub fn check_identity(
     let identitier = IdentityDispatcher { contract_address: target };
     let identity = identitier.identify();
     let version = identitier.version();
-    assert_eq!(expected_identity, identity);
-    assert_eq!(expected_version, version);
+    assert!(expected_identity == identity);
+    assert!(expected_version == version);
 }
 
 pub fn assert_panic_with_error<T, +Drop<T>>(
@@ -109,7 +108,7 @@ pub fn assert_panic_with_felt_error<T, +Drop<T>>(
 
 pub fn assert_expected_error(error_data: Span<felt252>, expected_error: ByteArray) {
     match try_deserialize_bytearray_error(error_data) {
-        Result::Ok(error) => assert_eq!(error, expected_error),
+        Result::Ok(error) => assert!(error == expected_error),
         Result::Err(_) => panic!(
             "Failed to deserialize error data: {:?}.\nExpect to panic with {}.",
             error_data,
@@ -135,10 +134,10 @@ pub fn assert_expected_event_emitted<T, +starknet::Event<T>, +Drop<T>, +Debug<T>
         panic!(
             "The expected event type '{expected_event_name}' does not match the actual event type",
         );
-    };
+    }
 
     let actual_event = starknet::Event::<T>::deserialize(ref :keys, ref :data).unwrap();
-    assert_eq!(expected_event, actual_event);
+    assert!(expected_event == actual_event);
 }
 
 /// The `TokenConfig` struct is used to configure the initial settings for a token contract.

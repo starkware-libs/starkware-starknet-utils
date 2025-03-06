@@ -1,8 +1,8 @@
 use core::num::traits::Zero;
-use starkware_utils::components::nonce::interface::INonce;
-use starkware_utils::components::nonce::mock_contract::NonceMock;
-use starkware_utils::components::nonce::nonce::NonceComponent;
-use starkware_utils::components::nonce::nonce::NonceComponent::InternalTrait;
+use starknet_utils::components::nonce::interface::INonce;
+use starknet_utils::components::nonce::mock_contract::NonceMock;
+use starknet_utils::components::nonce::nonce::NonceComponent;
+use starknet_utils::components::nonce::nonce::NonceComponent::InternalTrait;
 
 type ComponentState = NonceComponent::ComponentState<NonceMock::ContractState>;
 

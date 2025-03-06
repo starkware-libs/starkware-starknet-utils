@@ -2,7 +2,7 @@ use core::hash::{HashStateExTrait, HashStateTrait};
 use core::poseidon::PoseidonTrait;
 use openzeppelin::utils::snip12::{SNIP12Metadata, StarknetDomain, StructHash};
 use starknet::get_tx_info;
-use starkware_utils::types::{HashType, PublicKey};
+use starknet_utils::types::{HashType, PublicKey};
 
 /// Trait for calculating the hash of a message given the `public_key`
 pub trait OffchainMessageHash<T> {

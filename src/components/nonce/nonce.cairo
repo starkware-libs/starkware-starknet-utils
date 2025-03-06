@@ -6,7 +6,7 @@
 pub mod NonceComponent {
     use starknet::storage::StoragePointerReadAccess;
     use starknet::storage::StoragePointerWriteAccess;
-    use starkware_utils::components::nonce::interface::INonce;
+    use starknet_utils::components::nonce::interface::INonce;
 
     #[storage]
     pub struct Storage {

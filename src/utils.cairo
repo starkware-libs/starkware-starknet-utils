@@ -3,10 +3,10 @@ use starknet::Store;
 use starknet::storage::StoragePointerReadAccess;
 use starknet::storage::StoragePointerWriteAccess;
 use starknet::storage::{Mutable, StorageAsPointer, StoragePointer};
-use starkware_utils::errors::assert_with_byte_array;
-use starkware_utils::math::fraction::FractionTrait;
-use starkware_utils::types::time::time::{Time, Timestamp};
-use starkware_utils::types::{HashType, PublicKey, Signature};
+use starknet_utils::errors::assert_with_byte_array;
+use starknet_utils::math::fraction::FractionTrait;
+use starknet_utils::types::time::time::{Time, Timestamp};
+use starknet_utils::types::{HashType, PublicKey, Signature};
 
 pub trait AddToStorage<T> {
     type Value;

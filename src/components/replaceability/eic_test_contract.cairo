@@ -3,7 +3,7 @@
 pub(crate) mod EICTestContract {
     use starknet::storage::StoragePointerReadAccess;
     use starknet::storage::StoragePointerWriteAccess;
-    use starkware_utils::components::replaceability::interface::IEICInitializable;
+    use starknet_utils::components::replaceability::interface::IEICInitializable;
 
     #[storage]
     struct Storage {

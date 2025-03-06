@@ -2,15 +2,6 @@
 version = 1
 
 [[package]]
-name = "contracts_commons"
-version = "0.1.0"
-dependencies = [
- "openzeppelin",
- "openzeppelin_testing",
- "snforge_std",
-]
-
-[[package]]
 name = "openzeppelin"
 version = "0.20.0"
 source = "registry+https://scarbs.xyz/"
@@ -150,4 +141,13 @@ source = "registry+https://scarbs.xyz/"
 checksum = "sha256:61df5e54dbe1c946861f0580dc5e06f87a7a71c42d27931dccf7f3824f59ac34"
 dependencies = [
  "snforge_scarb_plugin",
+]
+
+[[package]]
+name = "starkware_utils"
+version = "0.1.0"
+dependencies = [
+ "openzeppelin",
+ "openzeppelin_testing",
+ "snforge_std",
 ]

@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use starknet::storage_access::StorePacking;
 use starkware_utils::types::HashType;
 use starkware_utils::types::time::time::{TimeDelta, Timestamp};
 
@@ -22,40 +21,14 @@ pub trait IDeposit<TContractState> {
     );
     fn get_deposit_status(self: @TContractState, deposit_hash: HashType) -> DepositStatus;
     fn get_asset_info(self: @TContractState, asset_id: felt252) -> (ContractAddress, u64);
-    fn get_deposit_grace_period(self: @TContractState) -> TimeDelta;
+    fn get_cancel_delay(self: @TContractState) -> TimeDelta;
 }
 
-const NOT_EXIST_CONSTANT: u64 = 0;
-const DONE_CONSTANT: u64 = 1;
-const CANCELED_CONSTANT: u64 = 2;
-
-#[derive(Debug, Drop, PartialEq, Serde)]
+#[derive(Debug, Drop, PartialEq, Serde, starknet::Store)]
 pub enum DepositStatus {
-    NOT_EXIST,
-    DONE,
+    #[default]
+    NOT_REGISTERED,
+    PROCESSED,
     CANCELED,
     PENDING: Timestamp,
-}
-
-impl DepositStatusPacking of StorePacking<DepositStatus, u64> {
-    fn pack(value: DepositStatus) -> u64 {
-        match value {
-            DepositStatus::NOT_EXIST => NOT_EXIST_CONSTANT,
-            DepositStatus::DONE => DONE_CONSTANT,
-            DepositStatus::CANCELED => CANCELED_CONSTANT,
-            DepositStatus::PENDING(time) => { time.into() },
-        }
-    }
-
-    fn unpack(value: u64) -> DepositStatus {
-        if (value == NOT_EXIST_CONSTANT) {
-            DepositStatus::NOT_EXIST
-        } else if (value == DONE_CONSTANT) {
-            DepositStatus::DONE
-        } else if (value == CANCELED_CONSTANT) {
-            DepositStatus::CANCELED
-        } else {
-            DepositStatus::PENDING(Timestamp { seconds: value })
-        }
-    }
 }

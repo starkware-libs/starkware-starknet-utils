@@ -1,6 +1,5 @@
 #[starknet::component]
 pub(crate) mod RequestApprovalsComponent {
-    use core::num::traits::Zero;
     use core::panic_with_felt252;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
@@ -44,19 +43,19 @@ pub(crate) mod RequestApprovalsComponent {
         /// The request is stored with a status of PENDING.
         fn register_approval<T, +OffchainMessageHash<T>, +Drop<T>>(
             ref self: ComponentState<TContractState>,
-            owner_account: ContractAddress,
+            owner_account: Option<ContractAddress>,
             public_key: PublicKey,
             signature: Signature,
             args: T,
         ) -> HashType {
-            if owner_account.is_non_zero() {
-                assert(owner_account == get_caller_address(), errors::CALLER_IS_NOT_OWNER_ACCOUNT);
-            }
             let request_hash = args.get_message_hash(:public_key);
             assert(
                 self._get_request_status(:request_hash) == RequestStatus::NOT_REGISTERED,
                 errors::REQUEST_ALREADY_REGISTERED,
             );
+            if let Option::Some(owner_account) = owner_account {
+                assert(owner_account == get_caller_address(), errors::CALLER_IS_NOT_OWNER_ACCOUNT);
+            }
             validate_stark_signature(:public_key, msg_hash: request_hash, :signature);
             self.approved_requests.write(key: request_hash, value: RequestStatus::PENDING);
             request_hash

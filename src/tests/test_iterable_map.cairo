@@ -35,7 +35,7 @@ mod IterableMapTestContract {
             let mut array = array![];
             for (key, value) in self.iterable_map {
                 array.append((key, value));
-            };
+            }
 
             array.span()
         }
@@ -97,12 +97,12 @@ fn test_iterator() {
 
     for (key, value) in inserted_pairs {
         dispatcher.set_value(*key, *value);
-    };
+    }
 
     let mut read_pairs = array![];
     for (key, value) in dispatcher.get_all_values() {
         read_pairs.append((*key, *value));
-    };
+    }
 
     let read_pairs = read_pairs.span();
     assert_eq!(read_pairs.len(), inserted_pairs.len());

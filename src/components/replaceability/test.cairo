@@ -483,7 +483,7 @@ mod ReplaceabilityTests {
         match replaceable_safe_dispatcher.replace_to(:implementation_data) {
             Result::Ok(_) => (),
             Result::Err(_) => panic!("First replace should NOT result an error"),
-        };
+        }
 
         // Should revert with FINALIZED as the implementation is already finalized.
         replaceable_dispatcher.replace_to(:implementation_data);

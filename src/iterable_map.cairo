@@ -2,13 +2,11 @@ use core::hash::Hash;
 use core::iter::{IntoIterator, Iterator};
 use core::pedersen::HashState;
 use starknet::Store;
-use starknet::storage::StoragePathEntry;
-use starknet::storage::StoragePointerReadAccess;
-use starknet::storage::StoragePointerWriteAccess;
 use starknet::storage::{
     FlattenedStorage, Map, Mutable, MutableVecTrait, PendingStoragePath, PendingStoragePathTrait,
     StorageAsPath, StorageBase, StorageMapReadAccess, StorageMapWriteAccess, StorageNode,
-    StorageNodeMut, StoragePath, StorageTrait, StorageTraitMut, Vec, VecTrait,
+    StorageNodeMut, StoragePath, StoragePathEntry, StoragePointerReadAccess,
+    StoragePointerWriteAccess, StorageTrait, StorageTraitMut, Vec, VecTrait,
 };
 
 /// A Map like struct that represents a map in a contract storage that can also be iterated over.
@@ -171,7 +169,7 @@ impl StoragePathIterableMapWriteAccessImpl<
     fn write(self: StoragePath<Mutable<IterableMap<K, V>>>, key: Self::Key, value: Self::Value) {
         let entry = self._inner_map.entry(key);
         if entry.read().is_none() {
-            self._keys.append().write(key);
+            self._keys.push(key);
         }
         entry.write(Option::Some(value));
     }

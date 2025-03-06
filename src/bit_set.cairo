@@ -1,8 +1,8 @@
 use core::iter::{IntoIterator, Iterator};
 use core::num::traits::zero::Zero;
 use core::num::traits::{BitSize, Bounded};
-use core::starknet::storage_access::StorePacking;
 use core::traits::{BitAnd, BitOr, BitXor};
+use starknet::storage_access::StorePacking;
 use starkware_utils::bit_mask::{BitMask, PowOfTwo};
 
 pub(crate) type BitSetU8 = BitSet<u8>;
@@ -16,7 +16,7 @@ pub(crate) enum BitSetError {
     InvalidBound,
 }
 
-#[derive(Debug, Drop, PartialEq)]
+#[derive(Debug, Copy, Drop, PartialEq)]
 struct BitSet<T> {
     // TODO: Consider eliminate size limitations.
     bit_array: T,
@@ -124,7 +124,7 @@ impl BitSetImpl<
                 count += 1;
             }
             index += 1;
-        };
+        }
         count
     }
 
@@ -168,7 +168,7 @@ impl BitSetImpl<
                 indices.append(index);
             }
             index += 1;
-        };
+        }
         indices.span()
     }
 
@@ -224,7 +224,7 @@ impl SpanTryIntoBitSet<
 #[cfg(test)]
 mod tests {
     use core::num::traits::Bounded;
-    use core::starknet::storage_access::StorePacking;
+    use starknet::storage_access::StorePacking;
     use super::{BitSet, BitSetError, BitSetTrait};
 
     const TESTED_BIT_ARRAY: u8 = 0b01100001;

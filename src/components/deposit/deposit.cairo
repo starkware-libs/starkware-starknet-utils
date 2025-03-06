@@ -5,10 +5,10 @@ pub(crate) mod Deposit {
     use core::panic_with_felt252;
     use core::poseidon::PoseidonTrait;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use starknet::storage::StorageMapWriteAccess;
-    use starknet::storage::StoragePointerReadAccess;
-    use starknet::storage::StoragePointerWriteAccess;
-    use starknet::storage::{Map, StorageMapReadAccess, StoragePathEntry};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry,
+        StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use starkware_utils::components::deposit::interface::{DepositStatus, IDeposit};
     use starkware_utils::components::deposit::{errors, events};
@@ -215,7 +215,7 @@ pub(crate) mod Deposit {
                 DepositStatus::DONE => { panic_with_felt252(errors::DEPOSIT_ALREADY_PROCESSED) },
                 DepositStatus::CANCELED => { panic_with_felt252(errors::DEPOSIT_ALREADY_CANCELED) },
                 DepositStatus::PENDING(_) => {},
-            };
+            }
             let (_, quantum) = self._get_asset_info(:asset_id);
             self
                 .aggregate_quantized_pending_deposits

@@ -4,7 +4,7 @@ pub fn contains<T, +PartialEq<T>, +Drop<T>, +Copy<T>>(span: Span<T>, element: T)
         if *value == element {
             result = true;
         }
-    };
+    }
     result
 }
 

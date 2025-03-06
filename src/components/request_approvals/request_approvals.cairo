@@ -1,16 +1,16 @@
 #[starknet::component]
 pub(crate) mod RequestApprovalsComponent {
-    use contracts_commons::components::request_approvals::errors;
-    use contracts_commons::components::request_approvals::interface::{
-        IRequestApprovals, RequestStatus,
-    };
-    use contracts_commons::message_hash::OffchainMessageHash;
-    use contracts_commons::types::{HashType, PublicKey, Signature};
-    use contracts_commons::utils::validate_stark_signature;
     use core::num::traits::Zero;
     use core::panic_with_felt252;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
+    use starknet_utils::components::request_approvals::errors;
+    use starknet_utils::components::request_approvals::interface::{
+        IRequestApprovals, RequestStatus,
+    };
+    use starknet_utils::message_hash::OffchainMessageHash;
+    use starknet_utils::types::{HashType, PublicKey, Signature};
+    use starknet_utils::utils::validate_stark_signature;
 
     #[storage]
     pub struct Storage {

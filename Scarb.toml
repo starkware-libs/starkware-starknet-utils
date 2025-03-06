@@ -1,5 +1,5 @@
 [package]
-name = "contracts_commons"
+name = "starknet_utils"
 version = "0.1.0"
 edition = "2024_07"
 
@@ -20,7 +20,7 @@ test = "SNFORGE_BACKTRACE=1 snforge test"
 [[target.starknet-contract]]
 
 [[test]]
-name = "contracts_commons_unittest"
+name = "starknet_utils_unittest"
 
 [tool.fmt]
 sort-module-level-items = true

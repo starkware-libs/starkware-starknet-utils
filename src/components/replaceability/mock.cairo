@@ -1,12 +1,12 @@
 #[starknet::contract]
 pub(crate) mod ReplaceabilityMock {
     use RolesComponent::InternalTrait as RolesInternalTrait;
-    use contracts_commons::components::replaceability::ReplaceabilityComponent;
-    use contracts_commons::components::replaceability::ReplaceabilityComponent::InternalReplaceabilityTrait;
-    use contracts_commons::components::roles::RolesComponent;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::ContractAddress;
+    use starknet_utils::components::replaceability::ReplaceabilityComponent;
+    use starknet_utils::components::replaceability::ReplaceabilityComponent::InternalReplaceabilityTrait;
+    use starknet_utils::components::roles::RolesComponent;
 
     component!(path: ReplaceabilityComponent, storage: replaceability, event: ReplaceabilityEvent);
     component!(path: RolesComponent, storage: roles, event: RolesEvent);

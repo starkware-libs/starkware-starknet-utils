@@ -11,7 +11,7 @@ pub trait IIterableMapTestContract<TContractState> {
 
 #[starknet::contract]
 mod IterableMapTestContract {
-    use starknet_utils::iterable_map::{
+    use starkware_utils::iterable_map::{
         IterableMap, IterableMapIntoIterImpl, IterableMapReadAccessImpl, IterableMapTrait,
         IterableMapWriteAccessImpl,
     };

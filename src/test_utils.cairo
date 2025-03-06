@@ -7,8 +7,8 @@ use snforge_std::{
     start_cheat_block_number_global,
 };
 use starknet::ContractAddress;
-use starknet_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use starknet_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
+use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 
 
 pub fn set_account_as_security_admin(

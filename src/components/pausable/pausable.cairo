@@ -5,8 +5,8 @@ pub(crate) mod PausableComponent {
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
-    use starknet_utils::components::pausable::interface::IPausable;
-    use starknet_utils::components::roles::RolesComponent;
+    use starkware_utils::components::pausable::interface::IPausable;
+    use starkware_utils::components::roles::RolesComponent;
 
     #[storage]
     pub struct Storage {

@@ -3,8 +3,8 @@ use roles::mock_contract::MockContract;
 use roles::roles::RolesComponent::Event as RolesEvent;
 use snforge_std::cheatcodes::events::{Event, Events, is_emitted};
 use starknet::ContractAddress;
-use starknet_utils::components::roles;
-use starknet_utils::event_test_utils::panic_with_event_details;
+use starkware_utils::components::roles;
+use starkware_utils::event_test_utils::panic_with_event_details;
 
 pub(crate) fn assert_app_role_admin_added_event(
     spied_event: @(ContractAddress, Event),

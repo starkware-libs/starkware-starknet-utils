@@ -10,11 +10,11 @@ pub(crate) mod Deposit {
     use starknet::storage::StoragePointerWriteAccess;
     use starknet::storage::{Map, StorageMapReadAccess, StoragePathEntry};
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use starknet_utils::components::deposit::interface::{DepositStatus, IDeposit};
-    use starknet_utils::components::deposit::{errors, events};
-    use starknet_utils::types::HashType;
-    use starknet_utils::types::time::time::{Time, TimeDelta};
-    use starknet_utils::utils::{AddToStorage, SubFromStorage};
+    use starkware_utils::components::deposit::interface::{DepositStatus, IDeposit};
+    use starkware_utils::components::deposit::{errors, events};
+    use starkware_utils::types::HashType;
+    use starkware_utils::types::time::time::{Time, TimeDelta};
+    use starkware_utils::utils::{AddToStorage, SubFromStorage};
 
 
     #[storage]

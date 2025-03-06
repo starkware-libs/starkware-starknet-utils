@@ -23,8 +23,8 @@ mod ReplaceabilityTests {
         CheatSpan, EventSpyAssertionsTrait, EventSpyTrait, EventsFilterTrait, cheat_block_timestamp,
         cheat_caller_address, get_class_hash, spy_events,
     };
-    use starknet_utils::components::replaceability;
-    use starknet_utils::test_utils::cheat_caller_address_once;
+    use starkware_utils::components::replaceability;
+    use starkware_utils::test_utils::cheat_caller_address_once;
 
     #[test]
     fn test_get_upgrade_delay() {

@@ -4,13 +4,13 @@ pub(crate) mod RequestApprovalsComponent {
     use core::panic_with_felt252;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
-    use starknet_utils::components::request_approvals::errors;
-    use starknet_utils::components::request_approvals::interface::{
+    use starkware_utils::components::request_approvals::errors;
+    use starkware_utils::components::request_approvals::interface::{
         IRequestApprovals, RequestStatus,
     };
-    use starknet_utils::message_hash::OffchainMessageHash;
-    use starknet_utils::types::{HashType, PublicKey, Signature};
-    use starknet_utils::utils::validate_stark_signature;
+    use starkware_utils::message_hash::OffchainMessageHash;
+    use starkware_utils::types::{HashType, PublicKey, Signature};
+    use starkware_utils::utils::validate_stark_signature;
 
     #[storage]
     pub struct Storage {

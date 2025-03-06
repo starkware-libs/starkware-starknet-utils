@@ -6,8 +6,8 @@ use openzeppelin::utils::cryptography::snip12::{
 use openzeppelin_testing::constants::{PUBKEY, RECIPIENT};
 use snforge_std::{start_cheat_chain_id, test_address};
 use starknet::ContractAddress;
-use starknet_utils::message_hash::OffchainMessageHash;
-use starknet_utils::types::HashType;
+use starkware_utils::message_hash::OffchainMessageHash;
+use starkware_utils::types::HashType;
 
 const MESSAGE_TYPE_HASH: HashType =
     0x120ae1bdaf7c1e48349da94bb8dad27351ca115d6605ce345aee02d68d99ec1;

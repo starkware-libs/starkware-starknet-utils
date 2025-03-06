@@ -67,6 +67,22 @@ pub impl TraceImpl of TraceTrait {
             checkpoints[pos - 1].read().value
         }
     }
+
+    /// Returns the checkpoint at the given position.
+    /// # Returns
+    /// A tuple containing:
+    /// - `u64`: Timestamp/key of the checkpoint
+    /// - `u128`: Value stored in the checkpoint
+    ///
+    /// # Panics
+    /// If the position is out of bounds.
+    fn at(self: StoragePath<Trace>, pos: u64) -> (u64, u128) {
+        let checkpoints = self.checkpoints;
+        let len = checkpoints.len();
+        assert!(pos < len, "{}", TraceErrors::INDEX_OUT_OF_BOUNDS);
+        let checkpoint = checkpoints[pos].read();
+        (checkpoint.key, checkpoint.value)
+    }
 }
 
 #[generate_trait]

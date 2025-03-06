@@ -12,9 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          starknet-foundry-version: "0.38.0"
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.9.2"
+          scarb-version: "2.10.1"
 
       - name: Install cairo-coverage
         run: |

@@ -18,22 +18,18 @@ jobs:
         with:
           scarb-version: "2.11.0"
 
-      # TODO: when new coverage tool is ready, uncomment this
-      # - name: Install cairo-coverage
-      #   run: |
-      #     curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
+      - name: Install cairo-coverage
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh
 
       - name: Run test and coverage
-        # TODO: when new coverage tool is ready, uncomment this
-        # run: scarb test --coverage
-        run: scarb test
+        run: scarb test --coverage
 
-      # TODO: when new coverage tool is ready, uncomment this
-      # - uses: codecov/codecov-action@v5.3.1
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     files: coverage/coverage.lcov
-      #     fail_ci_if_error: true
+      - uses: codecov/codecov-action@v5.3.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/coverage.lcov
+          fail_ci_if_error: true
 
       - name: Check formatting
         run: |

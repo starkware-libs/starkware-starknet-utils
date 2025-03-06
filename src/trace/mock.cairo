@@ -12,7 +12,7 @@ pub trait IMockTrace<TContractState> {
 
 #[starknet::contract]
 pub mod MockTrace {
-    use starknet_utils::trace::trace::{MutableTraceTrait, Trace, TraceTrait};
+    use starkware_utils::trace::trace::{MutableTraceTrait, Trace, TraceTrait};
 
     #[storage]
     struct Storage {

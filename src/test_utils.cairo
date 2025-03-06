@@ -7,8 +7,8 @@ use snforge_std::{
     start_cheat_block_number_global,
 };
 use starknet::ContractAddress;
-use starknet_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use starknet_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
+use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 
 
 pub fn set_account_as_security_admin(
@@ -41,6 +41,14 @@ pub fn set_account_as_operator(
     let roles_dispatcher = IRolesDispatcher { contract_address: contract };
     cheat_caller_address_once(contract_address: contract, caller_address: app_role_admin);
     roles_dispatcher.register_operator(:account);
+}
+
+pub fn set_account_as_app_governor(
+    contract: ContractAddress, account: ContractAddress, app_role_admin: ContractAddress,
+) {
+    let roles_dispatcher = IRolesDispatcher { contract_address: contract };
+    cheat_caller_address_once(contract_address: contract, caller_address: app_role_admin);
+    roles_dispatcher.register_app_governor(:account);
 }
 
 pub fn set_account_as_upgrade_governor(

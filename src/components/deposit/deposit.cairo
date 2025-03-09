@@ -167,7 +167,7 @@ pub(crate) mod Deposit {
     > of InternalTrait<TContractState> {
         fn initialize(ref self: ComponentState<TContractState>, cancel_delay: TimeDelta) {
             assert(self.cancel_delay.read().is_zero(), errors::ALREADY_INITIALIZED);
-            assert(cancel_delay.is_non_zero(), errors::INVALID_cancel_delay);
+            assert(cancel_delay.is_non_zero(), errors::INVALID_CANCEL_DELAY);
             self.cancel_delay.write(cancel_delay);
         }
 

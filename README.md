@@ -13,7 +13,7 @@
 [![License: Apache2.0](https://img.shields.io/badge/License-Apache2.0-green.svg)](LICENSE)
 </div>
 
-# Starknet Utils <!-- omit from toc -->
+# StarkWare Utils <!-- omit from toc -->
 
 ## Table of contents <!-- omit from toc -->
 
@@ -52,6 +52,6 @@ Reach out to the maintainer at any of the following:
 - Contact options listed on this [GitHub profile](https://github.com/starkware-libs)
 
 ## Security
-Starknet Utils follows good practices of security, but 100% security cannot be assured. Starknet Utils is provided "as is" without any warranty. Use at your own risk.
+StarkWare Utils follows good practices of security, but 100% security cannot be assured. StarkWare Utils is provided "as is" without any warranty. Use at your own risk.
 
 For more information and to report security issues, please refer to our [security documentation](https://github.com/starkware-libs/starkware-starknet-utils/blob/main/docs/SECURITY.md).

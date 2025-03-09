@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If there are any vulnerabilities in **Starknet Utils**, don't hesitate to _report them_.
+If there are any vulnerabilities in **StarkWare Utils**, don't hesitate to _report them_.
 
 1. Use any of the [private contact addresses](https://github.com/starkware-libs/starkware-starknet-utils#getting-help).
 2. Describe the vulnerability.

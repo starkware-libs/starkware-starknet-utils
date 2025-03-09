@@ -2,10 +2,8 @@ use core::num::traits::WideMul;
 use core::num::traits::one::One;
 use core::num::traits::zero::Zero;
 
-pub fn have_same_sign<T, +Zero<T>, +PartialOrd<T>, S, +Zero<S>, +PartialOrd<S>, +Drop<T>, +Drop<S>>(
-    a: T, b: S,
-) -> bool {
-    (a < Zero::<T>::zero()) == (b < Zero::<S>::zero())
+pub fn have_same_sign(x: i64, y: i64) -> bool {
+    (x < 0) == (y < 0)
 }
 
 pub fn mul_wide_and_div<
@@ -156,9 +154,5 @@ mod tests {
         assert!(
             have_same_sign(0_i64, -1_i64) == false, "One is negative and the other is zero failed",
         );
-
-        /// Case 7: different types
-        assert!(have_same_sign(1_i64, 2_u64), "Different types failed");
-        assert!(have_same_sign(1_u64, 2_i64), "Different types failed");
     }
 }

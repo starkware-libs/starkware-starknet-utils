@@ -118,7 +118,7 @@ impl FractionPartialOrd<
         right = right * lhs.denominator.into();
 
         /// case a > 0 and c > 0
-        if lhs.numerator > Zero::zero() && rhs.numerator > Zero::zero() {
+        if lhs.numerator > Zero::zero() {
             return left < right;
         }
         /// The remaining case is a < 0 and c < 0

@@ -239,7 +239,7 @@ pub(crate) mod Deposit {
         }
     }
 
-    fn deposit_hash(
+    pub fn deposit_hash(
         depositor: ContractAddress,
         beneficiary: u32,
         asset_id: felt252,

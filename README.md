@@ -27,7 +27,7 @@
 
 
 ## About
-This repo holds the implementation of the Starknet apps common library (starknet_utils).
+This repo holds the implementation of the Starknet apps common library (starkware_utils).
 
 ## Disclaimer
 This is a work in progress.
@@ -41,7 +41,7 @@ The project is built with [Scarb](https://docs.swmansion.com/scarb/) and [Starkn
 To use this package in your project, add the following to your `Scarb.toml` file:
 ```toml
 [dependencies]
-starknet_utils = { git = "https://github.com/starkware-libs/starkware-starknet-utils" version = SOME_VERSION }
+starkware_utils = { git = "https://github.com/starkware-libs/starkware-starknet-utils" version = SOME_VERSION }
 ...other dependencies...
 ```
 

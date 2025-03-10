@@ -3,27 +3,25 @@ pub(crate) mod Deposit {
     use core::hash::{HashStateExTrait, HashStateTrait};
     use core::num::traits::Zero;
     use core::panic_with_felt252;
-    use core::poseidon::PoseidonTrait;
+    use core::pedersen::PedersenTrait;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use starknet::storage::StorageMapWriteAccess;
-    use starknet::storage::StoragePointerReadAccess;
-    use starknet::storage::StoragePointerWriteAccess;
-    use starknet::storage::{Map, StorageMapReadAccess, StoragePathEntry};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use starkware_utils::components::deposit::interface::{DepositStatus, IDeposit};
     use starkware_utils::components::deposit::{errors, events};
     use starkware_utils::types::HashType;
     use starkware_utils::types::time::time::{Time, TimeDelta};
-    use starkware_utils::utils::{AddToStorage, SubFromStorage};
 
 
     #[storage]
     pub struct Storage {
         registered_deposits: Map<HashType, DepositStatus>,
-        aggregate_quantized_pending_deposits: Map<felt252, u128>,
         // asset_id -> (ContractAddress, quantum)
         asset_info: Map<felt252, (ContractAddress, u64)>,
-        deposit_grace_period: TimeDelta,
+        cancel_delay: TimeDelta,
     }
 
     #[event]
@@ -64,18 +62,13 @@ pub(crate) mod Deposit {
                 depositor: caller_address, :beneficiary, :asset_id, :quantized_amount, :salt,
             );
             assert(
-                self._get_deposit_status(:deposit_hash) == DepositStatus::NOT_EXIST,
+                self.get_deposit_status(:deposit_hash) == DepositStatus::NOT_REGISTERED,
                 errors::DEPOSIT_ALREADY_REGISTERED,
             );
             self
                 .registered_deposits
                 .write(key: deposit_hash, value: DepositStatus::PENDING(Time::now()));
             let (token_address, quantum) = self._get_asset_info(:asset_id);
-            self
-                .aggregate_quantized_pending_deposits
-                .entry(asset_id)
-                .add_and_write(quantized_amount);
-
             let unquantized_amount = quantized_amount * quantum.into();
             let token_contract = IERC20Dispatcher { contract_address: token_address };
             token_contract
@@ -122,21 +115,17 @@ pub(crate) mod Deposit {
             );
 
             // Validations
-            match self._get_deposit_status(:deposit_hash) {
+            match self.get_deposit_status(:deposit_hash) {
                 DepositStatus::PENDING(deposit_timestamp) => assert(
-                    deposit_timestamp.add(self.deposit_grace_period.read()) < Time::now(),
+                    deposit_timestamp.add(self.cancel_delay.read()) < Time::now(),
                     errors::DEPOSIT_NOT_CANCELABLE,
                 ),
-                DepositStatus::NOT_EXIST => panic_with_felt252(errors::DEPOSIT_NOT_REGISTERED),
-                DepositStatus::DONE => panic_with_felt252(errors::DEPOSIT_ALREADY_PROCESSED),
+                DepositStatus::NOT_REGISTERED => panic_with_felt252(errors::DEPOSIT_NOT_REGISTERED),
+                DepositStatus::PROCESSED => panic_with_felt252(errors::DEPOSIT_ALREADY_PROCESSED),
                 DepositStatus::CANCELED => panic_with_felt252(errors::DEPOSIT_ALREADY_CANCELED),
             }
 
             self.registered_deposits.write(key: deposit_hash, value: DepositStatus::CANCELED);
-            self
-                .aggregate_quantized_pending_deposits
-                .entry(asset_id)
-                .sub_and_write(quantized_amount);
             let (token_address, quantum) = self._get_asset_info(:asset_id);
 
             let token_contract = IERC20Dispatcher { contract_address: token_address };
@@ -158,7 +147,7 @@ pub(crate) mod Deposit {
         fn get_deposit_status(
             self: @ComponentState<TContractState>, deposit_hash: HashType,
         ) -> DepositStatus {
-            self._get_deposit_status(:deposit_hash)
+            self.registered_deposits.read(deposit_hash)
         }
 
         fn get_asset_info(
@@ -167,19 +156,19 @@ pub(crate) mod Deposit {
             self._get_asset_info(:asset_id)
         }
 
-        fn get_deposit_grace_period(self: @ComponentState<TContractState>) -> TimeDelta {
-            self.deposit_grace_period.read()
+        fn get_cancel_delay(self: @ComponentState<TContractState>) -> TimeDelta {
+            self.cancel_delay.read()
         }
     }
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, +HasComponent<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn initialize(ref self: ComponentState<TContractState>, deposit_grace_period: TimeDelta) {
-            assert(self.deposit_grace_period.read().is_zero(), errors::ALREADY_INITIALIZED);
-            assert(deposit_grace_period.is_non_zero(), errors::INVALID_DEPOSIT_GRACE_PERIOD);
-            self.deposit_grace_period.write(deposit_grace_period);
+        fn initialize(ref self: ComponentState<TContractState>, cancel_delay: TimeDelta) {
+            assert(self.cancel_delay.read().is_zero(), errors::ALREADY_INITIALIZED);
+            assert(cancel_delay.is_non_zero(), errors::INVALID_CANCEL_DELAY);
+            self.cancel_delay.write(cancel_delay);
         }
 
         /// Each `asset_id` can be registered only once.
@@ -209,18 +198,18 @@ pub(crate) mod Deposit {
             let deposit_hash = deposit_hash(
                 :depositor, :beneficiary, :asset_id, :quantized_amount, :salt,
             );
-            let deposit_status = self._get_deposit_status(:deposit_hash);
+            let deposit_status = self.get_deposit_status(:deposit_hash);
             match deposit_status {
-                DepositStatus::NOT_EXIST => { panic_with_felt252(errors::DEPOSIT_NOT_REGISTERED) },
-                DepositStatus::DONE => { panic_with_felt252(errors::DEPOSIT_ALREADY_PROCESSED) },
+                DepositStatus::NOT_REGISTERED => {
+                    panic_with_felt252(errors::DEPOSIT_NOT_REGISTERED)
+                },
+                DepositStatus::PROCESSED => {
+                    panic_with_felt252(errors::DEPOSIT_ALREADY_PROCESSED)
+                },
                 DepositStatus::CANCELED => { panic_with_felt252(errors::DEPOSIT_ALREADY_CANCELED) },
                 DepositStatus::PENDING(_) => {},
-            };
+            }
             let (_, quantum) = self._get_asset_info(:asset_id);
-            self
-                .aggregate_quantized_pending_deposits
-                .entry(asset_id)
-                .sub_and_write(quantized_amount);
             let unquantized_amount = quantized_amount * quantum.into();
             self
                 .emit(
@@ -233,13 +222,7 @@ pub(crate) mod Deposit {
                         deposit_request_hash: deposit_hash,
                     },
                 );
-            self.registered_deposits.write(deposit_hash, DepositStatus::DONE);
-        }
-
-        fn get_asset_aggregate_quantized_pending_deposits(
-            self: @ComponentState<TContractState>, asset_id: felt252,
-        ) -> u128 {
-            self.aggregate_quantized_pending_deposits.read(asset_id)
+            self.registered_deposits.write(deposit_hash, DepositStatus::PROCESSED);
         }
     }
 
@@ -247,12 +230,6 @@ pub(crate) mod Deposit {
     impl PrivateImpl<
         TContractState, +HasComponent<TContractState>,
     > of PrivateTrait<TContractState> {
-        fn _get_deposit_status(
-            self: @ComponentState<TContractState>, deposit_hash: HashType,
-        ) -> DepositStatus {
-            self.registered_deposits.read(deposit_hash)
-        }
-
         fn _get_asset_info(
             self: @ComponentState<TContractState>, asset_id: felt252,
         ) -> (ContractAddress, u64) {
@@ -269,8 +246,7 @@ pub(crate) mod Deposit {
         quantized_amount: u128,
         salt: felt252,
     ) -> HashType {
-        PoseidonTrait::new()
-            .update_with(value: depositor)
+        PedersenTrait::new(base: depositor.into())
             .update_with(value: beneficiary)
             .update_with(value: asset_id)
             .update_with(value: quantized_amount)

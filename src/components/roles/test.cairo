@@ -22,6 +22,7 @@ fn test_initialize_with_zero_address() {
 }
 
 #[test]
+#[feature("safe_dispatcher")]
 fn test_register_app_role_admin() {
     // Deploy mock contract.
     let contract_address = test_utils::deploy_mock_contract();
@@ -69,6 +70,7 @@ fn test_register_app_role_admin() {
 
 
 #[test]
+#[feature("safe_dispatcher")]
 fn test_remove_app_role_admin() {
     // Deploy mock contract.
     let contract_address = test_utils::deploy_mock_contract();
@@ -114,6 +116,7 @@ fn test_remove_app_role_admin() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_register_upgrade_governor() {
     // Deploy mock contract.
@@ -161,6 +164,7 @@ fn test_register_upgrade_governor() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_remove_upgrade_governor() {
     // Deploy mock contract.
@@ -208,6 +212,7 @@ fn test_remove_upgrade_governor() {
 
 
 #[test]
+#[feature("safe_dispatcher")]
 fn test_register_governance_admin() {
     // Deploy mock contract.
     let contract_address = test_utils::deploy_mock_contract();
@@ -255,6 +260,7 @@ fn test_register_governance_admin() {
 
 
 #[test]
+#[feature("safe_dispatcher")]
 fn test_remove_governance_admin() {
     // Deploy mock contract.
     let contract_address = test_utils::deploy_mock_contract();
@@ -301,6 +307,7 @@ fn test_remove_governance_admin() {
 
 
 #[test]
+#[feature("safe_dispatcher")]
 fn test_register_app_governor() {
     // Deploy mock contract.
     let contract_address = test_utils::deploy_mock_contract();
@@ -353,6 +360,7 @@ fn test_register_app_governor() {
 
 
 #[test]
+#[feature("safe_dispatcher")]
 fn test_remove_app_governor() {
     // Deploy mock contract.
     let contract_address = test_utils::deploy_mock_contract();
@@ -403,6 +411,7 @@ fn test_remove_app_governor() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_register_token_admin() {
     // Deploy mock contract.
@@ -455,6 +464,7 @@ fn test_register_token_admin() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_remove_token_admin() {
     // Deploy mock contract.
@@ -506,6 +516,7 @@ fn test_remove_token_admin() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_register_operator() {
     // Deploy mock contract.
@@ -558,6 +569,7 @@ fn test_register_operator() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_remove_operator() {
     // Deploy mock contract.
@@ -609,6 +621,7 @@ fn test_remove_operator() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_register_security_agent() {
     // Deploy mock contract.
@@ -655,6 +668,7 @@ fn test_register_security_agent() {
     );
 }
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_remove_security_agent() {
     // Deploy mock contract.
@@ -701,6 +715,7 @@ fn test_remove_security_agent() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_register_security_admin() {
     // Deploy mock contract.
@@ -748,6 +763,7 @@ fn test_register_security_admin() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_remove_security_admin() {
     // Deploy mock contract.
@@ -794,6 +810,7 @@ fn test_remove_security_admin() {
 }
 
 
+#[feature("safe_dispatcher")]
 #[test]
 fn test_renounce() {
     // Deploy mock contract.

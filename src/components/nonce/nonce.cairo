@@ -4,8 +4,7 @@
 /// used to prevent replay attacks when contracts accept signatures as input.
 #[starknet::component]
 pub mod NonceComponent {
-    use starknet::storage::StoragePointerReadAccess;
-    use starknet::storage::StoragePointerWriteAccess;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starkware_utils::components::nonce::interface::INonce;
 
     #[storage]

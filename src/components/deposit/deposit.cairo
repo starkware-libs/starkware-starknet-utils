@@ -3,12 +3,12 @@ pub(crate) mod Deposit {
     use core::hash::{HashStateExTrait, HashStateTrait};
     use core::num::traits::Zero;
     use core::panic_with_felt252;
-    use core::poseidon::PoseidonTrait;
+    use core::pedersen::PedersenTrait;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use starknet::storage::StorageMapWriteAccess;
-    use starknet::storage::StoragePointerReadAccess;
-    use starknet::storage::StoragePointerWriteAccess;
-    use starknet::storage::{Map, StorageMapReadAccess, StoragePathEntry};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry,
+        StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use starkware_utils::components::deposit::interface::{DepositStatus, IDeposit};
     use starkware_utils::components::deposit::{errors, events};
@@ -215,7 +215,7 @@ pub(crate) mod Deposit {
                 DepositStatus::DONE => { panic_with_felt252(errors::DEPOSIT_ALREADY_PROCESSED) },
                 DepositStatus::CANCELED => { panic_with_felt252(errors::DEPOSIT_ALREADY_CANCELED) },
                 DepositStatus::PENDING(_) => {},
-            };
+            }
             let (_, quantum) = self._get_asset_info(:asset_id);
             self
                 .aggregate_quantized_pending_deposits
@@ -243,6 +243,21 @@ pub(crate) mod Deposit {
         }
     }
 
+    pub fn deposit_hash(
+        depositor: ContractAddress,
+        beneficiary: u32,
+        asset_id: felt252,
+        quantized_amount: u128,
+        salt: felt252,
+    ) -> HashType {
+        PedersenTrait::new(depositor.into())
+            .update_with(value: beneficiary)
+            .update_with(value: asset_id)
+            .update_with(value: quantized_amount)
+            .update_with(value: salt)
+            .finalize()
+    }
+
     #[generate_trait]
     impl PrivateImpl<
         TContractState, +HasComponent<TContractState>,
@@ -260,22 +275,6 @@ pub(crate) mod Deposit {
             assert(token_address.is_non_zero(), errors::ASSET_NOT_REGISTERED);
             (token_address, quantum)
         }
-    }
-
-    fn deposit_hash(
-        depositor: ContractAddress,
-        beneficiary: u32,
-        asset_id: felt252,
-        quantized_amount: u128,
-        salt: felt252,
-    ) -> HashType {
-        PoseidonTrait::new()
-            .update_with(value: depositor)
-            .update_with(value: beneficiary)
-            .update_with(value: asset_id)
-            .update_with(value: quantized_amount)
-            .update_with(value: salt)
-            .finalize()
     }
 }
 

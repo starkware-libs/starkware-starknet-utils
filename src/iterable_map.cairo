@@ -3,90 +3,20 @@ use core::iter::{IntoIterator, Iterator};
 use core::pedersen::HashState;
 use starknet::Store;
 use starknet::storage::{
-    FlattenedStorage, Map, Mutable, MutableVecTrait, PendingStoragePath, PendingStoragePathTrait,
-    StorageAsPath, StorageBase, StorageMapReadAccess, StorageMapWriteAccess, StorageNode,
-    StorageNodeMut, StoragePath, StoragePathEntry, StoragePointerReadAccess,
-    StoragePointerWriteAccess, StorageTrait, StorageTraitMut, Vec, VecTrait,
+    Map, Mutable, MutableVecTrait, StorageAsPath, StorageMapReadAccess, StorageMapWriteAccess,
+    StoragePath, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Vec,
+    VecTrait,
 };
 
 /// A Map like struct that represents a map in a contract storage that can also be iterated over.
 /// Another thing that IterableMap is different from Map in that it returns Option<Value>, so values
 /// that weren't written into it will return Option::None.
-#[phantom]
+#[starknet::storage_node]
+#[allow(starknet::invalid_storage_member_types)]
 pub struct IterableMap<K, V> {
     _inner_map: Map<K, Option<V>>,
     _keys: Vec<K>,
 }
-
-////////////////////////////////////////////////////////////////////
-/// This code will be replaced by auto-generated code in the future.
-const INNER_MAP_FIELD_NAME_HASH: felt252 = selector!("_inner_map");
-const KEYS_FIELD_NAME_HASH: felt252 = selector!("_keys");
-
-#[derive(Drop, Copy)]
-struct IterableMapStorageBase<K, V> {
-    _inner_map: StorageBase<Map<K, Option<V>>>,
-    _keys: StorageBase<Vec<K>>,
-}
-
-impl IterableMapStorageImpl<K, V> of StorageTrait<IterableMap<K, V>> {
-    type BaseType = IterableMapStorageBase<K, V>;
-    fn storage(self: FlattenedStorage<IterableMap<K, V>>) -> IterableMapStorageBase<K, V> {
-        let _inner_map = StorageBase { __base_address__: INNER_MAP_FIELD_NAME_HASH };
-        let _keys = StorageBase { __base_address__: KEYS_FIELD_NAME_HASH };
-        IterableMapStorageBase { _inner_map, _keys }
-    }
-}
-
-#[derive(Drop, Copy)]
-struct IterableMapStorageBaseMut<K, V> {
-    _inner_map: StorageBase<Mutable<Map<K, Option<V>>>>,
-    _keys: StorageBase<Mutable<Vec<K>>>,
-}
-
-impl IterableMapStorageImplMut<K, V> of StorageTraitMut<IterableMap<K, V>> {
-    type BaseType = IterableMapStorageBaseMut<K, V>;
-    fn storage_mut(
-        self: FlattenedStorage<Mutable<IterableMap<K, V>>>,
-    ) -> IterableMapStorageBaseMut<K, V> {
-        let _inner_map = StorageBase { __base_address__: INNER_MAP_FIELD_NAME_HASH };
-        let _keys = StorageBase { __base_address__: KEYS_FIELD_NAME_HASH };
-        IterableMapStorageBaseMut { _inner_map, _keys }
-    }
-}
-
-#[derive(Copy, Drop)]
-struct IterableMapStorageNode<K, V> {
-    _inner_map: PendingStoragePath<Map<K, Option<V>>>,
-    _keys: PendingStoragePath<Vec<K>>,
-}
-
-impl IterableMapStorageNodeImpl<K, V> of StorageNode<IterableMap<K, V>> {
-    type NodeType = IterableMapStorageNode<K, V>;
-    fn storage_node(self: StoragePath<IterableMap<K, V>>) -> IterableMapStorageNode<K, V> {
-        let _inner_map = PendingStoragePathTrait::new(@self, INNER_MAP_FIELD_NAME_HASH);
-        let _keys = PendingStoragePathTrait::new(@self, KEYS_FIELD_NAME_HASH);
-        IterableMapStorageNode { _inner_map, _keys }
-    }
-}
-
-#[derive(Copy, Drop)]
-struct IterableMapStorageNodeMut<K, V> {
-    _inner_map: PendingStoragePath<Mutable<Map<K, Option<V>>>>,
-    _keys: PendingStoragePath<Mutable<Vec<K>>>,
-}
-
-impl IterableMapStorageNodeMutImpl<K, V> of StorageNodeMut<IterableMap<K, V>> {
-    type NodeType = IterableMapStorageNodeMut<K, V>;
-    fn storage_node_mut(
-        self: StoragePath<Mutable<IterableMap<K, V>>>,
-    ) -> IterableMapStorageNodeMut<K, V> {
-        let _inner_map = PendingStoragePathTrait::new(@self, INNER_MAP_FIELD_NAME_HASH);
-        let _keys = PendingStoragePathTrait::new(@self, KEYS_FIELD_NAME_HASH);
-        IterableMapStorageNodeMut { _inner_map, _keys }
-    }
-}
-////////////////////////////////////////////////////////////////////
 
 /// Trait for the interface of a iterable map.
 pub trait IterableMapTrait<T> {

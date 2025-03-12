@@ -18,7 +18,6 @@ pub mod interfaces;
 pub mod iterable_map;
 pub mod math;
 pub mod message_hash;
-pub mod span_utils;
 
 // Make the module be available in a test target.
 // Simple #cfg(test) won't work because the module is not

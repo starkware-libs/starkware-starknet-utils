@@ -77,9 +77,9 @@ pub fn validate_expiration(expiration: Timestamp, err: felt252) {
 }
 
 pub fn validate_ratio<N, D, +Into<N, i128>, +Drop<N>, +Into<D, u128>, +Drop<D>>(
-    n1: N, d1: D, n2: N, d2: D, err: ByteArray,
+    n1: i128, d1: u128, n2: i128, d2: u128, err: ByteArray,
 ) {
-    let f1 = FractionTrait::<i128, u128>::new(numerator: n1, denominator: d1);
+    let f1 = FractionTrait::new(numerator: n1, denominator: d1);
     let f2 = FractionTrait::new(numerator: n2, denominator: d2);
     assert_with_byte_array(f1 <= f2, err);
 }

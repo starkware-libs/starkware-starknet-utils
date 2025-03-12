@@ -1,4 +1,3 @@
-pub mod fixed_two_decimal;
 pub mod time;
 
 pub type Signature = Span<felt252>;

@@ -63,7 +63,7 @@ fn test_StructHashStarknetDomainImpl() {
 
 #[test]
 fn test_OffchainMessageHashImpl_Felt() {
-    let message = Message { recipient: RECIPIENT(), amount: 100, nonce: 1, expiry: 1000 };
+    let message = Message { recipient: RECIPIENT, amount: 100, nonce: 1, expiry: 1000 };
     let domain = StarknetDomain {
         name: 'DAPP_NAME', version: 'v1', chain_id: 'TEST', revision: '1',
     };
@@ -76,4 +76,3 @@ fn test_OffchainMessageHashImpl_Felt() {
     );
     assert_eq!(message.get_message_hash(PUBKEY), expected);
 }
-

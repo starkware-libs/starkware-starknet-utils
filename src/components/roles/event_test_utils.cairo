@@ -1,10 +1,10 @@
 use roles::interface as RolesInterface;
 use roles::mock_contract::MockContract;
 use roles::roles::RolesComponent::Event as RolesEvent;
-use snforge_std::cheatcodes::events::{Event, Events, is_emitted};
+use snforge_std::cheatcodes::events::{Event, Events};
 use starknet::ContractAddress;
 use starkware_utils::components::roles;
-use starkware_utils::event_test_utils::panic_with_event_details;
+use starkware_utils_testing::event_test_utils::{is_emitted, panic_with_event_details};
 
 pub(crate) fn assert_app_role_admin_added_event(
     spied_event: @(ContractAddress, Event),
@@ -26,7 +26,6 @@ pub(crate) fn assert_app_role_admin_added_event(
         panic_with_event_details(:expected_emitted_by, :details);
     }
 }
-
 
 pub(crate) fn assert_app_role_admin_removed_event(
     spied_event: @(ContractAddress, Event),
@@ -70,7 +69,6 @@ pub(crate) fn assert_app_governor_added_event(
     }
 }
 
-
 pub(crate) fn assert_app_governor_removed_event(
     spied_event: @(ContractAddress, Event),
     removed_account: ContractAddress,
@@ -112,7 +110,6 @@ pub(crate) fn assert_token_admin_added_event(
         panic_with_event_details(:expected_emitted_by, :details);
     }
 }
-
 
 pub(crate) fn assert_token_admin_removed_event(
     spied_event: @(ContractAddress, Event),
@@ -156,7 +153,6 @@ pub(crate) fn assert_operator_added_event(
     }
 }
 
-
 pub(crate) fn assert_operator_removed_event(
     spied_event: @(ContractAddress, Event),
     removed_account: ContractAddress,
@@ -180,7 +176,6 @@ pub(crate) fn assert_operator_removed_event(
     }
 }
 
-
 pub(crate) fn assert_upgrade_governor_added_event(
     spied_event: @(ContractAddress, Event),
     added_account: ContractAddress,
@@ -201,7 +196,6 @@ pub(crate) fn assert_upgrade_governor_added_event(
         panic_with_event_details(:expected_emitted_by, :details);
     }
 }
-
 
 pub(crate) fn assert_upgrade_governor_removed_event(
     spied_event: @(ContractAddress, Event),
@@ -226,7 +220,6 @@ pub(crate) fn assert_upgrade_governor_removed_event(
     }
 }
 
-
 pub(crate) fn assert_governance_admin_added_event(
     spied_event: @(ContractAddress, Event),
     added_account: ContractAddress,
@@ -247,7 +240,6 @@ pub(crate) fn assert_governance_admin_added_event(
         panic_with_event_details(:expected_emitted_by, :details);
     }
 }
-
 
 pub(crate) fn assert_governance_admin_removed_event(
     spied_event: @(ContractAddress, Event),
@@ -272,7 +264,6 @@ pub(crate) fn assert_governance_admin_removed_event(
     }
 }
 
-
 pub(crate) fn assert_security_agent_added_event(
     spied_event: @(ContractAddress, Event),
     added_account: ContractAddress,
@@ -293,7 +284,6 @@ pub(crate) fn assert_security_agent_added_event(
         panic_with_event_details(:expected_emitted_by, :details);
     }
 }
-
 
 pub(crate) fn assert_security_agent_removed_event(
     spied_event: @(ContractAddress, Event),
@@ -318,7 +308,6 @@ pub(crate) fn assert_security_agent_removed_event(
     }
 }
 
-
 pub(crate) fn assert_security_admin_added_event(
     spied_event: @(ContractAddress, Event),
     added_account: ContractAddress,
@@ -339,7 +328,6 @@ pub(crate) fn assert_security_admin_added_event(
         panic_with_event_details(:expected_emitted_by, :details);
     }
 }
-
 
 pub(crate) fn assert_security_admin_removed_event(
     spied_event: @(ContractAddress, Event),

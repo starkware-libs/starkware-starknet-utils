@@ -33,7 +33,7 @@ pub(crate) mod ReplaceabilityComponent {
     }
 
     #[event]
-    #[derive(Copy, Drop, PartialEq, starknet::Event)]
+    #[derive(Copy, Debug, Drop, PartialEq, starknet::Event)]
     pub enum Event {
         ImplementationAdded: ImplementationAdded,
         ImplementationRemoved: ImplementationRemoved,

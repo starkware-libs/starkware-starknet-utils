@@ -1,4 +1,4 @@
-use snforge_std::cheatcodes::events::Event;
+use snforge_std::cheatcodes::events::{Event, Events};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, load};
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
@@ -9,7 +9,8 @@ use starkware_utils::components::replaceability::interface::{
 };
 use starkware_utils::components::replaceability::mock::ReplaceabilityMock;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use starkware_utils::test_utils::{assert_expected_event_emitted, cheat_caller_address_once};
+use starkware_utils_testing::event_test_utils::is_emitted;
+use starkware_utils_testing::test_utils::cheat_caller_address_once;
 
 pub(crate) mod Constants {
     use super::{ContractAddress, ImplementationData};
@@ -103,29 +104,36 @@ pub(crate) fn dummy_nonfinal_eic_implementation_data_with_class_hash(
 pub(crate) fn assert_implementation_replaced_event_emitted(
     mut spied_event: @(ContractAddress, Event), implementation_data: ImplementationData,
 ) {
-    let expected_event = ReplaceabilityComponent::Event::ImplementationReplaced(
-        ImplementationReplaced { implementation_data: implementation_data },
+    let expected_event = @ReplaceabilityMock::Event::ReplaceabilityEvent(
+        ReplaceabilityComponent::Event::ImplementationReplaced(
+            ImplementationReplaced { implementation_data: implementation_data },
+        ),
     );
-    assert_expected_event_emitted(
-        :spied_event,
-        :expected_event,
-        expected_event_selector: @selector!("ImplementationReplaced"),
-        expected_event_name: "ImplementationReplaced",
-    );
+    assert_expected_event_emitted(:spied_event, :expected_event);
 }
 
 pub(crate) fn assert_implementation_finalized_event_emitted(
     mut spied_event: @(ContractAddress, Event), implementation_data: ImplementationData,
 ) {
-    let expected_event = ReplaceabilityComponent::Event::ImplementationFinalized(
-        ImplementationFinalized { impl_hash: implementation_data.impl_hash },
+    let expected_event = @ReplaceabilityMock::Event::ReplaceabilityEvent(
+        ReplaceabilityComponent::Event::ImplementationFinalized(
+            ImplementationFinalized { impl_hash: implementation_data.impl_hash },
+        ),
     );
-    assert_expected_event_emitted(
-        :spied_event,
-        :expected_event,
-        expected_event_selector: @selector!("ImplementationFinalized"),
-        expected_event_name: "ImplementationFinalized",
-    );
+    assert_expected_event_emitted(:spied_event, :expected_event);
+}
+
+fn assert_expected_event_emitted(
+    mut spied_event: @(ContractAddress, Event), expected_event: @ReplaceabilityMock::Event,
+) {
+    let (event_address, raw_event) = spied_event;
+    let wrapped_spied_event = Events { events: array![(*event_address, raw_event.clone())] };
+    if (!is_emitted(
+        self: @wrapped_spied_event, expected_emitted_by: event_address, :expected_event,
+    )) {
+        let event_from: felt252 = (*event_address).into();
+        panic!("Could not match expected event from {}", event_from);
+    }
 }
 
 pub(crate) fn assert_finalized_status(expected: bool, contract_address: ContractAddress) {

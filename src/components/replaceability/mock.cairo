@@ -28,13 +28,9 @@ pub(crate) mod ReplaceabilityMock {
     #[event]
     #[derive(Drop, starknet::Event)]
     pub(crate) enum Event {
-        #[flat]
         ReplaceabilityEvent: ReplaceabilityComponent::Event,
-        #[flat]
         RolesEvent: RolesComponent::Event,
-        #[flat]
         AccessControlEvent: AccessControlComponent::Event,
-        #[flat]
         SRC5Event: SRC5Component::Event,
     }
 

@@ -10,8 +10,8 @@ use starkware_utils::components::roles::errors::AccessErrors;
 use starkware_utils::components::roles::test_utils;
 use starkware_utils::components::roles::test_utils::Constants;
 use starkware_utils::errors::Describable;
-use starkware_utils::event_test_utils::assert_number_of_events;
-use starkware_utils::test_utils::{
+use starkware_utils_testing::event_test_utils::assert_number_of_events;
+use starkware_utils_testing::test_utils::{
     assert_panic_with_error, assert_panic_with_felt_error, cheat_caller_address_once,
 };
 

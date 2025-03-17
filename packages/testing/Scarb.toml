@@ -1,23 +1,18 @@
-[workspace]
-members = [
-    "packages/testing",
-]
-
 [package]
-name = "starkware_utils"
+name = "starkware_utils_testing"
 version = "0.1.0"
 edition = "2024_07"
 
 [dependencies]
 starknet = "2.11.0"
 openzeppelin = "1.0.0"
-
-[dev-dependencies]
 snforge_std = "0.34.0"
 assert_macros = "2.11.0"
 openzeppelin_testing = "1.0.0"
+starkware_utils =  {path = "../../"}
+
+[dev-dependencies]
 snforge_scarb_plugin = "0.34.0"
-starkware_utils_testing = { path = "packages/testing" }
 
 [scripts]
 test = "SNFORGE_BACKTRACE=1 snforge test"
@@ -26,11 +21,11 @@ test = "SNFORGE_BACKTRACE=1 snforge test"
 
 [[target.starknet-contract]]
 
-[[test]]
-name = "starkware_utils_unittest"
-
 [tool.fmt]
 sort-module-level-items = true
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
 
 [profile.dev.cairo]
 unstable-add-statements-code-locations-debug-info = true

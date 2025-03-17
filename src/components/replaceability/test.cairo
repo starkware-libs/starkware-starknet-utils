@@ -101,9 +101,7 @@ mod ReplaceabilityTests {
         let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
 
         // Invoke not as an Upgrade Governor.
-        cheat_caller_address_once(
-            :contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT(),
-        );
+        cheat_caller_address_once(:contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT);
         replaceable_dispatcher.add_new_implementation(:implementation_data);
     }
 
@@ -155,9 +153,7 @@ mod ReplaceabilityTests {
         let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
 
         // Invoke not as an Upgrade Governor.
-        cheat_caller_address_once(
-            :contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT(),
-        );
+        cheat_caller_address_once(:contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT);
         replaceable_dispatcher.remove_implementation(:implementation_data);
     }
 
@@ -323,9 +319,7 @@ mod ReplaceabilityTests {
         let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
 
         // Invoke not as an Upgrade Governor.
-        cheat_caller_address_once(
-            :contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT(),
-        );
+        cheat_caller_address_once(:contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT);
         replaceable_dispatcher.replace_to(:implementation_data);
     }
 

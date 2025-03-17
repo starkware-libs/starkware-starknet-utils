@@ -17,13 +17,9 @@ pub(crate) mod Constants {
     pub(crate) const DEFAULT_UPGRADE_DELAY: u64 = 12345;
     pub(crate) const EIC_UPGRADE_DELAY_ADDITION: u64 = 5;
 
-    pub(crate) fn CALLER_ADDRESS() -> ContractAddress {
-        'CALLER_ADDRESS'.try_into().unwrap()
-    }
+    pub(crate) const CALLER_ADDRESS: ContractAddress = 'CALLER_ADDRESS'.try_into().unwrap();
 
-    pub(crate) fn GOVERNANCE_ADMIN() -> ContractAddress {
-        'GOVERNANCE_ADMIN'.try_into().unwrap()
-    }
+    pub(crate) const GOVERNANCE_ADMIN: ContractAddress = 'GOVERNANCE_ADMIN'.try_into().unwrap();
 
     pub(crate) fn DUMMY_FINAL_IMPLEMENTATION_DATA() -> ImplementationData {
         ImplementationData {
@@ -37,16 +33,16 @@ pub(crate) mod Constants {
         }
     }
 
-    pub(crate) fn NOT_UPGRADE_GOVERNOR_ACCOUNT() -> ContractAddress {
-        'NOT_UPGRADE_GOVERNOR_ACCOUNT'.try_into().unwrap()
-    }
+    pub(crate) const NOT_UPGRADE_GOVERNOR_ACCOUNT: ContractAddress = 'NOT_UPGRADE_GOVERNOR_ACCOUNT'
+        .try_into()
+        .unwrap();
 }
 
 pub(crate) fn deploy_replaceability_mock() -> IReplaceableDispatcher {
     let replaceable_contract = declare("ReplaceabilityMock").unwrap().contract_class();
     let (contract_address, _) = replaceable_contract
         .deploy(
-            @array![Constants::DEFAULT_UPGRADE_DELAY.into(), Constants::GOVERNANCE_ADMIN().into()],
+            @array![Constants::DEFAULT_UPGRADE_DELAY.into(), Constants::GOVERNANCE_ADMIN.into()],
         )
         .unwrap();
     return IReplaceableDispatcher { contract_address: contract_address };
@@ -65,14 +61,14 @@ pub(crate) fn deploy_dummy_contract() -> ContractAddress {
 }
 
 pub(crate) fn get_upgrade_governor_account(contract_address: ContractAddress) -> ContractAddress {
-    let caller_address: ContractAddress = Constants::CALLER_ADDRESS();
+    let caller_address: ContractAddress = Constants::CALLER_ADDRESS;
     set_caller_as_upgrade_governor(contract_address, caller_address);
     return caller_address;
 }
 
 fn set_caller_as_upgrade_governor(contract_address: ContractAddress, caller: ContractAddress) {
     let roles_dispatcher = IRolesDispatcher { contract_address: contract_address };
-    cheat_caller_address_once(:contract_address, caller_address: Constants::GOVERNANCE_ADMIN());
+    cheat_caller_address_once(:contract_address, caller_address: Constants::GOVERNANCE_ADMIN);
     roles_dispatcher.register_upgrade_governor(account: caller);
 }
 

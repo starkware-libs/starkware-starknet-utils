@@ -28,9 +28,9 @@ fn test_register_app_role_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Try to add zero address as app role admin.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -76,9 +76,9 @@ fn test_remove_app_role_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Remove app role admin that was not registered (should not emit events).
     assert!(!roles_dispatcher.is_app_role_admin(account: app_role_admin));
@@ -123,9 +123,9 @@ fn test_register_upgrade_governor() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let upgrade_governor = Constants::UPGRADE_GOVERNOR();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let upgrade_governor = Constants::UPGRADE_GOVERNOR;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Try to add zero address as upgrade governor.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -171,9 +171,9 @@ fn test_remove_upgrade_governor() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let upgrade_governor = Constants::UPGRADE_GOVERNOR();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let upgrade_governor = Constants::UPGRADE_GOVERNOR;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Remove upgrade governor that was not registered (should not emit events).
     assert!(!roles_dispatcher.is_upgrade_governor(account: upgrade_governor));
@@ -218,9 +218,9 @@ fn test_register_governance_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let initial_governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let governance_admin = Constants::GOVERNANCE_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let initial_governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let governance_admin = Constants::GOVERNANCE_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Try to add zero address as governance admin.
     cheat_caller_address_once(:contract_address, caller_address: initial_governance_admin);
@@ -266,9 +266,9 @@ fn test_remove_governance_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let initial_governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let governance_admin = Constants::GOVERNANCE_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let initial_governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let governance_admin = Constants::GOVERNANCE_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Remove governance admin that was not registered (should not emit events).
     assert!(!roles_dispatcher.is_governance_admin(account: governance_admin));
@@ -313,10 +313,10 @@ fn test_register_app_governor() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let app_governor = Constants::APP_GOVERNOR();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let app_governor = Constants::APP_GOVERNOR;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Register the app role admin which is the admin of operator role.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -366,10 +366,10 @@ fn test_remove_app_governor() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let app_governor = Constants::APP_GOVERNOR();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let app_governor = Constants::APP_GOVERNOR;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Register the app role admin which is the admin of operator role.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -418,10 +418,10 @@ fn test_register_token_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let token_admin = Constants::TOKEN_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let token_admin = Constants::TOKEN_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Register the app role admin which is the admin of operator role.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -471,10 +471,10 @@ fn test_remove_token_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let token_admin = Constants::TOKEN_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let token_admin = Constants::TOKEN_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Register the app role admin which is the admin of operator role.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -523,10 +523,10 @@ fn test_register_operator() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let operator = Constants::OPERATOR();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let operator = Constants::OPERATOR;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Register the app role admin which is the admin of operator role.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -576,10 +576,10 @@ fn test_remove_operator() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
-    let operator = Constants::OPERATOR();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
+    let operator = Constants::OPERATOR;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Register the app role admin which is the admin of operator role.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
@@ -628,9 +628,9 @@ fn test_register_security_agent() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let security_admin = Constants::INITIAL_ROOT_ADMIN();
-    let security_agent = Constants::SECURITY_AGENT();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let security_admin = Constants::INITIAL_ROOT_ADMIN;
+    let security_agent = Constants::SECURITY_AGENT;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Try to add zero address as security agent.
     cheat_caller_address_once(:contract_address, caller_address: security_admin);
@@ -675,9 +675,9 @@ fn test_remove_security_agent() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let security_admin = Constants::INITIAL_ROOT_ADMIN();
-    let security_agent = Constants::SECURITY_AGENT();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let security_admin = Constants::INITIAL_ROOT_ADMIN;
+    let security_agent = Constants::SECURITY_AGENT;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Remove security agent that was not registered (should not emit events).
     assert!(!roles_dispatcher.is_security_agent(account: security_agent));
@@ -722,9 +722,9 @@ fn test_register_security_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let initial_security_admin = Constants::INITIAL_ROOT_ADMIN();
-    let security_admin = Constants::SECURITY_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let initial_security_admin = Constants::INITIAL_ROOT_ADMIN;
+    let security_admin = Constants::SECURITY_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Try to add zero address as security admin.
     cheat_caller_address_once(:contract_address, caller_address: initial_security_admin);
@@ -770,9 +770,9 @@ fn test_remove_security_admin() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let initial_security_admin = Constants::INITIAL_ROOT_ADMIN();
-    let security_admin = Constants::SECURITY_ADMIN();
-    let wrong_admin = Constants::WRONG_ADMIN();
+    let initial_security_admin = Constants::INITIAL_ROOT_ADMIN;
+    let security_admin = Constants::SECURITY_ADMIN;
+    let wrong_admin = Constants::WRONG_ADMIN;
 
     // Remove security admin that was not registered (should not emit events).
     assert!(!roles_dispatcher.is_security_admin(account: security_admin));
@@ -817,8 +817,8 @@ fn test_renounce() {
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
     let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
-    let governance_admin = Constants::INITIAL_ROOT_ADMIN();
-    let app_role_admin = Constants::APP_ROLE_ADMIN();
+    let governance_admin = Constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = Constants::APP_ROLE_ADMIN;
 
     // Try to renounce governance admin.
     // Note: the caller doesn't have to be a governance admin for this error as it's checked first.

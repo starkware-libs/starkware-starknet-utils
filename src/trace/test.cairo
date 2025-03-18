@@ -50,6 +50,26 @@ fn test_latest() {
 }
 
 #[test]
+fn test_penultimate() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+
+    let (key, value) = mock_trace.penultimate();
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+}
+
+#[test]
+#[should_panic(expected: "Penultimate does not exist")]
+fn test_penultimate_not_exist() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    let _ = mock_trace.penultimate();
+}
+
+#[test]
 fn test_length() {
     let mut mock_trace = CONTRACT_STATE();
 

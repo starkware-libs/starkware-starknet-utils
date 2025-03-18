@@ -5,6 +5,7 @@ pub enum TraceErrors {
     UNORDERED_INSERTION,
     EMPTY_TRACE,
     INDEX_OUT_OF_BOUNDS,
+    PENULTIMATE_NOT_EXIST,
 }
 
 impl DescribableError of Describable<TraceErrors> {
@@ -13,6 +14,7 @@ impl DescribableError of Describable<TraceErrors> {
             TraceErrors::UNORDERED_INSERTION => "Unordered insertion",
             TraceErrors::EMPTY_TRACE => "Empty trace",
             TraceErrors::INDEX_OUT_OF_BOUNDS => "Index out of bounds",
+            TraceErrors::PENULTIMATE_NOT_EXIST => "Penultimate does not exist",
         }
     }
 }

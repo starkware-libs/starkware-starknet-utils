@@ -51,6 +51,16 @@ pub impl TraceImpl of TraceTrait {
         Result::Ok(checkpoint.into())
     }
 
+    fn penultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
+        let checkpoints = self.checkpoints;
+        let pos = checkpoints.len();
+        if pos <= 1 {
+            return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
+        }
+        let checkpoint = checkpoints[pos - 2].read();
+        Result::Ok(checkpoint.into())
+    }
+
     /// Returns the total number of checkpoints.
     fn length(self: StoragePath<Trace>) -> u64 {
         self.checkpoints.len()
@@ -85,6 +95,11 @@ pub impl TraceImpl of TraceTrait {
         let checkpoint = checkpoints[pos].read();
         (checkpoint.key, checkpoint.value)
     }
+
+    /// Returns `true` is the trace is empty.
+    fn is_empty(self: StoragePath<Trace>) -> bool {
+        self.length().is_zero()
+    }
 }
 
 #[generate_trait]
@@ -114,6 +129,16 @@ pub impl MutableTraceImpl of MutableTraceTrait {
             return Result::Err(TraceErrors::EMPTY_TRACE);
         }
         let checkpoint = checkpoints[pos - 1].read();
+        Result::Ok(checkpoint.into())
+    }
+
+    fn penultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
+        let checkpoints = self.checkpoints;
+        let pos = checkpoints.len();
+        if pos <= 1 {
+            return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
+        }
+        let checkpoint = checkpoints[pos - 2].read();
         Result::Ok(checkpoint.into())
     }
 

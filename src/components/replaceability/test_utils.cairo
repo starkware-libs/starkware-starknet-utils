@@ -9,7 +9,7 @@ use starkware_utils::components::replaceability::interface::{
 };
 use starkware_utils::components::replaceability::mock::ReplaceabilityMock;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
-use starkware_utils::test_utils::cheat_caller_address_once;
+use starkware_utils_testing::test_utils::cheat_caller_address_once;
 
 pub(crate) mod Constants {
     use super::{ContractAddress, ImplementationData};

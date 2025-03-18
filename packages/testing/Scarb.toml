@@ -4,15 +4,14 @@ version = "0.1.0"
 edition = "2024_07"
 
 [dependencies]
-starknet = "2.11.0"
+starknet = "2.11.2"
 openzeppelin = "1.0.0"
-snforge_std = "0.34.0"
-assert_macros = "2.11.0"
-openzeppelin_testing = "1.0.0"
+snforge_std = "0.38.3"
+assert_macros = "2.11.2"
+openzeppelin_testing = "2.0.0"
 starkware_utils =  {path = "../../"}
 
 [dev-dependencies]
-snforge_scarb_plugin = "0.34.0"
 
 [scripts]
 test = "SNFORGE_BACKTRACE=1 snforge test"

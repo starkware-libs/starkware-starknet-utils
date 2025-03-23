@@ -51,6 +51,8 @@ pub impl TraceImpl of TraceTrait {
         Result::Ok(checkpoint.into())
     }
 
+    /// Retrieves the penultimate checkpoint from the trace structure.
+    /// Penultimate checkpoint is the second last checkpoint in the trace.
     fn penultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
         let checkpoints = self.checkpoints;
         let len = checkpoints.len();
@@ -135,6 +137,8 @@ pub impl MutableTraceImpl of MutableTraceTrait {
         Result::Ok(checkpoint.into())
     }
 
+    /// Retrieves the penultimate checkpoint from the trace structure.
+    /// Penultimate checkpoint is the second last checkpoint in the trace.
     fn penultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
         let checkpoints = self.checkpoints;
         let len = checkpoints.len();

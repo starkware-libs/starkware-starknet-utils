@@ -90,9 +90,26 @@ pub impl TraceImpl of TraceTrait {
 
 #[generate_trait]
 pub impl MutableTraceImpl of MutableTraceTrait {
-    /// Inserts a (`key`, `value`) pair into a Trace so that it is stored as the checkpoint.
+    /// Inserts a (`key`, `value`) pair into a Trace so that it is stored as the checkpoint,
+    /// either by inserting a new checkpoint, or by updating the last one.
     fn insert(self: StoragePath<Mutable<Trace>>, key: u64, value: u128) {
-        self.checkpoints.as_path()._insert(key, value)
+        let checkpoints = self.checkpoints.as_path();
+        let len = checkpoints.len();
+        if len.is_zero() {
+            checkpoints.push(Checkpoint { key, value });
+            return;
+        }
+
+        // Update or append new checkpoint.
+        let mut last = checkpoints[len - 1].read();
+        if last.key == key {
+            last.value = value;
+            checkpoints[len - 1].write(last);
+        } else {
+            // Checkpoint keys must be non-decreasing.
+            assert!(last.key < key, "{}", TraceErrors::UNORDERED_INSERTION);
+            checkpoints.push(Checkpoint { key, value });
+        }
     }
 
     /// Retrieves the most recent checkpoint from the trace structure.
@@ -136,30 +153,5 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// Returns `true` is the trace is empty.
     fn is_empty(self: StoragePath<Mutable<Trace>>) -> bool {
         self.length().is_zero()
-    }
-}
-
-#[generate_trait]
-impl MutableCheckpointImpl of MutableCheckpointTrait {
-    /// Pushes a (`key`, `value`) pair into an ordered list of checkpoints, either by inserting a
-    /// new checkpoint, or by updating the last one.
-    fn _insert(self: StoragePath<Mutable<Vec<Checkpoint>>>, key: u64, value: u128) {
-        let len = self.len();
-
-        if len > 0 {
-            let mut last = self[len - 1].read();
-
-            // Update or append new checkpoint
-            if last.key == key {
-                last.value = value;
-                self[len - 1].write(last);
-            } else {
-                // Checkpoint keys must be non-decreasing
-                assert!(last.key < key, "{}", TraceErrors::UNORDERED_INSERTION);
-                self.push(Checkpoint { key, value });
-            }
-        } else {
-            self.push(Checkpoint { key, value });
-        };
     }
 }

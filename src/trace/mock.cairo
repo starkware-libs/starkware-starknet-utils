@@ -5,7 +5,6 @@ pub trait IMockTrace<TContractState> {
     fn penultimate(self: @TContractState) -> (u64, u128);
     fn length(self: @TContractState) -> u64;
     fn is_empty(self: @TContractState) -> bool;
-    fn upper_lookup(self: @TContractState, key: u64) -> u128;
     fn latest_mutable(ref self: TContractState) -> (u64, u128);
     fn length_mutable(ref self: TContractState) -> u64;
     fn penultimate_mutable(ref self: TContractState) -> (u64, u128);
@@ -44,10 +43,6 @@ pub mod MockTrace {
 
         fn length(self: @ContractState) -> u64 {
             self.trace.deref().length()
-        }
-
-        fn upper_lookup(self: @ContractState, key: u64) -> u128 {
-            self.trace.deref().upper_lookup(:key)
         }
 
         fn latest_mutable(ref self: ContractState) -> (u64, u128) {

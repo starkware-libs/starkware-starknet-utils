@@ -43,41 +43,27 @@ pub impl TraceImpl of TraceTrait {
     /// invariant of non-decreasing keys.
     fn latest(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
         let checkpoints = self.checkpoints;
-        let pos = checkpoints.len();
-        if pos == 0 {
+        let len = checkpoints.len();
+        if len == 0 {
             return Result::Err(TraceErrors::EMPTY_TRACE);
         }
-        let checkpoint = checkpoints[pos - 1].read();
+        let checkpoint = checkpoints[len - 1].read();
         Result::Ok(checkpoint.into())
     }
 
     fn penultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
         let checkpoints = self.checkpoints;
-        let pos = checkpoints.len();
-        if pos <= 1 {
+        let len = checkpoints.len();
+        if len <= 1 {
             return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
         }
-        let checkpoint = checkpoints[pos - 2].read();
+        let checkpoint = checkpoints[len - 2].read();
         Result::Ok(checkpoint.into())
     }
 
     /// Returns the total number of checkpoints.
     fn length(self: StoragePath<Trace>) -> u64 {
         self.checkpoints.len()
-    }
-
-    /// Returns the value in the last (most recent) checkpoint with the key lower than or equal to
-    /// the search key, or zero if there is none.
-    fn upper_lookup(self: StoragePath<Trace>, key: u64) -> u128 {
-        let checkpoints = self.checkpoints.as_path();
-        let len = checkpoints.len();
-        let pos = checkpoints._upper_binary_lookup(key, 0, len).into();
-
-        if pos == 0 {
-            0
-        } else {
-            checkpoints[pos - 1].read().value
-        }
     }
 
     /// Returns the checkpoint at the given position.
@@ -124,21 +110,21 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// invariant of non-decreasing keys.
     fn latest(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
         let checkpoints = self.checkpoints;
-        let pos = checkpoints.len();
-        if pos == 0 {
+        let len = checkpoints.len();
+        if len == 0 {
             return Result::Err(TraceErrors::EMPTY_TRACE);
         }
-        let checkpoint = checkpoints[pos - 1].read();
+        let checkpoint = checkpoints[len - 1].read();
         Result::Ok(checkpoint.into())
     }
 
     fn penultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
         let checkpoints = self.checkpoints;
-        let pos = checkpoints.len();
-        if pos <= 1 {
+        let len = checkpoints.len();
+        if len <= 1 {
             return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
         }
-        let checkpoint = checkpoints[pos - 2].read();
+        let checkpoint = checkpoints[len - 2].read();
         Result::Ok(checkpoint.into())
     }
 
@@ -158,15 +144,15 @@ impl MutableCheckpointImpl of MutableCheckpointTrait {
     /// Pushes a (`key`, `value`) pair into an ordered list of checkpoints, either by inserting a
     /// new checkpoint, or by updating the last one.
     fn _insert(self: StoragePath<Mutable<Vec<Checkpoint>>>, key: u64, value: u128) {
-        let pos = self.len();
+        let len = self.len();
 
-        if pos > 0 {
-            let mut last = self[pos - 1].read();
+        if len > 0 {
+            let mut last = self[len - 1].read();
 
             // Update or append new checkpoint
             if last.key == key {
                 last.value = value;
-                self[pos - 1].write(last);
+                self[len - 1].write(last);
             } else {
                 // Checkpoint keys must be non-decreasing
                 assert!(last.key < key, "{}", TraceErrors::UNORDERED_INSERTION);
@@ -175,27 +161,5 @@ impl MutableCheckpointImpl of MutableCheckpointTrait {
         } else {
             self.push(Checkpoint { key, value });
         };
-    }
-
-    /// Returns the index of the last (most recent) checkpoint with the key lower than or equal to
-    /// the search key, or `high` if there is none. `low` and `high` define a section where to do
-    /// the search, with inclusive `low` and exclusive `high`.
-    fn _upper_binary_lookup(
-        self: StoragePath<Vec<Checkpoint>>, key: u64, low: u64, high: u64,
-    ) -> u64 {
-        let mut _low = low;
-        let mut _high = high;
-        loop {
-            if _low >= _high {
-                break;
-            }
-            let mid = average(_low, _high);
-            if (self[mid].read().key > key) {
-                _high = mid;
-            } else {
-                _low = mid + 1;
-            };
-        }
-        _high
     }
 }

@@ -83,19 +83,6 @@ fn test_length() {
 }
 
 #[test]
-fn test_upper_lookup() {
-    let mut mock_trace = CONTRACT_STATE();
-
-    mock_trace.insert(100, 1000);
-    mock_trace.insert(200, 2000);
-
-    assert_eq!(mock_trace.upper_lookup(100), 1000);
-    assert_eq!(mock_trace.upper_lookup(150), 1000);
-    assert_eq!(mock_trace.upper_lookup(200), 2000);
-    assert_eq!(mock_trace.upper_lookup(250), 2000);
-}
-
-#[test]
 #[should_panic(expected: "Empty trace")]
 fn test_latest_mutable_empty_trace() {
     let mut mock_trace = CONTRACT_STATE();

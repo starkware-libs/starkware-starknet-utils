@@ -9,14 +9,13 @@ version = "0.1.0"
 edition = "2024_07"
 
 [dependencies]
-starknet = "2.11.0"
+starknet = "2.11.2"
 openzeppelin = "1.0.0"
 
 [dev-dependencies]
-snforge_std = "0.34.0"
-assert_macros = "2.11.0"
-openzeppelin_testing = "1.0.0"
-snforge_scarb_plugin = "0.34.0"
+snforge_std = "0.38.3"
+assert_macros = "2.11.2"
+openzeppelin_testing = "2.0.0"
 starkware_utils_testing = { path = "packages/testing" }
 
 [scripts]
@@ -31,6 +30,9 @@ name = "starkware_utils_unittest"
 
 [tool.fmt]
 sort-module-level-items = true
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
 
 [profile.dev.cairo]
 unstable-add-statements-code-locations-debug-info = true

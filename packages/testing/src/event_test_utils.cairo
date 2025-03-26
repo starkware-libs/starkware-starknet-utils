@@ -27,8 +27,9 @@ pub fn is_emitted<T, impl TEvent: starknet::Event<T>, impl TDrop: Drop<T>>(
 
 
 pub fn assert_number_of_events(actual: u32, expected: u32, message: ByteArray) {
-    assert_eq!(
-        actual, expected, "{actual} events were emitted instead of {expected}. Context: {message}",
+    assert!(
+        actual == expected,
+        "{actual} events were emitted instead of {expected}. Context: {message}",
     );
 }
 

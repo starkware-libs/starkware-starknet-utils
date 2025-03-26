@@ -11,7 +11,7 @@ jobs:
     # Only run if the PR was merged and had the 'testing-release' label
     if: >
       github.event.pull_request.merged == true && 
-      contains(fromJson('["' + join(github.event.pull_request.labels.*.name, '","') + '"]'), 'testing-release')
+      contains(github.event.pull_request.labels.*.name, 'testing-release')
     permissions:
       contents: write
     runs-on: ubuntu-latest

@@ -1,14 +1,8 @@
 [workspace]
 members = [
     "packages/testing",
+    "packages/utils",
 ]
-
-[package]
-name = "starkware_utils"
-readme = "README.md"
-version.workspace = true
-keywords.workspace = true
-edition.workspace = true
 
 [workspace.package]
 version = "0.1.1"
@@ -30,35 +24,12 @@ snforge_std = "0.38.3"
 assert_macros = "2.11.2"
 openzeppelin_testing = "2.0.0"
 
-[dependencies]
-starknet.workspace = true
-openzeppelin.workspace = true
-
-[dev-dependencies]
-snforge_std.workspace = true
-assert_macros.workspace = true
-openzeppelin_testing.workspace = true
-starkware_utils_testing = { path = "packages/testing" }
-
-[scripts]
-test = "SNFORGE_BACKTRACE=1 snforge test"
-
-[lib]
-
-[[target.starknet-contract]]
-
-[[test]]
-name = "starkware_utils_unittest"
 
 [workspace.tool.fmt]
 sort-module-level-items = true
 
 [workspace.tool.scarb]
 allow-prebuilt-plugins = ["snforge_std"]
-
-[tool]
-fmt.workspace = true
-scarb.workspace = true
 
 [profile.dev.cairo]
 unstable-add-statements-functions-debug-info = true

@@ -1,14 +1,24 @@
 [package]
 name = "starkware_utils_testing"
-version = "0.1.0"
-edition = "2024_07"
+readme = "README.md"
+version = "1.0.0"
+keywords = [
+    "starkware",
+    "starknet",
+    "utils",
+    "testing"
+]
+edition.workspace = true
+description.workspace = true
+repository.workspace = true
+license-file.workspace = true
 
 [dependencies]
-starknet = "2.11.2"
-openzeppelin = "1.0.0"
-snforge_std = "0.38.3"
-assert_macros = "2.11.2"
-openzeppelin_testing = "2.0.0"
+starknet.workspace = true
+openzeppelin.workspace = true
+snforge_std.workspace = true
+assert_macros.workspace = true
+openzeppelin_testing.workspace = true
 starkware_utils =  {path = "../../"}
 
 [dev-dependencies]
@@ -20,13 +30,11 @@ test = "SNFORGE_BACKTRACE=1 snforge test"
 
 [[target.starknet-contract]]
 
-[tool.fmt]
-sort-module-level-items = true
-
-[tool.scarb]
-allow-prebuilt-plugins = ["snforge_std"]
+[tool]
+fmt.workspace = true
+scarb.workspace = true
 
 [profile.dev.cairo]
-unstable-add-statements-code-locations-debug-info = true
 unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
 inlining-strategy = "avoid"

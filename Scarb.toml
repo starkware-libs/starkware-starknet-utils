@@ -5,17 +5,39 @@ members = [
 
 [package]
 name = "starkware_utils"
+readme = "README.md"
+version.workspace = true
+keywords.workspace = true
+edition.workspace = true
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024_07"
+description = "Starkware Starknet contracts utils"
+repository = "https://github.com/starkware-libs/starkware-starknet-utils"
+license-file = "LICENSE"
+keywords = [
+    "starkware",
+    "starknet",
+    "utils"
+]
 
-[dependencies]
+
+[workspace.dependencies]
 starknet = "2.11.2"
 openzeppelin = "1.0.0"
-
-[dev-dependencies]
 snforge_std = "0.38.3"
 assert_macros = "2.11.2"
 openzeppelin_testing = "2.0.0"
+
+[dependencies]
+starknet.workspace = true
+openzeppelin.workspace = true
+
+[dev-dependencies]
+snforge_std.workspace = true
+assert_macros.workspace = true
+openzeppelin_testing.workspace = true
 starkware_utils_testing = { path = "packages/testing" }
 
 [scripts]
@@ -28,13 +50,17 @@ test = "SNFORGE_BACKTRACE=1 snforge test"
 [[test]]
 name = "starkware_utils_unittest"
 
-[tool.fmt]
+[workspace.tool.fmt]
 sort-module-level-items = true
 
-[tool.scarb]
+[workspace.tool.scarb]
 allow-prebuilt-plugins = ["snforge_std"]
 
+[tool]
+fmt.workspace = true
+scarb.workspace = true
+
 [profile.dev.cairo]
-unstable-add-statements-code-locations-debug-info = true
 unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
 inlining-strategy = "avoid"

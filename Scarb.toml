@@ -11,7 +11,7 @@ keywords.workspace = true
 edition.workspace = true
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024_07"
 description = "Starkware Starknet contracts utils"
 repository = "https://github.com/starkware-libs/starkware-starknet-utils"

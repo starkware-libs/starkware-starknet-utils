@@ -1,0 +1,53 @@
+name: Prepare Testing Release
+
+on:
+  push:
+    tags:
+      - 'testing-release-v*.*.*'
+
+jobs:
+  create-release-pr:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Extract new version number
+        run: echo "NEW_VERSION=${GITHUB_REF#refs/tags/testing-release-v}" >> $GITHUB_ENV
+
+      - name: Create release branch
+        run: |
+          git checkout -b testing-release/${{ env.NEW_VERSION }}
+          
+      - name: Extract current versions
+        working-directory: ./packages/testing
+        run: |
+          CURRENT_VERSION=$(grep '^version = ' Scarb.toml | sed 's/version = "\(.*\)"/\1/')
+          {
+            echo "CURRENT_VERSION=$CURRENT_VERSION"
+          } >> "$GITHUB_ENV"
+
+      - name: Replace version in files
+        working-directory: ./packages/testing
+        run: |
+          echo "Current version: $CURRENT_VERSION"
+          echo "New version: $NEW_VERSION"
+          ESCAPED_CURRENT_VERSION="${CURRENT_VERSION//\./\\.}"
+          find . -type f -not -path '*/\.*' \
+            -exec sed -i "s/$ESCAPED_CURRENT_VERSION/$NEW_VERSION/g" {} +
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          title: "Testing Release v${{ env.NEW_VERSION }}"
+          body: |
+            This PR prepares the release of version ${{ env.NEW_VERSION }}.
+            
+            Once this PR is merged, the new version will be automatically published to the registry.
+          branch: testing-release/${{ env.NEW_VERSION }}
+          base: main
+          labels: testing-release

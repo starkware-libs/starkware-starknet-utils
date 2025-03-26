@@ -24,10 +24,10 @@ keywords = [
 
 
 [workspace.dependencies]
-starknet = "2.11.2"
+starknet = "2.11.3"
 openzeppelin = "1.0.0"
 snforge_std = "0.38.3"
-assert_macros = "2.11.2"
+assert_macros = "2.11.3"
 openzeppelin_testing = "2.0.0"
 
 [dependencies]

@@ -27,7 +27,7 @@ jobs:
           } >> "$GITHUB_ENV"
         
       - name: Extract new version number
-        run: echo "NEW_VERSION=${GITHUB_REF#refs/heads/release-v}" >> "$GITHUB_ENV"
+        run: echo "NEW_VERSION=${GITHUB_REF#refs/tags/release-v}" >> $GITHUB_OUTPUT
 
       - name: Replace version in files
         run: |

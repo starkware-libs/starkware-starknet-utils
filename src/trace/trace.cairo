@@ -1,8 +1,7 @@
 use core::num::traits::Zero;
-use openzeppelin::utils::math::average;
 use starknet::storage::{
-    Mutable, MutableVecTrait, StorageAsPath, StoragePath, StoragePointerReadAccess,
-    StoragePointerWriteAccess, Vec, VecTrait,
+    Mutable, MutableVecTrait, StoragePath, StoragePointerReadAccess, StoragePointerWriteAccess, Vec,
+    VecTrait,
 };
 use starkware_utils::trace::errors::TraceErrors;
 
@@ -95,7 +94,7 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// Inserts a (`key`, `value`) pair into a Trace so that it is stored as the checkpoint,
     /// either by inserting a new checkpoint, or by updating the last one.
     fn insert(self: StoragePath<Mutable<Trace>>, key: u64, value: u128) {
-        let checkpoints = self.checkpoints.as_path();
+        let checkpoints = self.checkpoints;
         let len = checkpoints.len();
         if len.is_zero() {
             checkpoints.push(Checkpoint { key, value });

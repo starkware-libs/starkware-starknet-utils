@@ -24,55 +24,55 @@ pub mod MockTrace {
     #[abi(embed_v0)]
     impl MockTraceImpl of super::IMockTrace<ContractState> {
         fn insert(ref self: ContractState, key: u64, value: u128) {
-            self.trace.deref().insert(:key, :value)
+            self.trace.insert(:key, :value)
         }
 
         fn latest(self: @ContractState) -> (u64, u128) {
-            match self.trace.deref().latest() {
+            match self.trace.latest() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
         }
 
         fn penultimate(self: @ContractState) -> (u64, u128) {
-            match self.trace.deref().penultimate() {
+            match self.trace.penultimate() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
         }
 
         fn length(self: @ContractState) -> u64 {
-            self.trace.deref().length()
+            self.trace.length()
         }
 
         fn latest_mutable(ref self: ContractState) -> (u64, u128) {
-            match self.trace.deref().latest() {
+            match self.trace.latest() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
         }
 
         fn penultimate_mutable(ref self: ContractState) -> (u64, u128) {
-            match self.trace.deref().penultimate() {
+            match self.trace.penultimate() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
         }
 
         fn length_mutable(ref self: ContractState) -> u64 {
-            self.trace.deref().length()
+            self.trace.length()
         }
 
         fn is_empty(self: @ContractState) -> bool {
-            self.trace.deref().is_empty()
+            self.trace.is_empty()
         }
 
         fn is_empty_mutable(ref self: ContractState) -> bool {
-            self.trace.deref().is_empty()
+            self.trace.is_empty()
         }
 
         fn at(self: @ContractState, pos: u64) -> (u64, u128) {
-            self.trace.deref().at(:pos)
+            self.trace.at(:pos)
         }
     }
 }

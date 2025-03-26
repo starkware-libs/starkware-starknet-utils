@@ -20,10 +20,6 @@ jobs:
       - name: Extract new version number
         run: echo "NEW_VERSION=${GITHUB_REF#refs/tags/release-v}" >> $GITHUB_ENV
 
-      - name: Create release branch
-        run: |
-          git checkout -b release/${{ env.NEW_VERSION }}
-          
       - name: Extract current versions
         run: |
           CURRENT_VERSION=$(grep '^version = ' Scarb.toml | sed 's/version = "\(.*\)"/\1/')
@@ -49,5 +45,5 @@ jobs:
             
             Once this PR is merged, the new version will be automatically published to the registry.
           branch: release/${{ env.NEW_VERSION }}
-          base: main
           labels: release
+          base: main

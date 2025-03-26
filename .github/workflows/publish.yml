@@ -46,6 +46,7 @@ jobs:
         with:
           commit_message: Bump version to ${{ env.NEW_VERSION }}
           branch: main
+          push_options: --force
           token: ${{ secrets.PAT }}
         
       - name: Publish Package

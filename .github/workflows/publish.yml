@@ -14,7 +14,9 @@ jobs:
       SCARB_REGISTRY_AUTH_TOKEN: ${{ secrets.SCARB_REGISTRY_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          ref: main
+
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: "2.11.2"
@@ -27,7 +29,7 @@ jobs:
           } >> "$GITHUB_ENV"
         
       - name: Extract new version number
-        run: echo "NEW_VERSION=${GITHUB_REF#refs/tags/release-v}" >> $GITHUB_OUTPUT
+        run: echo "NEW_VERSION=${GITHUB_REF#refs/tags/release-v}" >> $GITHUB_ENV
 
       - name: Replace version in files
         run: |
@@ -42,6 +44,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Bump version to ${{ env.NEW_VERSION }}
+          branch: main
         
       - name: Publish Package
         run: scarb publish -p starkware_utils

@@ -1,32 +1,30 @@
 [package]
-name = "starkware_utils_testing"
+name = "starkware_utils"
 readme = "README.md"
-version = "1.0.0"
-keywords = [
-    "starkware",
-    "starknet",
-    "utils",
-    "testing"
-]
+version.workspace = true
+keywords.workspace = true
 edition.workspace = true
 description.workspace = true
-repository.workspace = true
-license-file.workspace = true
 
 [dependencies]
 starknet.workspace = true
 openzeppelin.workspace = true
+
+[dev-dependencies]
 snforge_std.workspace = true
 assert_macros.workspace = true
 openzeppelin_testing.workspace = true
-starkware_utils = {version = "0.1.1", path = "../utils"}
-
-[dev-dependencies]
+starkware_utils_testing = { path = "../testing" }
 
 [scripts]
 test = "SNFORGE_BACKTRACE=1 snforge test"
 
 [lib]
+
+[[target.starknet-contract]]
+
+[[test]]
+name = "starkware_utils_unittest"
 
 [tool]
 fmt.workspace = true

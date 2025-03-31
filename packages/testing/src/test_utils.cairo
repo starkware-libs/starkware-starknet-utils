@@ -108,7 +108,9 @@ pub fn assert_panic_with_felt_error<T, +Drop<T>>(
 
 pub fn assert_expected_error(error_data: Span<felt252>, expected_error: ByteArray) {
     match try_deserialize_bytearray_error(error_data) {
-        Result::Ok(error) => assert!(error == expected_error),
+        Result::Ok(error) => assert!(
+            error == expected_error, "Expected error: {}\nActual error: {}", expected_error, error,
+        ),
         Result::Err(_) => panic!(
             "Failed to deserialize error data: {:?}.\nExpect to panic with {}.",
             error_data,

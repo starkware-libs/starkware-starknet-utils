@@ -9,6 +9,7 @@ use snforge_std::{
 use starknet::ContractAddress;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
+use starkware_utils_testing::constants as testing_constants;
 
 pub fn set_account_as_security_admin(
     contract: ContractAddress, account: ContractAddress, governance_admin: ContractAddress,
@@ -64,6 +65,38 @@ pub fn set_account_as_token_admin(
     let roles_dispatcher = IRolesDispatcher { contract_address: contract };
     cheat_caller_address_once(contract_address: contract, caller_address: app_role_admin);
     roles_dispatcher.register_token_admin(:account);
+}
+
+pub fn set_default_roles(contract: ContractAddress, governance_admin: ContractAddress) {
+    set_account_as_app_role_admin(
+        :contract, account: testing_constants::APP_ROLE_ADMIN, :governance_admin,
+    );
+    set_account_as_upgrade_governor(
+        :contract, account: testing_constants::UPGRADE_GOVERNOR, :governance_admin,
+    );
+    set_account_as_app_governor(
+        :contract,
+        account: testing_constants::APP_GOVERNOR,
+        app_role_admin: testing_constants::APP_ROLE_ADMIN,
+    );
+    set_account_as_operator(
+        :contract,
+        account: testing_constants::OPERATOR,
+        app_role_admin: testing_constants::APP_ROLE_ADMIN,
+    );
+    set_account_as_token_admin(
+        :contract,
+        account: testing_constants::TOKEN_ADMIN,
+        app_role_admin: testing_constants::APP_ROLE_ADMIN,
+    );
+    set_account_as_security_admin(
+        :contract, account: testing_constants::SECURITY_ADMIN, :governance_admin,
+    );
+    set_account_as_security_agent(
+        :contract,
+        account: testing_constants::SECURITY_AGENT,
+        security_admin: testing_constants::SECURITY_ADMIN,
+    );
 }
 
 pub fn cheat_caller_address_once(

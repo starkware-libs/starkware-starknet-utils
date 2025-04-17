@@ -6,6 +6,48 @@ pub fn have_same_sign(x: i64, y: i64) -> bool {
     (x < 0) == (y < 0)
 }
 
+
+/// Converts an array of 8 `u32` values into a single `u256` value.
+///
+/// This function treats the input array as a sequence of 32-bit words,
+/// where the first element of the array represents the most significant
+/// 32 bits and the last element represents the least significant 32 bits.
+/// The resulting `u256` value is constructed by combining these words
+/// in big-endian order.
+///
+/// # Arguments
+/// - `arr` - An array of 8 `u32` values to be converted into a `u256`.
+///
+/// # Returns
+/// - A `u256` value representing the combined value of the input array.
+///
+/// # Example
+/// ```cairo
+/// let arr: [u32; 8] = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8];
+/// let result: u256 = u256_from_u32_array_be(arr);
+/// // `result` will now hold the value:
+/// // 0x00000001_00000002_00000003_00000004_00000005_00000006_00000007_00000008
+/// ```
+pub fn u256_from_u32_array_be(arr: [u32; 8]) -> u256 {
+    let mut value: u256 = 0;
+    // This loop iterates over the elements of `arr.span()` and constructs a single value by
+    // combining the elements. The multiplication by `0x100000000` shifts the current value
+    // by 32 bits to the left (equivalent to appending 32 zero bits), making space for the
+    // next word. This is typically done when reconstructing a larger number from smaller
+    // chunks, such as converting an array of 32-bit words into a single 256-bit integer.
+    for word in arr.span() {
+        value *= 0x100000000;
+        value = value + (*word).into();
+    }
+    value
+}
+
+fn u256_reverse_endian(input: u256) -> u256 {
+    let low = core::integer::u128_byte_reverse(input.high);
+    let high = core::integer::u128_byte_reverse(input.low);
+    u256 { low, high }
+}
+
 pub fn mul_wide_and_div<
     T,
     impl TWide: WideMul<T, T>,

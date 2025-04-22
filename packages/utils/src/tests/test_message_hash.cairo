@@ -6,11 +6,15 @@ use openzeppelin::utils::cryptography::snip12::{
 use openzeppelin_testing::constants::{PUBKEY, RECIPIENT};
 use snforge_std::{start_cheat_chain_id, test_address};
 use starknet::ContractAddress;
-use starkware_utils::message_hash::OffchainMessageHash;
+use starkware_utils::message_hash::{OffchainMessageHash, REVISION, STARKNET_MESSAGE};
 use starkware_utils::types::HashType;
 
 const MESSAGE_TYPE_HASH: HashType =
     0x120ae1bdaf7c1e48349da94bb8dad27351ca115d6605ce345aee02d68d99ec1;
+
+const DAPP_NAME: felt252 = 'DAPP_NAME';
+const VERSION: felt252 = 'v1';
+const CHAIN_ID: felt252 = 'TEST';
 
 #[derive(Copy, Drop, Hash)]
 struct Message {
@@ -29,10 +33,10 @@ impl StructHashImpl of StructHash<Message> {
 
 impl SNIP12MetadataImpl of SNIP12Metadata {
     fn name() -> felt252 {
-        'DAPP_NAME'
+        DAPP_NAME
     }
     fn version() -> felt252 {
-        'v1'
+        VERSION
     }
 }
 
@@ -46,7 +50,9 @@ fn test_starknet_domain_type_hash() {
 
 #[test]
 fn test_StructHashStarknetDomainImpl() {
-    let domain = StarknetDomain { name: 'DAPP_NAME', version: 'v1', chain_id: 'TEST', revision: 1 };
+    let domain = StarknetDomain {
+        name: DAPP_NAME, version: VERSION, chain_id: CHAIN_ID, revision: REVISION,
+    };
 
     let expected = poseidon_hash_span(
         array![
@@ -65,14 +71,14 @@ fn test_StructHashStarknetDomainImpl() {
 fn test_OffchainMessageHashImpl_Felt() {
     let message = Message { recipient: RECIPIENT, amount: 100, nonce: 1, expiry: 1000 };
     let domain = StarknetDomain {
-        name: 'DAPP_NAME', version: 'v1', chain_id: 'TEST', revision: '1',
+        name: DAPP_NAME, version: VERSION, chain_id: CHAIN_ID, revision: REVISION,
     };
 
     let contract_address = test_address();
-    start_cheat_chain_id(contract_address, 'TEST');
+    start_cheat_chain_id(contract_address, CHAIN_ID);
 
     let expected = poseidon_hash_span(
-        array!['StarkNet Message', domain.hash_struct(), PUBKEY, message.hash_struct()].span(),
+        array![STARKNET_MESSAGE, domain.hash_struct(), PUBKEY, message.hash_struct()].span(),
     );
     assert_eq!(message.get_message_hash(PUBKEY), expected);
 }

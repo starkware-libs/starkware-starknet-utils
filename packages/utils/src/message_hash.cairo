@@ -9,8 +9,8 @@ pub trait OffchainMessageHash<T> {
     fn get_message_hash(self: @T, public_key: PublicKey) -> HashType;
 }
 
-const REVISION: felt252 = '1';
-const STARKNET_MESSAGE: felt252 = 'StarkNet Message';
+pub const REVISION: felt252 = 1;
+pub const STARKNET_MESSAGE: felt252 = 'StarkNet Message';
 
 pub(crate) impl OffchainMessageHashImpl<
     T, +StructHash<T>, impl metadata: SNIP12Metadata,

@@ -1,6 +1,15 @@
 use starknet::ContractAddress;
 
 #[derive(Debug, Drop, PartialEq, starknet::Event)]
+pub struct AssetRegistered {
+    #[key]
+    pub asset_id: felt252,
+    #[key]
+    pub token_address: ContractAddress,
+    pub quantum: u64,
+}
+
+#[derive(Debug, Drop, PartialEq, starknet::Event)]
 pub struct Deposit {
     #[key]
     pub beneficiary: u32,

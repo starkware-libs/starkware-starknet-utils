@@ -27,6 +27,7 @@ pub(crate) mod Deposit {
     #[event]
     #[derive(Drop, PartialEq, starknet::Event)]
     pub enum Event {
+        AssetRegistered: events::AssetRegistered,
         Deposit: events::Deposit,
         DepositCanceled: events::DepositCanceled,
         DepositProcessed: events::DepositProcessed,
@@ -71,12 +72,13 @@ pub(crate) mod Deposit {
             let (token_address, quantum) = self._get_asset_info(:asset_id);
             let unquantized_amount = quantized_amount * quantum.into();
             let token_contract = IERC20Dispatcher { contract_address: token_address };
-            token_contract
+            let transfered = token_contract
                 .transfer_from(
                     sender: caller_address,
                     recipient: get_contract_address(),
                     amount: unquantized_amount.into(),
                 );
+            assert(transfered, errors::TRANSFER_FAILED);
             self
                 .emit(
                     events::Deposit {
@@ -130,7 +132,9 @@ pub(crate) mod Deposit {
 
             let token_contract = IERC20Dispatcher { contract_address: token_address };
             let unquantized_amount = quantized_amount * quantum.into();
-            token_contract.transfer(recipient: caller_address, amount: unquantized_amount.into());
+            let transfered = token_contract
+                .transfer(recipient: caller_address, amount: unquantized_amount.into());
+            assert(transfered, errors::TRANSFER_FAILED);
             self
                 .emit(
                     events::DepositCanceled {
@@ -184,6 +188,7 @@ pub(crate) mod Deposit {
             assert(token_address.is_non_zero(), errors::INVALID_ZERO_TOKEN_ADDRESS);
             assert(quantum.is_non_zero(), errors::INVALID_ZERO_QUANTUM);
             self.asset_info.write(key: asset_id, value: (token_address, quantum));
+            self.emit(events::AssetRegistered { asset_id, token_address, quantum });
         }
 
         fn process_deposit(

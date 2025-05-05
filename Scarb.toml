@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.1"
+version = "1.0.0"
 edition = "2024_07"
 description = "Starkware Starknet contracts utils"
 repository = "https://github.com/starkware-libs/starkware-starknet-utils"
@@ -18,10 +18,10 @@ keywords = [
 
 
 [workspace.dependencies]
-starknet = "2.11.2"
+starknet = "2.11.4"
 openzeppelin = "1.0.0"
 snforge_std = "0.41.0"
-assert_macros = "2.11.2"
+assert_macros = "2.11.4"
 openzeppelin_testing = "3.0.0"
 
 

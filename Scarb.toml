@@ -19,7 +19,7 @@ keywords = [
 
 [workspace.dependencies]
 starknet = "2.11.4"
-openzeppelin = "1.0.0"
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts", branch="main"}
 snforge_std = "0.41.0"
 assert_macros = "2.11.4"
 openzeppelin_testing = "3.0.0"

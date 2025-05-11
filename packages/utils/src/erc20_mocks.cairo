@@ -13,6 +13,10 @@ pub(crate) mod DualCaseERC20Mock {
     impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
     impl InternalImpl = ERC20Component::InternalImpl<ContractState>;
 
+    impl ImmutableConfigImpl of ERC20Component::ImmutableConfig {
+        const DECIMALS: u8 = 8;
+    }
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
@@ -51,6 +55,10 @@ pub(crate) mod SnakeERC20Mock {
     #[abi(embed_v0)]
     impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
     impl InternalImpl = ERC20Component::InternalImpl<ContractState>;
+
+    impl ImmutableConfigImpl of ERC20Component::ImmutableConfig {
+        const DECIMALS: u8 = 8;
+    }
 
     #[storage]
     struct Storage {
@@ -94,6 +102,10 @@ pub(crate) mod CamelERC20Mock {
     // mock. The `ERC20Impl` case-agnostic methods are manually exposed.
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
     impl InternalImpl = ERC20Component::InternalImpl<ContractState>;
+
+    impl ImmutableConfigImpl of ERC20Component::ImmutableConfig {
+        const DECIMALS: u8 = 8;
+    }
 
     #[storage]
     struct Storage {

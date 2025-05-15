@@ -112,7 +112,7 @@ pub impl TimeImpl of Time {
         TimeDelta { seconds: self.seconds - other.seconds }
     }
     fn sub_delta(self: Timestamp, other: TimeDelta) -> Timestamp {
-        assert!(self.seconds >= other.seconds, "{}", TimeErrors::TIMESTAMP_SUB_UNDERFLOW);
+        assert!(self.seconds >= other.seconds, "{}", TimeErrors::TIMESTAMP_SUB_DELTA_UNDERFLOW);
         Timestamp { seconds: self.seconds - other.seconds }
     }
     fn div(self: TimeDelta, divider: u64) -> TimeDelta {
@@ -333,7 +333,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: "Timestamp_sub Underflow")]
+    #[should_panic(expected: "Timestamp_sub_delta Underflow")]
     fn test_timestamp_sub_delta_underflow() {
         let time1 = Timestamp { seconds: 1 };
         let delta = TimeDelta { seconds: 2 };

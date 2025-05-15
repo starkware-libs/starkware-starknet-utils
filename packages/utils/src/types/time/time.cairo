@@ -111,6 +111,10 @@ pub impl TimeImpl of Time {
         assert!(self.seconds >= other.seconds, "{}", TimeErrors::TIMESTAMP_SUB_UNDERFLOW);
         TimeDelta { seconds: self.seconds - other.seconds }
     }
+    fn sub_delta(self: Timestamp, other: TimeDelta) -> Timestamp {
+        assert!(self.seconds >= other.seconds, "{}", TimeErrors::TIMESTAMP_SUB_DELTA_UNDERFLOW);
+        Timestamp { seconds: self.seconds - other.seconds }
+    }
     fn div(self: TimeDelta, divider: u64) -> TimeDelta {
         assert!(divider != 0, "{}", TimeErrors::TIMEDELTA_DIV_BY_ZERO);
         TimeDelta { seconds: self.seconds / divider }
@@ -231,6 +235,14 @@ mod tests {
     }
 
     #[test]
+    fn test_timestamp_sub_delta() {
+        let time1 = Timestamp { seconds: 2 };
+        let delta = Time::seconds(count: 1);
+        let time2 = time1.sub_delta(other: delta);
+        assert_eq!(time2, Timestamp { seconds: 1 });
+    }
+
+    #[test]
     fn test_timestamp_lt() {
         let time1: Timestamp = Zero::zero();
         let time2 = time1.add(delta: Time::days(count: 1));
@@ -318,6 +330,14 @@ mod tests {
         let time1 = Timestamp { seconds: 1 };
         let time2 = Timestamp { seconds: 2 };
         time1.sub(other: time2);
+    }
+
+    #[test]
+    #[should_panic(expected: "Timestamp_sub_delta Underflow")]
+    fn test_timestamp_sub_delta_underflow() {
+        let time1 = Timestamp { seconds: 1 };
+        let delta = TimeDelta { seconds: 2 };
+        time1.sub_delta(other: delta);
     }
 
     #[test]

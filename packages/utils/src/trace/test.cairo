@@ -149,3 +149,53 @@ fn test_at_out_of_bounds() {
 
     mock_trace.at(0);
 }
+
+#[test]
+fn test_latest_or_penultimate() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+
+    let (key, value) = mock_trace.latest_or_penultimate(100);
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+
+    let (key, value) = mock_trace.latest_or_penultimate(150);
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+
+    let (key, value) = mock_trace.latest_or_penultimate(200);
+    assert_eq!(key, 200);
+    assert_eq!(value, 2000);
+
+    let (key, value) = mock_trace.latest_or_penultimate(300);
+    assert_eq!(key, 200);
+    assert_eq!(value, 2000);
+}
+
+#[test]
+#[should_panic(expected: "Both latest and penultimate checkpoints are above target key")]
+fn test_latest_or_penultimate_both_above_target() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+
+    mock_trace.latest_or_penultimate(99);
+}
+
+#[test]
+#[should_panic(expected: "Empty trace")]
+fn test_latest_or_penultimate_empty_trace() {
+    let mut mock_trace = CONTRACT_STATE();
+    mock_trace.latest_or_penultimate(100);
+}
+
+#[test]
+#[should_panic(expected: "Penultimate does not exist")]
+fn test_latest_or_penultimate_penultimate_not_exist() {
+    let mut mock_trace = CONTRACT_STATE();
+    mock_trace.insert(100, 1000);
+    mock_trace.latest_or_penultimate(50);
+}

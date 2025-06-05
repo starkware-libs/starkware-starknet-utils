@@ -6,6 +6,7 @@ pub enum TraceErrors {
     EMPTY_TRACE,
     INDEX_OUT_OF_BOUNDS,
     PENULTIMATE_NOT_EXIST,
+    LATEST_AND_PENULTIMATE_ABOVE_TARGET,
 }
 
 impl DescribableError of Describable<TraceErrors> {
@@ -15,6 +16,7 @@ impl DescribableError of Describable<TraceErrors> {
             TraceErrors::EMPTY_TRACE => "Empty trace",
             TraceErrors::INDEX_OUT_OF_BOUNDS => "Index out of bounds",
             TraceErrors::PENULTIMATE_NOT_EXIST => "Penultimate does not exist",
+            TraceErrors::LATEST_AND_PENULTIMATE_ABOVE_TARGET => "Both latest and penultimate checkpoints are above target key",
         }
     }
 }

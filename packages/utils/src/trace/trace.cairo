@@ -62,6 +62,32 @@ pub impl TraceImpl of TraceTrait {
         Result::Ok(checkpoint.into())
     }
 
+    /// Returns the latest or penultimate checkpoint whose key is <= `target_key`.
+    /// If latest checkpoint satisfies the condition, it is returned.
+    /// Otherwise, if penultimate checkpoint satisfies the condition, it is returned.
+    /// Panics if neither satisfies the condition.
+    fn latest_or_penultimate(
+        self: StoragePath<Trace>, target_key: u64,
+    ) -> Result<(u64, u128), TraceErrors> {
+        let checkpoints = self.checkpoints;
+        let len = checkpoints.len();
+        if len == 0 {
+            return Result::Err(TraceErrors::EMPTY_TRACE);
+        }
+        let checkpoint = checkpoints[len - 1].read();
+        if checkpoint.key <= target_key {
+            return Result::Ok(checkpoint.into());
+        }
+        if len == 1 {
+            return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
+        }
+        let checkpoint = checkpoints[len - 2].read();
+        if checkpoint.key <= target_key {
+            return Result::Ok(checkpoint.into());
+        }
+        return Result::Err(TraceErrors::LATEST_AND_PENULTIMATE_ABOVE_TARGET);
+    }
+
     /// Returns the total number of checkpoints.
     fn length(self: StoragePath<Trace>) -> u64 {
         self.checkpoints.len()

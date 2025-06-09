@@ -149,3 +149,80 @@ fn test_at_out_of_bounds() {
 
     mock_trace.at(0);
 }
+
+#[test]
+fn test_n_latest() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+    mock_trace.insert(300, 3000);
+    mock_trace.insert(400, 4000);
+    mock_trace.insert(500, 5000);
+
+    let span = mock_trace.n_latest(1);
+    let expected = [(500, 5000)];
+    assert_eq!(span, expected.span());
+
+    let span = mock_trace.n_latest(3);
+    let expected = [(300, 3000), (400, 4000), (500, 5000)];
+    assert_eq!(span, expected.span());
+
+    let span = mock_trace.n_latest(5);
+    let expected = [(100, 1000), (200, 2000), (300, 3000), (400, 4000), (500, 5000)];
+    assert_eq!(span, expected.span());
+}
+
+#[test]
+#[should_panic(expected: "N is zero")]
+fn test_n_latest_zero() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.n_latest(0);
+}
+
+#[test]
+#[should_panic(expected: "N is too large")]
+fn test_n_latest_too_large() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+    mock_trace.insert(300, 3000);
+    mock_trace.insert(400, 4000);
+    mock_trace.insert(500, 5000);
+    mock_trace.insert(600, 6000);
+    mock_trace.insert(700, 7000);
+    mock_trace.insert(800, 8000);
+    mock_trace.insert(900, 9000);
+    mock_trace.insert(1000, 10000);
+    mock_trace.insert(1100, 11000);
+    mock_trace.insert(1200, 12000);
+    mock_trace.insert(1300, 13000);
+    mock_trace.insert(1400, 14000);
+    mock_trace.insert(1500, 15000);
+
+    mock_trace.n_latest(11);
+}
+
+#[test]
+#[should_panic(expected: "Index out of bounds")]
+fn test_n_latest_out_of_bounds() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+    mock_trace.insert(300, 3000);
+    mock_trace.insert(400, 4000);
+    mock_trace.insert(500, 5000);
+
+    mock_trace.n_latest(6);
+}
+
+#[test]
+#[should_panic(expected: "Index out of bounds")]
+fn test_n_latest_out_of_bounds_empty() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.n_latest(1);
+}

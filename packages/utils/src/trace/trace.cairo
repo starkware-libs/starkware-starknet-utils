@@ -157,4 +157,22 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     fn is_empty(self: StoragePath<Mutable<Trace>>) -> bool {
         self.length().is_zero()
     }
+
+    /// Returns the `n` latest checkpoints.
+    /// Precondition: `0 < n`, `n <= self.length()`, `n <= 10`.
+    fn n_latest(self: StoragePath<Mutable<Trace>>, n: u64) -> Span<(u64, u128)> {
+        let checkpoints = self.checkpoints;
+        let len = checkpoints.len();
+        assert!(0 < n, "{}", TraceErrors::N_IS_ZERO);
+        assert!(n <= len, "{}", TraceErrors::INDEX_OUT_OF_BOUNDS);
+        assert!(n <= 10, "{}", TraceErrors::N_TOO_LARGE);
+        let mut arr = array![];
+        let mut i = len - n;
+        while i < len {
+            let checkpoint = checkpoints[i].read();
+            arr.append((checkpoint.key, checkpoint.value));
+            i += 1;
+        }
+        arr.span()
+    }
 }

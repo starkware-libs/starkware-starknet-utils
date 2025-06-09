@@ -10,6 +10,7 @@ pub trait IMockTrace<TContractState> {
     fn penultimate_mutable(ref self: TContractState) -> (u64, u128);
     fn is_empty_mutable(ref self: TContractState) -> bool;
     fn at(self: @TContractState, pos: u64) -> (u64, u128);
+    fn n_latest(ref self: TContractState, n: u64) -> Span<(u64, u128)>;
 }
 
 #[starknet::contract]
@@ -73,6 +74,10 @@ pub mod MockTrace {
 
         fn at(self: @ContractState, pos: u64) -> (u64, u128) {
             self.trace.at(:pos)
+        }
+
+        fn n_latest(ref self: ContractState, n: u64) -> Span<(u64, u128)> {
+            self.trace.n_latest(:n)
         }
     }
 }

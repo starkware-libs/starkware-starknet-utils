@@ -7,9 +7,10 @@ pub(crate) mod RequestApprovalsComponent {
     use starkware_utils::components::request_approvals::interface::{
         IRequestApprovals, RequestStatus,
     };
-    use starkware_utils::message_hash::OffchainMessageHash;
-    use starkware_utils::types::{HashType, PublicKey, Signature};
-    use starkware_utils::utils::validate_stark_signature;
+    use starkware_utils::hash::message_hash::OffchainMessageHash;
+    use starkware_utils::signature::stark::{
+        HashType, PublicKey, Signature, validate_stark_signature,
+    };
 
     #[storage]
     pub struct Storage {

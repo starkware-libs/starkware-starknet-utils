@@ -1,4 +1,4 @@
-use starkware_utils::types::HashType;
+use starkware_utils::signature::stark::HashType;
 
 #[starknet::interface]
 pub trait IRequestApprovals<TContractState> {

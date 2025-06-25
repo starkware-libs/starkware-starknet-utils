@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use core::num::traits::{BitSize, Bounded};
 use core::traits::{BitAnd, BitOr, BitXor};
 use starknet::storage_access::StorePacking;
-use starkware_utils::bit_mask::{BitMask, PowOfTwo};
+use starkware_utils::storage::bit_mask::{BitMask, PowOfTwo};
 
 pub(crate) type BitSetU8 = BitSet<u8>;
 pub(crate) type BitSetU16 = BitSet<u16>;

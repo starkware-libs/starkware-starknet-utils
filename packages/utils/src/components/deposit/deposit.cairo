@@ -12,8 +12,8 @@ pub(crate) mod Deposit {
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use starkware_utils::components::deposit::interface::{DepositStatus, IDeposit};
     use starkware_utils::components::deposit::{errors, events};
-    use starkware_utils::types::HashType;
-    use starkware_utils::types::time::time::{Time, TimeDelta};
+    use starkware_utils::signature::stark::HashType;
+    use starkware_utils::time::time::{Time, TimeDelta};
 
 
     #[storage]

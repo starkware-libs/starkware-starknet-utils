@@ -1,8 +1,13 @@
 use core::traits::Into;
 use starkware_utils::constants::{DAY, MAX_U64, WEEK};
-use starkware_utils::types::time::errors::TimeErrors;
+use starkware_utils::time::errors::TimeErrors;
 
 pub type Seconds = u64;
+
+
+pub fn validate_expiration(expiration: Timestamp, err: felt252) {
+    assert(Time::now() <= expiration, err);
+}
 
 #[derive(Debug, PartialEq, Drop, Serde, Copy, starknet::Store)]
 pub struct TimeDelta {

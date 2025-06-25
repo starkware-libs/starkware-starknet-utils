@@ -1,6 +1,6 @@
 use core::num::traits::{One, Zero};
+use starkware_utils::errors::assert_with_byte_array;
 use starkware_utils::math::abs::Abs;
-
 
 #[derive(Copy, Drop, Hash, Serde)]
 pub struct Fraction {
@@ -8,6 +8,13 @@ pub struct Fraction {
     denominator: u128,
 }
 
+pub fn validate_fraction_ratio<N, D, +Into<N, i128>, +Drop<N>, +Into<D, u128>, +Drop<D>>(
+    n1: i128, d1: u128, n2: i128, d2: u128, err: ByteArray,
+) {
+    let f1 = FractionTrait::new(numerator: n1, denominator: d1);
+    let f2 = FractionTrait::new(numerator: n2, denominator: d2);
+    assert_with_byte_array(f1 <= f2, err);
+}
 
 #[generate_trait]
 pub impl FractionlImpl of FractionTrait {

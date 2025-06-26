@@ -1,7 +1,7 @@
 #[starknet::component]
 pub(crate) mod ReplaceabilityComponent {
     use core::num::traits::Zero;
-    use core::poseidon;
+    use core::{panic_with_felt252, poseidon};
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::get_block_timestamp;
@@ -149,7 +149,10 @@ pub(crate) mod ReplaceabilityComponent {
                         function_selector: EIC_INITIALIZE_SELECTOR,
                         calldata: calldata_wrapper.span(),
                     );
-                    assert!(res.is_ok(), "{}", ReplaceErrors::EIC_LIB_CALL_FAILED);
+                    match res {
+                        Ok(_) => {},
+                        Err(err_array) => { panic_with_felt252(*err_array.at(0)); },
+                    }
                 },
                 Option::None(()) => {},
             }

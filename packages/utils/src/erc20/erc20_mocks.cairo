@@ -41,16 +41,15 @@ pub(crate) mod DualCaseERC20Mock {
 
 #[starknet::contract]
 mod ERC20DecimalsMock {
+    use openzeppelin::token::erc20::interface::IERC20Metadata;
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerWriteAccess;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
 
     #[abi(embed_v0)]
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
     #[abi(embed_v0)]
     impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
     impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
@@ -81,6 +80,21 @@ mod ERC20DecimalsMock {
         self._set_decimals(decimals);
         self.erc20.initializer(name, symbol);
         self.erc20.mint(recipient, initial_supply);
+    }
+
+    #[abi(embed_v0)]
+    impl ERC20MetadataImpl of IERC20Metadata<ContractState> {
+        fn name(self: @ContractState) -> ByteArray {
+            self.erc20.name()
+        }
+
+        fn symbol(self: @ContractState) -> ByteArray {
+            self.erc20.symbol()
+        }
+
+        fn decimals(self: @ContractState) -> u8 {
+            self.decimals.read()
+        }
     }
 
     #[generate_trait]

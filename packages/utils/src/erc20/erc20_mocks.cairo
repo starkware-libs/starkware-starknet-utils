@@ -40,6 +40,58 @@ pub(crate) mod DualCaseERC20Mock {
 }
 
 #[starknet::contract]
+mod ERC20DecimalsMock {
+    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
+    use starknet::ContractAddress;
+    use starknet::storage::StoragePointerWriteAccess;
+
+    component!(path: ERC20Component, storage: erc20, event: ERC20Event);
+
+    #[abi(embed_v0)]
+    impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
+    impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        erc20: ERC20Component::Storage,
+        decimals: u8,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC20Event: ERC20Component::Event,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        decimals: u8,
+        initial_supply: u256,
+        recipient: ContractAddress,
+    ) {
+        self._set_decimals(decimals);
+        self.erc20.initializer(name, symbol);
+        self.erc20.mint(recipient, initial_supply);
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn _set_decimals(ref self: ContractState, decimals: u8) {
+            self.decimals.write(decimals);
+        }
+    }
+}
+
+#[starknet::contract]
 pub(crate) mod SnakeERC20Mock {
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;

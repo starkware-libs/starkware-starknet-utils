@@ -10,6 +10,7 @@ use starknet::ContractAddress;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use starkware_utils_testing::constants as testing_constants;
+use testing_constants::STARKGATE_ADDRESS;
 
 pub fn set_account_as_security_admin(
     contract: ContractAddress, account: ContractAddress, governance_admin: ContractAddress,
@@ -210,6 +211,11 @@ pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
     }
 }
 
+#[starknet::interface]
+trait IMintableToken<TContractState> {
+    fn permissioned_mint(ref self: TContractState, account: ContractAddress, amount: u256);
+}
+
 pub trait TokenTrait<TTokenState> {
     fn fund(self: TTokenState, recipient: ContractAddress, amount: u128);
     fn approve(self: TTokenState, owner: ContractAddress, spender: ContractAddress, amount: u128);
@@ -218,9 +224,12 @@ pub trait TokenTrait<TTokenState> {
 
 pub impl TokenImpl of TokenTrait<TokenState> {
     fn fund(self: TokenState, recipient: ContractAddress, amount: u128) {
-        let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
-        cheat_caller_address_once(contract_address: self.address, caller_address: self.owner);
-        erc20_dispatcher.transfer(recipient: recipient, amount: amount.into());
+        let mintable_token_dispatcher = IMintableTokenDispatcher { contract_address: self.address };
+        // Cheat caller address since the STRK token requires that in order to mint.
+        cheat_caller_address_once(
+            contract_address: self.address, caller_address: STARKGATE_ADDRESS(),
+        );
+        mintable_token_dispatcher.permissioned_mint(account: recipient, amount: amount.into());
     }
 
     fn approve(self: TokenState, owner: ContractAddress, spender: ContractAddress, amount: u128) {

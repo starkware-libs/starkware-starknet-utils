@@ -7,6 +7,14 @@ pub fn assert_with_byte_array(condition: bool, err: ByteArray) {
     }
 }
 
+pub fn assert_with_describe<TError, +Describable<TError>, +Drop<TError>>(
+    condition: bool, err: TError,
+) {
+    if !condition {
+        panic_with_byte_array(err: @err.describe())
+    }
+}
+
 pub trait Describable<T> {
     fn describe(self: @T) -> ByteArray;
 }

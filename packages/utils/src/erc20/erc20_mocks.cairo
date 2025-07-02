@@ -37,6 +37,15 @@ pub(crate) mod DualCaseERC20Mock {
         self.erc20.initializer(name, symbol);
         self.erc20.mint(recipient, initial_supply);
     }
+
+    #[abi(per_item)]
+    #[generate_trait]
+    impl MintableTokenImpl of MintableTokenTrait {
+        #[external(v0)]
+        fn permissioned_mint(ref self: ContractState, account: ContractAddress, amount: u256) {
+            self.erc20.mint(recipient: account, :amount)
+        }
+    }
 }
 
 #[starknet::contract]

@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub(crate) mod DualCaseERC20Mock {
-    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
+    use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -83,13 +83,13 @@ mod ERC20DecimalsMock {
     }
 
     #[abi(embed_v0)]
-    impl ERC20MetadataImpl of IERC20Metadata<ContractState> {
+    impl ERC20CustomMetadataImpl of IERC20Metadata<ContractState> {
         fn name(self: @ContractState) -> ByteArray {
-            self.erc20.name()
+            self.erc20.ERC20_name.read()
         }
 
         fn symbol(self: @ContractState) -> ByteArray {
-            self.erc20.symbol()
+            self.erc20.ERC20_symbol.read()
         }
 
         fn decimals(self: @ContractState) -> u8 {
@@ -107,7 +107,7 @@ mod ERC20DecimalsMock {
 
 #[starknet::contract]
 pub(crate) mod SnakeERC20Mock {
-    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
+    use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -146,7 +146,7 @@ pub(crate) mod SnakeERC20Mock {
 
 #[starknet::contract]
 pub(crate) mod CamelERC20Mock {
-    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
+    use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);

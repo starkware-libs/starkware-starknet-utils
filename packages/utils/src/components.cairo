@@ -1,3 +1,4 @@
+pub mod blacklist;
 pub mod deposit;
 pub mod nonce;
 pub mod pausable;

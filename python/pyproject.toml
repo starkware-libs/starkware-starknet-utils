@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test_utils"
+version = "0.1.0"
+requires-python = ">=3.7"
+
+dependencies = [
+    "pytest>=7.0",
+    "pytest-asyncio",
+    "starknet-py",
+    "requests",
+    "pytest-xdist"
+]
+
+[tool.setuptools]
+packages = ["test_utils"]
+
+[tool.setuptools.package-dir]
+"" = "."

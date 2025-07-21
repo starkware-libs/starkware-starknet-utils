@@ -65,3 +65,11 @@ target
 .snfoundry_versioned_programs
 snfoundry_trace
 coverage_report
+
+#python
+venv/
+__pycache__
+*.egg-info
+*.pyc
+.mypy_cache
+.pytest_cache

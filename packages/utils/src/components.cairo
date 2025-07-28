@@ -1,5 +1,6 @@
 pub mod blocklist;
 pub mod deposit;
+pub mod filestorage;
 pub mod nonce;
 pub mod pausable;
 pub mod replaceability;

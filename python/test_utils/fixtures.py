@@ -1,5 +1,5 @@
 import pytest
-from python.test_utils.starknet_test_utils import StarknetTestUtils
+from test_utils.starknet_test_utils import StarknetTestUtils
 from typing import Iterator
 import time
 

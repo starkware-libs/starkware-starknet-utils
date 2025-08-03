@@ -18,8 +18,6 @@ import errno
 import time
 
 
-from pathlib import Path
-
 logger = logging.getLogger(__name__)
 
 SIERRA_PROGRAM_KEY = "sierra_program"
@@ -28,12 +26,12 @@ CASM_KEY = "casm"
 ABI_KEY = "abi"
 
 
-def get_contract_path(contract_name: str) -> Path:
-    return Path(os.path.join(os.path.dirname(__file__), "target", "dev", f"{contract_name}.json"))
+def get_contract_path(contract_name: str, base_path: Path) -> Path:
+    return base_path / f"{contract_name}.json"
 
 
-def load_contract(contract_name: str) -> str:
-    contract_path = get_contract_path(contract_name)
+def load_contract(contract_name: str, base_path: Path) -> str:
+    contract_path = get_contract_path(contract_name=contract_name, base_path=base_path)
     return contract_path.read_text("utf-8")
 
 

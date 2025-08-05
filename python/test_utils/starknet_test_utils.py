@@ -158,20 +158,23 @@ class Starknet:
         self.accounts = accounts
         self.starknet_chain_id = starknet_chain_id
 
-        command = (
-            "starknet-devnet "
-            f"--port {self.port} "
-            f"--seed {self.seed} "
-            f"--initial-balance {self.initial_balance} "
-            f"--accounts {self.accounts} "
-            "--lite-mode"
-        )
+        command = [
+            "starknet-devnet",
+            "--port",
+            str(self.port),
+            "--seed",
+            str(self.seed),
+            "--initial-balance",
+            str(self.initial_balance),
+            "--accounts",
+            str(self.accounts),
+            "--lite-mode",
+        ]
+
         self.starknet_proc = subprocess.Popen(
             command,
-            shell=True,
             stdout=subprocess.DEVNULL,
             stderr=self.err_stream,
-            # Open the process in a new process group.
             start_new_session=True,
         )
         self.is_alive = True

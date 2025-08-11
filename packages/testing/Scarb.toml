@@ -18,7 +18,6 @@ starknet.workspace = true
 openzeppelin.workspace = true
 snforge_std.workspace = true
 assert_macros.workspace = true
-openzeppelin_testing.workspace = true
 starkware_utils = {version = "1.0.0", path = "../utils"}
 
 [dev-dependencies]

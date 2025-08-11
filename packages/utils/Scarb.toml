@@ -13,7 +13,6 @@ openzeppelin.workspace = true
 [dev-dependencies]
 snforge_std.workspace = true
 assert_macros.workspace = true
-openzeppelin_testing.workspace = true
 starkware_utils_testing = { path = "../testing" }
 
 [scripts]

@@ -3,7 +3,6 @@ use core::poseidon::{PoseidonTrait, poseidon_hash_span};
 use openzeppelin::utils::cryptography::snip12::{
     SNIP12Metadata, STARKNET_DOMAIN_TYPE_HASH, StarknetDomain, StructHash,
 };
-use openzeppelin_testing::constants::{PUBKEY, RECIPIENT};
 use snforge_std::{start_cheat_chain_id, test_address};
 use starknet::ContractAddress;
 use starkware_utils::hash::message_hash::{OffchainMessageHash, REVISION, STARKNET_MESSAGE};
@@ -15,6 +14,10 @@ const MESSAGE_TYPE_HASH: HashType =
 const DAPP_NAME: felt252 = 'DAPP_NAME';
 const VERSION: felt252 = 'v1';
 const CHAIN_ID: felt252 = 'TEST';
+
+pub const RECIPIENT: ContractAddress = 'RECIPIENT'.try_into().unwrap();
+pub const PUBKEY: felt252 = 'PUBKEY';
+
 
 #[derive(Copy, Drop, Hash)]
 struct Message {
@@ -56,10 +59,7 @@ fn test_StructHashStarknetDomainImpl() {
 
     let expected = poseidon_hash_span(
         array![
-            STARKNET_DOMAIN_TYPE_HASH,
-            domain.name,
-            domain.version,
-            domain.chain_id,
+            STARKNET_DOMAIN_TYPE_HASH, domain.name, domain.version, domain.chain_id,
             domain.revision,
         ]
             .span(),

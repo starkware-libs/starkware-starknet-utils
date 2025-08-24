@@ -138,7 +138,7 @@ pub impl MutableTraceImpl of MutableTraceTrait {
 
     /// Returns the total number of checkpoints.
     fn length(self: StoragePath<Mutable<Trace>>) -> u64 {
-        self.checkpoints.len()
+        self.as_non_mut().length()
     }
 
     /// Returns the checkpoint at the given position.
@@ -150,16 +150,12 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// # Panics
     /// If the position is out of bounds.
     fn at(self: StoragePath<Mutable<Trace>>, pos: u64) -> (u64, u128) {
-        let checkpoints = self.checkpoints;
-        let len = checkpoints.len();
-        assert!(pos < len, "{}", TraceErrors::INDEX_OUT_OF_BOUNDS);
-        let checkpoint = checkpoints[pos].read();
-        (checkpoint.key, checkpoint.value)
+        self.as_non_mut().at(:pos)
     }
 
     /// Returns `true` is the trace is empty.
     fn is_empty(self: StoragePath<Mutable<Trace>>) -> bool {
-        self.length().is_zero()
+        self.as_non_mut().is_empty()
     }
 }
 

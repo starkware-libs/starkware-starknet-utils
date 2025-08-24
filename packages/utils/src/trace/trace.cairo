@@ -1,7 +1,7 @@
 use core::num::traits::Zero;
 use starknet::storage::{
-    Mutable, MutableVecTrait, StoragePath, StoragePointerReadAccess, StoragePointerWriteAccess, Vec,
-    VecTrait,
+    Mutable, MutableVecTrait, StoragePath, StoragePathMutableConversion, StoragePointerReadAccess,
+    StoragePointerWriteAccess, Vec, VecTrait,
 };
 use starkware_utils::trace::errors::TraceErrors;
 
@@ -59,6 +59,18 @@ pub impl TraceImpl of TraceTrait {
             return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
         }
         let checkpoint = checkpoints[len - 2].read();
+        Result::Ok(checkpoint.into())
+    }
+
+    /// Returns the antepenultimate checkpoint from the trace structure.
+    /// Antepenultimate checkpoint is the third last checkpoint in the trace.
+    fn antepenultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
+        let checkpoints = self.checkpoints;
+        let len = checkpoints.len();
+        if len <= 2 {
+            return Result::Err(TraceErrors::ANTEPENULTIMATE_NOT_EXIST);
+        }
+        let checkpoint = checkpoints[len - 3].read();
         Result::Ok(checkpoint.into())
     }
 
@@ -146,6 +158,12 @@ pub impl MutableTraceImpl of MutableTraceTrait {
         }
         let checkpoint = checkpoints[len - 2].read();
         Result::Ok(checkpoint.into())
+    }
+
+    /// Returns the antepenultimate checkpoint from the trace structure.
+    /// Antepenultimate checkpoint is the third last checkpoint in the trace.
+    fn antepenultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
+        self.as_non_mut().antepenultimate()
     }
 
     /// Returns the total number of checkpoints.

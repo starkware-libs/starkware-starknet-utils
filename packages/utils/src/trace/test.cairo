@@ -173,3 +173,45 @@ fn test_at_mutable_out_of_bounds() {
 
     mock_trace.at_mutable(0);
 }
+
+#[test]
+fn test_antepenultimate() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+    mock_trace.insert(300, 3000);
+
+    let (key, value) = mock_trace.antepenultimate();
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+}
+
+#[test]
+#[should_panic(expected: "Antepenultimate does not exist")]
+fn test_antepenultimate_not_exist() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    let _ = mock_trace.antepenultimate();
+}
+
+#[test]
+fn test_antepenultimate_mutable() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+    mock_trace.insert(300, 3000);
+
+    let (key, value) = mock_trace.antepenultimate_mutable();
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+}
+
+#[test]
+#[should_panic(expected: "Antepenultimate does not exist")]
+fn test_antepenultimate_mutable_not_exist() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    let _ = mock_trace.antepenultimate_mutable();
+}

@@ -28,9 +28,3 @@ name = "starkware_utils_unittest"
 [tool]
 fmt.workspace = true
 scarb.workspace = true
-
-[profile.dev.cairo]
-unstable-add-statements-functions-debug-info = true
-unstable-add-statements-code-locations-debug-info = true
-inlining-strategy = "avoid"
-panic-backtrace = true

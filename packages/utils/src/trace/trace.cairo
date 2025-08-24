@@ -139,25 +139,13 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// This will return the last inserted checkpoint that maintains the structure's
     /// invariant of non-decreasing keys.
     fn latest(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
-        let checkpoints = self.checkpoints;
-        let len = checkpoints.len();
-        if len == 0 {
-            return Result::Err(TraceErrors::EMPTY_TRACE);
-        }
-        let checkpoint = checkpoints[len - 1].read();
-        Result::Ok(checkpoint.into())
+        self.as_non_mut().latest()
     }
 
     /// Retrieves the penultimate checkpoint from the trace structure.
     /// Penultimate checkpoint is the second last checkpoint in the trace.
     fn penultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
-        let checkpoints = self.checkpoints;
-        let len = checkpoints.len();
-        if len <= 1 {
-            return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
-        }
-        let checkpoint = checkpoints[len - 2].read();
-        Result::Ok(checkpoint.into())
+        self.as_non_mut().penultimate()
     }
 
     /// Returns the antepenultimate checkpoint from the trace structure.
@@ -168,7 +156,7 @@ pub impl MutableTraceImpl of MutableTraceTrait {
 
     /// Returns the total number of checkpoints.
     fn length(self: StoragePath<Mutable<Trace>>) -> u64 {
-        self.checkpoints.len()
+        self.as_non_mut().length()
     }
 
     /// Returns the checkpoint at the given position.
@@ -180,15 +168,11 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// # Panics
     /// If the position is out of bounds.
     fn at(self: StoragePath<Mutable<Trace>>, pos: u64) -> (u64, u128) {
-        let checkpoints = self.checkpoints;
-        let len = checkpoints.len();
-        assert!(pos < len, "{}", TraceErrors::INDEX_OUT_OF_BOUNDS);
-        let checkpoint = checkpoints[pos].read();
-        (checkpoint.key, checkpoint.value)
+        self.as_non_mut().at(pos)
     }
 
     /// Returns `true` is the trace is empty.
     fn is_empty(self: StoragePath<Mutable<Trace>>) -> bool {
-        self.length().is_zero()
+        self.as_non_mut().is_empty()
     }
 }

@@ -9,12 +9,17 @@ pub(crate) mod RolesComponent {
         UpgradeGovernorRemoved,
     };
     use core::num::traits::Zero;
+    use starknet::storage::StorageMapReadAccess;
     use starknet::{ContractAddress, get_caller_address};
     use starkware_utils::components::roles::errors::AccessErrors;
     use starkware_utils::components::roles::interface as RolesInterface;
 
     #[storage]
-    pub struct Storage {}
+    pub struct Storage {
+        // LEGACY: This is the old storage for role members.
+        // We need it to allow reclaim legacy roles.
+        role_members: starknet::storage::Map<(RoleId, ContractAddress), bool>,
+    }
 
     #[event]
     #[derive(Copy, Drop, PartialEq, starknet::Event)]
@@ -255,8 +260,41 @@ pub(crate) mod RolesComponent {
             // TODO add another event? Currently there are two events when a role is removed but
         // only one if it was renounced.
         }
+        fn has_legacy_role(
+            self: @ComponentState<TContractState>, account: ContractAddress, role: RoleId,
+        ) -> bool {
+            self.role_members.read((role, account))
+        }
+        fn reclaim_legacy_roles(ref self: ComponentState<TContractState>) {
+            let account = get_caller_address();
+            self._reclaim_role(role: GOVERNANCE_ADMIN, :account);
+            self._reclaim_role(role: APP_GOVERNOR, :account);
+            self._reclaim_role(role: APP_ROLE_ADMIN, :account);
+            self._reclaim_role(role: OPERATOR, :account);
+            self._reclaim_role(role: TOKEN_ADMIN, :account);
+            self._reclaim_role(role: UPGRADE_GOVERNOR, :account);
+            self._reclaim_role(role: SECURITY_ADMIN, :account);
+            self._reclaim_role(role: SECURITY_AGENT, :account);
+        }
     }
 
+    #[generate_trait]
+    pub impl ClaimRoleImpl<
+        TContractState,
+        +HasComponent<TContractState>,
+        +Drop<TContractState>,
+        impl Access: AccessControlComponent::HasComponent<TContractState>,
+        +SRC5Component::HasComponent<TContractState>,
+    > of ClaimRoleInternal<TContractState> {
+        fn _reclaim_role(
+            ref self: ComponentState<TContractState>, role: RoleId, account: ContractAddress,
+        ) {
+            if self.has_legacy_role(account, role) {
+                let mut access_comp = get_dep_component_mut!(ref self, Access);
+                access_comp._grant_role(:role, :account);
+            }
+        }
+    }
 
     #[generate_trait]
     pub impl RolesInternalImpl<

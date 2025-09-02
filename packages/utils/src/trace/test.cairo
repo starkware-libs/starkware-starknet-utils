@@ -70,6 +70,26 @@ fn test_penultimate_not_exist() {
 }
 
 #[test]
+fn test_penultimate_mutable() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+
+    let (key, value) = mock_trace.penultimate_mutable();
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+}
+
+#[test]
+#[should_panic(expected: "Index out of bounds")]
+fn test_penultimate_mutable_not_exist() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    let _ = mock_trace.penultimate_mutable();
+}
+
+#[test]
 fn test_length() {
     let mut mock_trace = CONTRACT_STATE();
 

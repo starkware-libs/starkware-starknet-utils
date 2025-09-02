@@ -202,3 +202,23 @@ pub impl IterableMapIntoIterImpl<
         self.as_path().into_iter()
     }
 }
+
+/// Mutable trait for the interface of iterable map.
+pub trait MutableIterableMapTrait<T> {
+    type Key;
+    fn clear(self: T);
+}
+
+/// Implement `MutableIterableMapTrait` for `StoragePath<Mutable<IterableMap<K, V>>>`.
+impl MutableIterableMapImpl<
+    K, V, +Drop<K>, +Drop<V>, +Store<Option<V>>, +Store<K>, +Hash<K, HashState>,
+> of MutableIterableMapTrait<StoragePath<Mutable<IterableMap<K, V>>>> {
+    type Key = K;
+    fn clear(self: StoragePath<Mutable<IterableMap<K, V>>>) {
+        let len = self._keys.len();
+        for _ in 0..len {
+            let key = self._keys.pop().unwrap();
+            self._inner_map.entry(key).write(Option::None);
+        }
+    }
+}

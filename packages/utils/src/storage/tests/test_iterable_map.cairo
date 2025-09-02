@@ -7,13 +7,14 @@ pub trait IIterableMapTestContract<TContractState> {
     fn set_value(ref self: TContractState, key: u8, value: i32);
     fn get_all_values(ref self: TContractState) -> Span<(u8, i32)>;
     fn get_len(self: @TContractState) -> u64;
+    fn clear(ref self: TContractState);
 }
 
 #[starknet::contract]
 mod IterableMapTestContract {
     use starkware_utils::storage::iterable_map::{
         IterableMap, IterableMapIntoIterImpl, IterableMapReadAccessImpl, IterableMapTrait,
-        IterableMapWriteAccessImpl,
+        IterableMapWriteAccessImpl, MutableIterableMapTrait,
     };
 
     #[storage]
@@ -42,6 +43,10 @@ mod IterableMapTestContract {
 
         fn get_len(self: @ContractState) -> u64 {
             self.iterable_map.len()
+        }
+
+        fn clear(ref self: ContractState) {
+            self.iterable_map.clear();
         }
     }
 }
@@ -127,4 +132,34 @@ fn test_len() {
         expected_len += 1;
         assert_eq!(dispatcher.get_len(), expected_len);
     };
+}
+
+#[test]
+fn test_clear() {
+    let dispatcher = IIterableMapTestContractDispatcher {
+        contract_address: deploy_iterable_map_test_contract(),
+    };
+
+    dispatcher.set_value(1_u8, -10_i32);
+    dispatcher.set_value(2_u8, -20_i32);
+    dispatcher.set_value(3_u8, -30_i32);
+
+    assert_eq!(dispatcher.get_len(), 3);
+    assert_eq!(dispatcher.get_value(1_u8), Option::Some(-10_i32));
+    assert_eq!(dispatcher.get_value(2_u8), Option::Some(-20_i32));
+    assert_eq!(dispatcher.get_value(3_u8), Option::Some(-30_i32));
+
+    dispatcher.clear();
+
+    assert_eq!(dispatcher.get_len(), 0);
+    assert_eq!(dispatcher.get_all_values().len(), 0);
+
+    assert_eq!(dispatcher.get_value(1_u8), Option::None);
+    assert_eq!(dispatcher.get_value(2_u8), Option::None);
+    assert_eq!(dispatcher.get_value(3_u8), Option::None);
+
+    // Clear empty iterable map.
+    dispatcher.clear();
+
+    assert_eq!(dispatcher.get_len(), 0);
 }

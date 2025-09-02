@@ -11,6 +11,8 @@ pub trait IMockTrace<TContractState> {
     fn is_empty_mutable(ref self: TContractState) -> bool;
     fn at(self: @TContractState, pos: u64) -> (u64, u128);
     fn at_mutable(ref self: TContractState, pos: u64) -> (u64, u128);
+    fn antepenultimate(self: @TContractState) -> (u64, u128);
+    fn antepenultimate_mutable(ref self: TContractState) -> (u64, u128);
 }
 
 #[starknet::contract]
@@ -78,6 +80,20 @@ pub mod MockTrace {
 
         fn at_mutable(ref self: ContractState, pos: u64) -> (u64, u128) {
             self.trace.at(:pos)
+        }
+
+        fn antepenultimate(self: @ContractState) -> (u64, u128) {
+            match self.trace.antepenultimate() {
+                Result::Ok((key, value)) => (key, value),
+                Result::Err(e) => panic!("{}", e),
+            }
+        }
+
+        fn antepenultimate_mutable(ref self: ContractState) -> (u64, u128) {
+            match self.trace.antepenultimate() {
+                Result::Ok((key, value)) => (key, value),
+                Result::Err(e) => panic!("{}", e),
+            }
         }
     }
 }

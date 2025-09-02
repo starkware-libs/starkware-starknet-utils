@@ -50,6 +50,12 @@ pub impl TraceImpl of TraceTrait {
         self._nth_back(1).map_err(|_e| TraceErrors::PENULTIMATE_NOT_EXIST)
     }
 
+    /// Returns the antepenultimate checkpoint from the trace structure.
+    /// Antepenultimate checkpoint is the third last checkpoint in the trace.
+    fn antepenultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
+        self._nth_back(2)
+    }
+
     /// Returns the total number of checkpoints.
     fn length(self: StoragePath<Trace>) -> u64 {
         self.checkpoints.len()
@@ -122,6 +128,12 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// Penultimate checkpoint is the second last checkpoint in the trace.
     fn penultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
         self.as_non_mut().penultimate()
+    }
+
+    /// Returns the antepenultimate checkpoint from the trace structure.
+    /// Antepenultimate checkpoint is the third last checkpoint in the trace.
+    fn antepenultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
+        self.as_non_mut().antepenultimate()
     }
 
     /// Returns the total number of checkpoints.

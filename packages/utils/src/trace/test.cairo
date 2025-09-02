@@ -30,7 +30,7 @@ fn test_insert_unordered_insertion() {
 }
 
 #[test]
-#[should_panic(expected: "Empty trace")]
+#[should_panic(expected: "Index out of bounds")]
 fn test_latest_empty_trace() {
     let mut mock_trace = CONTRACT_STATE();
 
@@ -62,7 +62,7 @@ fn test_penultimate() {
 }
 
 #[test]
-#[should_panic(expected: "Penultimate does not exist")]
+#[should_panic(expected: "Index out of bounds")]
 fn test_penultimate_not_exist() {
     let mut mock_trace = CONTRACT_STATE();
 
@@ -83,7 +83,7 @@ fn test_length() {
 }
 
 #[test]
-#[should_panic(expected: "Empty trace")]
+#[should_panic(expected: "Index out of bounds")]
 fn test_latest_mutable_empty_trace() {
     let mut mock_trace = CONTRACT_STATE();
 
@@ -172,4 +172,46 @@ fn test_at_mutable_out_of_bounds() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.at_mutable(0);
+}
+
+#[test]
+fn test_antepenultimate() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+    mock_trace.insert(300, 3000);
+
+    let (key, value) = mock_trace.antepenultimate();
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+}
+
+#[test]
+#[should_panic(expected: "Index out of bounds")]
+fn test_antepenultimate_not_exist() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    let _ = mock_trace.antepenultimate();
+}
+
+#[test]
+fn test_antepenultimate_mutable() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    mock_trace.insert(100, 1000);
+    mock_trace.insert(200, 2000);
+    mock_trace.insert(300, 3000);
+
+    let (key, value) = mock_trace.antepenultimate_mutable();
+    assert_eq!(key, 100);
+    assert_eq!(value, 1000);
+}
+
+#[test]
+#[should_panic(expected: "Index out of bounds")]
+fn test_antepenultimate_mutable_not_exist() {
+    let mut mock_trace = CONTRACT_STATE();
+
+    let _ = mock_trace.antepenultimate_mutable();
 }

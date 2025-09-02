@@ -41,13 +41,13 @@ pub impl TraceImpl of TraceTrait {
     /// This will return the last inserted checkpoint that maintains the structure's
     /// invariant of non-decreasing keys.
     fn latest(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
-        self._nth_back(0).map_err(|_e| TraceErrors::EMPTY_TRACE)
+        self._nth_back(0)
     }
 
     /// Retrieves the penultimate checkpoint from the trace structure.
     /// Penultimate checkpoint is the second last checkpoint in the trace.
     fn penultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
-        self._nth_back(1).map_err(|_e| TraceErrors::PENULTIMATE_NOT_EXIST)
+        self._nth_back(1)
     }
 
     /// Returns the total number of checkpoints.

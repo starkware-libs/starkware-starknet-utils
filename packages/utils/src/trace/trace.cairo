@@ -41,25 +41,13 @@ pub impl TraceImpl of TraceTrait {
     /// This will return the last inserted checkpoint that maintains the structure's
     /// invariant of non-decreasing keys.
     fn latest(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
-        let checkpoints = self.checkpoints;
-        let len = checkpoints.len();
-        if len == 0 {
-            return Result::Err(TraceErrors::EMPTY_TRACE);
-        }
-        let checkpoint = checkpoints[len - 1].read();
-        Result::Ok(checkpoint.into())
+        self._nth_back(0).map_err(|_e| TraceErrors::EMPTY_TRACE)
     }
 
     /// Retrieves the penultimate checkpoint from the trace structure.
     /// Penultimate checkpoint is the second last checkpoint in the trace.
     fn penultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
-        let checkpoints = self.checkpoints;
-        let len = checkpoints.len();
-        if len <= 1 {
-            return Result::Err(TraceErrors::PENULTIMATE_NOT_EXIST);
-        }
-        let checkpoint = checkpoints[len - 2].read();
-        Result::Ok(checkpoint.into())
+        self._nth_back(1).map_err(|_e| TraceErrors::PENULTIMATE_NOT_EXIST)
     }
 
     /// Returns the total number of checkpoints.
@@ -156,5 +144,19 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// Returns `true` is the trace is empty.
     fn is_empty(self: StoragePath<Mutable<Trace>>) -> bool {
         self.as_non_mut().is_empty()
+    }
+}
+
+#[generate_trait]
+impl TraceHelperImpl of TraceHelperTrait {
+    /// Returns the `n`th element from the end of the trace.
+    fn _nth_back(self: StoragePath<Trace>, n: u64) -> Result<(u64, u128), TraceErrors> {
+        let checkpoints = self.checkpoints;
+        let len = checkpoints.len();
+        if len <= n {
+            return Result::Err(TraceErrors::INDEX_OUT_OF_BOUNDS);
+        }
+        let checkpoint = checkpoints[len - n - 1].read();
+        Result::Ok(checkpoint.into())
     }
 }

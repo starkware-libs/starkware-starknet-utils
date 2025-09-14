@@ -9,14 +9,14 @@ fn test_insert() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.insert(100, 1000);
-    assert_eq!(mock_trace.latest(), (100, 1000));
+    assert_eq!(mock_trace.last(), (100, 1000));
 
     mock_trace.insert(200, 2000);
-    assert_eq!(mock_trace.latest(), (200, 2000));
+    assert_eq!(mock_trace.last(), (200, 2000));
     assert_eq!(mock_trace.length(), 2);
 
     mock_trace.insert(200, 500);
-    assert_eq!(mock_trace.latest(), (200, 500));
+    assert_eq!(mock_trace.last(), (200, 500));
     assert_eq!(mock_trace.length(), 2);
 }
 
@@ -31,62 +31,62 @@ fn test_insert_unordered_insertion() {
 
 #[test]
 #[should_panic(expected: "Index out of bounds")]
-fn test_latest_empty_trace() {
+fn test_last_empty_trace() {
     let mut mock_trace = CONTRACT_STATE();
 
-    let _ = mock_trace.latest();
+    let _ = mock_trace.last();
 }
 
 #[test]
-fn test_latest() {
+fn test_last() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.insert(100, 1000);
     mock_trace.insert(200, 2000);
 
-    let (key, value) = mock_trace.latest();
+    let (key, value) = mock_trace.last();
     assert_eq!(key, 200);
     assert_eq!(value, 2000);
 }
 
 #[test]
-fn test_penultimate() {
+fn test_second_last() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.insert(100, 1000);
     mock_trace.insert(200, 2000);
 
-    let (key, value) = mock_trace.penultimate();
+    let (key, value) = mock_trace.second_last();
     assert_eq!(key, 100);
     assert_eq!(value, 1000);
 }
 
 #[test]
 #[should_panic(expected: "Index out of bounds")]
-fn test_penultimate_not_exist() {
+fn test_second_last_not_exist() {
     let mut mock_trace = CONTRACT_STATE();
 
-    let _ = mock_trace.penultimate();
+    let _ = mock_trace.second_last();
 }
 
 #[test]
-fn test_penultimate_mutable() {
+fn test_second_last_mutable() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.insert(100, 1000);
     mock_trace.insert(200, 2000);
 
-    let (key, value) = mock_trace.penultimate_mutable();
+    let (key, value) = mock_trace.second_last_mutable();
     assert_eq!(key, 100);
     assert_eq!(value, 1000);
 }
 
 #[test]
 #[should_panic(expected: "Index out of bounds")]
-fn test_penultimate_mutable_not_exist() {
+fn test_second_last_mutable_not_exist() {
     let mut mock_trace = CONTRACT_STATE();
 
-    let _ = mock_trace.penultimate_mutable();
+    let _ = mock_trace.second_last_mutable();
 }
 
 #[test]
@@ -104,22 +104,22 @@ fn test_length() {
 
 #[test]
 #[should_panic(expected: "Index out of bounds")]
-fn test_latest_mutable_empty_trace() {
+fn test_last_mutable_empty_trace() {
     let mut mock_trace = CONTRACT_STATE();
 
-    let _ = mock_trace.latest();
+    let _ = mock_trace.last();
 }
 
 #[test]
-fn test_latest_mutable() {
+fn test_last_mutable() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.insert(100, 1000);
     mock_trace.insert(200, 2000);
 
-    let (key, latest) = mock_trace.latest_mutable();
+    let (key, last) = mock_trace.last_mutable();
     assert_eq!(key, 200);
-    assert_eq!(latest, 2000);
+    assert_eq!(last, 2000);
 }
 
 #[test]
@@ -195,43 +195,43 @@ fn test_at_mutable_out_of_bounds() {
 }
 
 #[test]
-fn test_antepenultimate() {
+fn test_third_last() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.insert(100, 1000);
     mock_trace.insert(200, 2000);
     mock_trace.insert(300, 3000);
 
-    let (key, value) = mock_trace.antepenultimate();
+    let (key, value) = mock_trace.third_last();
     assert_eq!(key, 100);
     assert_eq!(value, 1000);
 }
 
 #[test]
 #[should_panic(expected: "Index out of bounds")]
-fn test_antepenultimate_not_exist() {
+fn test_third_last_not_exist() {
     let mut mock_trace = CONTRACT_STATE();
 
-    let _ = mock_trace.antepenultimate();
+    let _ = mock_trace.third_last();
 }
 
 #[test]
-fn test_antepenultimate_mutable() {
+fn test_third_last_mutable() {
     let mut mock_trace = CONTRACT_STATE();
 
     mock_trace.insert(100, 1000);
     mock_trace.insert(200, 2000);
     mock_trace.insert(300, 3000);
 
-    let (key, value) = mock_trace.antepenultimate_mutable();
+    let (key, value) = mock_trace.third_last_mutable();
     assert_eq!(key, 100);
     assert_eq!(value, 1000);
 }
 
 #[test]
 #[should_panic(expected: "Index out of bounds")]
-fn test_antepenultimate_mutable_not_exist() {
+fn test_third_last_mutable_not_exist() {
     let mut mock_trace = CONTRACT_STATE();
 
-    let _ = mock_trace.antepenultimate_mutable();
+    let _ = mock_trace.third_last_mutable();
 }

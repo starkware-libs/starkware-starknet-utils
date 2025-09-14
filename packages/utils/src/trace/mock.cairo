@@ -1,18 +1,18 @@
 #[starknet::interface]
 pub trait IMockTrace<TContractState> {
     fn insert(ref self: TContractState, key: u64, value: u128);
-    fn latest(self: @TContractState) -> (u64, u128);
-    fn penultimate(self: @TContractState) -> (u64, u128);
+    fn last(self: @TContractState) -> (u64, u128);
+    fn second_last(self: @TContractState) -> (u64, u128);
     fn length(self: @TContractState) -> u64;
     fn is_empty(self: @TContractState) -> bool;
-    fn latest_mutable(ref self: TContractState) -> (u64, u128);
+    fn last_mutable(ref self: TContractState) -> (u64, u128);
     fn length_mutable(ref self: TContractState) -> u64;
-    fn penultimate_mutable(ref self: TContractState) -> (u64, u128);
+    fn second_last_mutable(ref self: TContractState) -> (u64, u128);
     fn is_empty_mutable(ref self: TContractState) -> bool;
     fn at(self: @TContractState, pos: u64) -> (u64, u128);
     fn at_mutable(ref self: TContractState, pos: u64) -> (u64, u128);
-    fn antepenultimate(self: @TContractState) -> (u64, u128);
-    fn antepenultimate_mutable(ref self: TContractState) -> (u64, u128);
+    fn third_last(self: @TContractState) -> (u64, u128);
+    fn third_last_mutable(ref self: TContractState) -> (u64, u128);
 }
 
 #[starknet::contract]
@@ -30,15 +30,15 @@ pub mod MockTrace {
             self.trace.insert(:key, :value)
         }
 
-        fn latest(self: @ContractState) -> (u64, u128) {
-            match self.trace.latest() {
+        fn last(self: @ContractState) -> (u64, u128) {
+            match self.trace.last() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
         }
 
-        fn penultimate(self: @ContractState) -> (u64, u128) {
-            match self.trace.penultimate() {
+        fn second_last(self: @ContractState) -> (u64, u128) {
+            match self.trace.second_last() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
@@ -48,15 +48,15 @@ pub mod MockTrace {
             self.trace.length()
         }
 
-        fn latest_mutable(ref self: ContractState) -> (u64, u128) {
-            match self.trace.latest() {
+        fn last_mutable(ref self: ContractState) -> (u64, u128) {
+            match self.trace.last() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
         }
 
-        fn penultimate_mutable(ref self: ContractState) -> (u64, u128) {
-            match self.trace.penultimate() {
+        fn second_last_mutable(ref self: ContractState) -> (u64, u128) {
+            match self.trace.second_last() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
@@ -82,15 +82,15 @@ pub mod MockTrace {
             self.trace.at(:pos)
         }
 
-        fn antepenultimate(self: @ContractState) -> (u64, u128) {
-            match self.trace.antepenultimate() {
+        fn third_last(self: @ContractState) -> (u64, u128) {
+            match self.trace.third_last() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }
         }
 
-        fn antepenultimate_mutable(ref self: ContractState) -> (u64, u128) {
-            match self.trace.antepenultimate() {
+        fn third_last_mutable(ref self: ContractState) -> (u64, u128) {
+            match self.trace.third_last() {
                 Result::Ok((key, value)) => (key, value),
                 Result::Err(e) => panic!("{}", e),
             }

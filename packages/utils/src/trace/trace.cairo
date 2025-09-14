@@ -31,8 +31,8 @@ pub impl TraceImpl of TraceTrait {
     ///
     /// # Returns
     /// A tuple containing:
-    /// - `u64`: Timestamp/key of the latest checkpoint
-    /// - `u128`: Value stored in the latest checkpoint
+    /// - `u64`: Timestamp/key of the last checkpoint
+    /// - `u128`: Value stored in the last checkpoint
     ///
     /// # Panics
     /// If the trace structure is empty (no checkpoints exist)
@@ -40,19 +40,17 @@ pub impl TraceImpl of TraceTrait {
     /// # Note
     /// This will return the last inserted checkpoint that maintains the structure's
     /// invariant of non-decreasing keys.
-    fn latest(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
+    fn last(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
         self._nth_back(0)
     }
 
-    /// Retrieves the penultimate checkpoint from the trace structure.
-    /// Penultimate checkpoint is the second last checkpoint in the trace.
-    fn penultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
+    /// Retrieves the second last checkpoint from the trace structure.
+    fn second_last(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
         self._nth_back(1)
     }
 
-    /// Returns the antepenultimate checkpoint from the trace structure.
-    /// Antepenultimate checkpoint is the third last checkpoint in the trace.
-    fn antepenultimate(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
+    /// Returns the third last checkpoint from the trace structure.
+    fn third_last(self: StoragePath<Trace>) -> Result<(u64, u128), TraceErrors> {
         self._nth_back(2)
     }
 
@@ -111,8 +109,8 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     ///
     /// # Returns
     /// A tuple containing:
-    /// - `u64`: Timestamp/key of the latest checkpoint
-    /// - `u128`: Value stored in the latest checkpoint
+    /// - `u64`: Timestamp/key of the last checkpoint
+    /// - `u128`: Value stored in the last checkpoint
     ///
     /// # Panics
     /// If the trace structure is empty (no checkpoints exist)
@@ -120,20 +118,18 @@ pub impl MutableTraceImpl of MutableTraceTrait {
     /// # Note
     /// This will return the last inserted checkpoint that maintains the structure's
     /// invariant of non-decreasing keys.
-    fn latest(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
-        self.as_non_mut().latest()
+    fn last(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
+        self.as_non_mut().last()
     }
 
-    /// Retrieves the penultimate checkpoint from the trace structure.
-    /// Penultimate checkpoint is the second last checkpoint in the trace.
-    fn penultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
-        self.as_non_mut().penultimate()
+    /// Retrieves the second last checkpoint from the trace structure.
+    fn second_last(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
+        self.as_non_mut().second_last()
     }
 
-    /// Returns the antepenultimate checkpoint from the trace structure.
-    /// Antepenultimate checkpoint is the third last checkpoint in the trace.
-    fn antepenultimate(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
-        self.as_non_mut().antepenultimate()
+    /// Returns the third last checkpoint from the trace structure.
+    fn third_last(self: StoragePath<Mutable<Trace>>) -> Result<(u64, u128), TraceErrors> {
+        self.as_non_mut().third_last()
     }
 
     /// Returns the total number of checkpoints.

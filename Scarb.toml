@@ -18,10 +18,10 @@ keywords = [
 
 
 [workspace.dependencies]
-starknet = "2.12.0"
+starknet = "2.12.2"
 openzeppelin = "2.0.0"
-snforge_std = "0.48.0"
-assert_macros = "2.12.0"
+snforge_std = "0.49.0"
+assert_macros = "2.12.2"
 
 
 [workspace.tool.fmt]

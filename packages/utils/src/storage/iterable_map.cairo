@@ -3,9 +3,9 @@ use core::iter::{IntoIterator, Iterator};
 use core::pedersen::HashState;
 use starknet::Store;
 use starknet::storage::{
-    Map, Mutable, MutableVecTrait, StorageAsPath, StorageMapReadAccess, StorageMapWriteAccess,
-    StoragePath, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Vec,
-    VecTrait,
+    IntoIterRange, Map, Mutable, MutableVecTrait, StorageAsPath, StorageMapReadAccess,
+    StorageMapWriteAccess, StoragePath, StoragePathEntry, StoragePathMutableConversion,
+    StoragePointerReadAccess, StoragePointerWriteAccess, Vec, VecIter, VecTrait,
 };
 
 /// A Map like struct that represents a map in a contract storage that can also be iterated over.
@@ -22,6 +22,7 @@ pub struct IterableMap<K, V> {
 pub trait IterableMapTrait<T> {
     type Key;
     fn len(self: T) -> u64;
+    fn keys_iter(self: T) -> VecIter<StoragePath<Vec<Self::Key>>>;
 }
 
 impl StoragePathIterableMapImpl<
@@ -31,6 +32,10 @@ impl StoragePathIterableMapImpl<
     fn len(self: StoragePath<IterableMap<K, V>>) -> u64 {
         self._keys.len()
     }
+
+    fn keys_iter(self: StoragePath<IterableMap<K, V>>) -> VecIter<StoragePath<Vec<K>>> {
+        self._keys.as_path().into_iter_full_range()
+    }
 }
 
 impl StoragePathMutableIterableMapImpl<
@@ -39,6 +44,10 @@ impl StoragePathMutableIterableMapImpl<
     type Key = K;
     fn len(self: StoragePath<Mutable<IterableMap<K, V>>>) -> u64 {
         self._keys.len()
+    }
+
+    fn keys_iter(self: StoragePath<Mutable<IterableMap<K, V>>>) -> VecIter<StoragePath<Vec<K>>> {
+        self.as_non_mut().keys_iter()
     }
 }
 
@@ -52,6 +61,10 @@ pub impl IterableMapTraitImpl<
     type Key = StoragePathImpl::Key;
     fn len(self: T) -> u64 {
         self.as_path().len()
+    }
+
+    fn keys_iter(self: T) -> VecIter<StoragePath<Vec<Self::Key>>> {
+        self.as_path().keys_iter()
     }
 }
 

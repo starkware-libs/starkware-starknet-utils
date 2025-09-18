@@ -8,10 +8,13 @@ pub trait IIterableMapTestContract<TContractState> {
     fn get_all_values(ref self: TContractState) -> Span<(u8, i32)>;
     fn get_len(self: @TContractState) -> u64;
     fn clear(ref self: TContractState);
+    fn get_all_keys(self: @TContractState) -> Span<u8>;
+    fn get_all_keys_mut(ref self: TContractState) -> Span<u8>;
 }
 
 #[starknet::contract]
 mod IterableMapTestContract {
+    use starknet::storage::StoragePointerReadAccess;
     use starkware_utils::storage::iterable_map::{
         IterableMap, IterableMapIntoIterImpl, IterableMapReadAccessImpl, IterableMapTrait,
         IterableMapWriteAccessImpl, MutableIterableMapTrait,
@@ -47,6 +50,24 @@ mod IterableMapTestContract {
 
         fn clear(ref self: ContractState) {
             self.iterable_map.clear();
+        }
+
+        fn get_all_keys(self: @ContractState) -> Span<u8> {
+            let mut array = array![];
+            for key in self.iterable_map.keys_iter() {
+                array.append(key.read());
+            }
+
+            array.span()
+        }
+
+        fn get_all_keys_mut(ref self: ContractState) -> Span<u8> {
+            let mut array = array![];
+            for key in self.iterable_map.keys_iter() {
+                array.append(key.read());
+            }
+
+            array.span()
         }
     }
 }
@@ -113,6 +134,38 @@ fn test_iterator() {
     assert_eq!(read_pairs.len(), inserted_pairs.len());
     for i in 0..read_pairs.len() {
         assert_eq!(inserted_pairs.at(i), read_pairs.at(i));
+    }
+}
+
+#[test]
+fn test_keys_iter() {
+    let dispatcher = IIterableMapTestContractDispatcher {
+        contract_address: deploy_iterable_map_test_contract(),
+    };
+
+    let inserted_keys = array![1_u8, 2_u8, 3_u8].span();
+
+    for key in inserted_keys {
+        dispatcher.set_value(*key, 0_i32);
+    }
+
+    let mut read_keys = array![];
+    for key in dispatcher.get_all_keys() {
+        read_keys.append(*key);
+    }
+
+    let mut read_keys_mut = array![];
+    for key in dispatcher.get_all_keys_mut() {
+        read_keys_mut.append(*key);
+    }
+
+    let read_keys = read_keys.span();
+    let read_keys_mut = read_keys_mut.span();
+    assert_eq!(read_keys.len(), inserted_keys.len());
+    assert_eq!(read_keys_mut.len(), inserted_keys.len());
+    for i in 0..inserted_keys.len() {
+        assert_eq!(inserted_keys.at(i), read_keys.at(i));
+        assert_eq!(inserted_keys.at(i), read_keys_mut.at(i));
     }
 }
 

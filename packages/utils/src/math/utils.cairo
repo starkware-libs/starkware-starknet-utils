@@ -1,11 +1,23 @@
 use core::num::traits::WideMul;
 use core::num::traits::one::One;
 use core::num::traits::zero::Zero;
+use core::to_byte_array::FormatAsByteArray;
 
 pub fn have_same_sign(x: i64, y: i64) -> bool {
     (x < 0) == (y < 0)
 }
 
+/// Converts a `felt252` to a `base16` string padded to 66 characters including the `0x` prefix.
+pub fn to_base_16_string(value: felt252) -> ByteArray {
+    let mut string = value.format_as_byte_array(16);
+    let mut padding = 64 - string.len();
+
+    while padding != 0 {
+        string = "0" + string;
+        padding -= 1;
+    }
+    format!("0x{}", string)
+}
 
 /// Converts an array of 8 `u32` values into a single `u256` value.
 ///

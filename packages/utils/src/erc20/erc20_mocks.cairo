@@ -227,19 +227,16 @@ pub(crate) mod SnakeERC20Panic {
         #[external(v0)]
         fn name(self: @ContractState) -> ByteArray {
             panic!("Some error");
-            "3"
         }
 
         #[external(v0)]
         fn symbol(self: @ContractState) -> ByteArray {
             panic!("Some error");
-            "3"
         }
 
         #[external(v0)]
         fn decimals(self: @ContractState) -> u8 {
             panic!("Some error");
-            3
         }
 
         #[external(v0)]
@@ -247,31 +244,26 @@ pub(crate) mod SnakeERC20Panic {
             self: @ContractState, owner: ContractAddress, spender: ContractAddress,
         ) -> u256 {
             panic!("Some error");
-            3
         }
 
         #[external(v0)]
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
             panic!("Some error");
-            false
         }
 
         #[external(v0)]
         fn approve(ref self: ContractState, to: ContractAddress, token_id: u256) -> bool {
             panic!("Some error");
-            false
         }
 
         #[external(v0)]
         fn total_supply(self: @ContractState) -> u256 {
             panic!("Some error");
-            3
         }
 
         #[external(v0)]
         fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
             panic!("Some error");
-            3
         }
 
         #[external(v0)]
@@ -279,7 +271,6 @@ pub(crate) mod SnakeERC20Panic {
             ref self: ContractState, from: ContractAddress, to: ContractAddress, amount: u256,
         ) -> bool {
             panic!("Some error");
-            false
         }
     }
 }
@@ -297,13 +288,11 @@ pub(crate) mod CamelERC20Panic {
         #[external(v0)]
         fn totalSupply(self: @ContractState) -> u256 {
             panic!("Some error");
-            3
         }
 
         #[external(v0)]
         fn balanceOf(self: @ContractState, account: ContractAddress) -> u256 {
             panic!("Some error");
-            3
         }
 
         #[external(v0)]

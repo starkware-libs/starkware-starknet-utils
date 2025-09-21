@@ -1,8 +1,10 @@
 use openzeppelin::account::utils::is_valid_stark_signature;
+use snforge_std::signature::KeyPair;
 
 pub type Signature = Span<felt252>;
 pub type PublicKey = felt252;
 pub type HashType = felt252;
+pub type StarkKeyPair = KeyPair<felt252, felt252>;
 
 
 pub fn validate_stark_signature(public_key: PublicKey, msg_hash: HashType, signature: Signature) {

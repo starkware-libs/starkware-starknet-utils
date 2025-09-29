@@ -84,7 +84,7 @@ pub(crate) mod DualCaseERC20Mock {
 
 #[starknet::contract]
 mod ERC20DecimalsMock {
-    use openzeppelin::token::erc20::interface::IERC20Metadata;
+    use openzeppelin::interfaces::token::erc20::IERC20Metadata;
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};

@@ -18,10 +18,10 @@ keywords = [
 
 
 [workspace.dependencies]
-starknet = "2.12.0"
-openzeppelin = "2.0.0"
-snforge_std = "0.48.0"
-assert_macros = "2.12.0"
+starknet = "2.12.2"
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts/", rev = "0e51722f231c0913915945d3df89e43cbb5cfc38" }
+snforge_std = "0.49.0"
+assert_macros = "2.12.2"
 
 
 [workspace.tool.fmt]
@@ -34,3 +34,4 @@ allow-prebuilt-plugins = ["snforge_std"]
 unstable-add-statements-functions-debug-info = true
 unstable-add-statements-code-locations-debug-info = true
 inlining-strategy = "avoid"
+panic-backtrace = true

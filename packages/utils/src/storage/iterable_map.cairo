@@ -55,7 +55,7 @@ impl StoragePathMutableIterableMapImpl<
     type Key = K;
     type Value = V;
     fn len(self: StoragePath<Mutable<IterableMap<K, V>>>) -> u64 {
-        self._keys.len()
+        self.as_non_mut().len()
     }
 
     fn keys_iter(self: StoragePath<Mutable<IterableMap<K, V>>>) -> VecIter<StoragePath<Vec<K>>> {
@@ -108,7 +108,7 @@ impl StoragePathMutableIterableMapReadAccessImpl<
     type Key = K;
     type Value = Option<V>;
     fn read(self: StoragePath<Mutable<IterableMap<K, V>>>, key: Self::Key) -> Self::Value {
-        self._inner_map.entry(key).read()
+        self.as_non_mut().read(key)
     }
 }
 

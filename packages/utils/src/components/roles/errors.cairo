@@ -1,7 +1,7 @@
 use starkware_utils::errors::{Describable, ErrorDisplay};
 
 #[derive(Drop)]
-pub(crate) enum AccessErrors {
+pub enum AccessErrors {
     INVALID_MINTER,
     INVALID_TOKEN,
     CALLER_MISSING_ROLE,

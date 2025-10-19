@@ -10,3 +10,13 @@ def starknet_test_utils() -> Iterator[StarknetTestUtils]:
         # TODO: replace the sleep with await.
         time.sleep(2)
         yield val
+
+
+@pytest.fixture
+def starknet_test_utils_factory():
+    def _factory(**kwargs):
+        with StarknetTestUtils.context_manager(**kwargs) as val:
+            time.sleep(2)
+            return val
+
+    return _factory

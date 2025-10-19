@@ -100,7 +100,16 @@ class StarknetTestUtils:
 
     @classmethod
     @contextlib.contextmanager
-    def context_manager(cls, port: int | None = None, backoff: float = 0.1):
+    def context_manager(
+        cls,
+        port: int | None = None,
+        seed: int = 500,
+        initial_balance: int = 10**30,
+        starknet_chain_id: StarknetChainId = StarknetChainId.SEPOLIA,
+        fork_network: Optional[str] = None,
+        fork_block: Optional[int] = None,
+        backoff: float = 0.1,
+    ):
         """
         Retry creating a Starknet instance if port is already in use.
         If port is None, will pick random free port.
@@ -108,7 +117,14 @@ class StarknetTestUtils:
         for attempt in range(cls.MAX_RETRIES):
             try:
                 actual_port = port or get_free_port()
-                res = cls(port=actual_port)
+                res = cls(
+                    port=actual_port,
+                    seed=seed,
+                    initial_balance=initial_balance,
+                    starknet_chain_id=starknet_chain_id,
+                    fork_network=fork_network,
+                    fork_block=fork_block,
+                )
                 yield res
                 return
             except OSError as e:

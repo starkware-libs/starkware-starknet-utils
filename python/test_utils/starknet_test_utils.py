@@ -16,6 +16,7 @@ from pathlib import Path
 import socket
 import errno
 import time
+from typing import Optional
 
 
 logger = logging.getLogger(__name__)
@@ -146,6 +147,8 @@ class Starknet:
         initial_balance: int = 10**30,
         accounts: int = 15,
         starknet_chain_id: StarknetChainId = StarknetChainId.SEPOLIA,
+        fork_network: Optional[str] = None,
+        fork_block: Optional[int] = None,
     ):
         """
         Runs starknet.
@@ -170,6 +173,12 @@ class Starknet:
             str(self.accounts),
             "--lite-mode",
         ]
+
+        if fork_network is not None:
+            command.extend(["--fork-network", fork_network])
+
+        if fork_block is not None:
+            command.extend(["--fork-block", str(fork_block)])
 
         self.starknet_proc = subprocess.Popen(
             command,

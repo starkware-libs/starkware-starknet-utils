@@ -5,11 +5,10 @@ import signal
 import subprocess
 import tempfile
 from starknet_py.net.account.account import Account
-from starknet_py.net.full_node_client import FullNodeClient
+from starknet_py.devnet_utils import DevnetClient
 from starknet_py.net.models.chains import StarknetChainId
 from starknet_py.net.signer.key_pair import KeyPair
 from starknet_py.net.signer.stark_curve_signer import StarkCurveSigner
-import requests
 from starknet_py.contract import Contract
 import re
 from pathlib import Path
@@ -91,8 +90,25 @@ class StarknetTestUtils:
 
     MAX_RETRIES = 5
 
-    def __init__(self, port: int):
-        self.starknet = Starknet(port=port)
+    def __init__(
+        self,
+        port: int,
+        seed: int,
+        initial_balance: int,
+        accounts: int,
+        starknet_chain_id: StarknetChainId,
+        fork_network: Optional[str],
+        fork_block: Optional[int],
+    ):
+        self.starknet = Starknet(
+            port=port,
+            seed=seed,
+            initial_balance=initial_balance,
+            accounts=accounts,
+            starknet_chain_id=starknet_chain_id,
+            fork_network=fork_network,
+            fork_block=fork_block,
+        )
         self.accounts = self.starknet.accounts
 
     def stop(self):
@@ -100,7 +116,16 @@ class StarknetTestUtils:
 
     @classmethod
     @contextlib.contextmanager
-    def context_manager(cls, port: int | None = None, backoff: float = 0.1):
+    def context_manager(
+        cls,
+        port: int | None = None,
+        seed: int = 500,
+        initial_balance: int = 10**30,
+        starknet_chain_id: StarknetChainId = StarknetChainId.SEPOLIA,
+        fork_network: Optional[str] = None,
+        fork_block: Optional[int] = None,
+        backoff: float = 0.1,
+    ):
         """
         Retry creating a Starknet instance if port is already in use.
         If port is None, will pick random free port.
@@ -108,7 +133,14 @@ class StarknetTestUtils:
         for attempt in range(cls.MAX_RETRIES):
             try:
                 actual_port = port or get_free_port()
-                res = cls(port=actual_port)
+                res = cls(
+                    port=actual_port,
+                    seed=seed,
+                    initial_balance=initial_balance,
+                    starknet_chain_id=starknet_chain_id,
+                    fork_network=fork_network,
+                    fork_block=fork_block,
+                )
                 yield res
                 return
             except OSError as e:
@@ -124,15 +156,7 @@ class StarknetTestUtils:
                     pass
 
     def advance_time(self, n_seconds: int):
-        payload = {
-            "jsonrpc": "2.0",
-            "id": "1",
-            "method": "devnet_increaseTime",
-            "params": {"time": n_seconds},
-        }
-        rpc_url = f"{self.starknet.get_client().url}\rpc"
-        response = requests.post(rpc_url, json=payload)
-        response.raise_for_status()
+        self.starknet.get_client().increase_time(n_seconds)
 
 
 class Starknet:
@@ -206,9 +230,9 @@ class Starknet:
     def __del__(self):
         self.stop()
 
-    def get_client(self) -> FullNodeClient:
+    def get_client(self) -> DevnetClient:
         node_url = f"http://localhost:{self.port}"
-        return FullNodeClient(node_url=node_url)
+        return DevnetClient(node_url=node_url)
 
     def stop(self):
         if not self.is_alive:

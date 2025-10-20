@@ -120,6 +120,7 @@ class StarknetTestUtils:
         cls,
         port: int | None = None,
         seed: int = 500,
+        accounts: int = 15,
         initial_balance: int = 10**30,
         starknet_chain_id: StarknetChainId = StarknetChainId.SEPOLIA,
         fork_network: Optional[str] = None,
@@ -136,6 +137,7 @@ class StarknetTestUtils:
                 res = cls(
                     port=actual_port,
                     seed=seed,
+                    accounts=accounts,
                     initial_balance=initial_balance,
                     starknet_chain_id=starknet_chain_id,
                     fork_network=fork_network,

@@ -5,7 +5,7 @@ import signal
 import subprocess
 import tempfile
 from starknet_py.net.account.account import Account
-from starknet_py.devnet_utils import DevnetClient
+from starknet_py.devnet_utils.devnet_client import DevnetClient
 from starknet_py.net.models.chains import StarknetChainId
 from starknet_py.net.signer.key_pair import KeyPair
 from starknet_py.net.signer.stark_curve_signer import StarkCurveSigner

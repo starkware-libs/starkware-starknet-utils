@@ -10,7 +10,7 @@ requires-python = ">=3.7"
 dependencies = [
     "pytest>=7.0",
     "pytest-asyncio",
-    "starknet-py",
+    "starknet-py>=0.28.0",
     "requests",
     "pytest-xdist"
 ]

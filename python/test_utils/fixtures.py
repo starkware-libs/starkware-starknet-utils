@@ -1,6 +1,7 @@
 import pytest
 from test_utils.starknet_test_utils import StarknetTestUtils
 from typing import Iterator
+import contextlib
 import time
 
 
@@ -10,3 +11,14 @@ def starknet_test_utils() -> Iterator[StarknetTestUtils]:
         # TODO: replace the sleep with await.
         time.sleep(2)
         yield val
+
+
+@pytest.fixture
+def starknet_test_utils_factory():
+    @contextlib.contextmanager
+    def _factory(**kwargs):
+        with StarknetTestUtils.context_manager(**kwargs) as val:
+            time.sleep(2)
+            yield val
+
+    return _factory

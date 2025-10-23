@@ -18,7 +18,7 @@ def starknet_test_utils_factory():
     @contextlib.contextmanager
     def _factory(**kwargs):
         with StarknetTestUtils.context_manager(**kwargs) as val:
-            time.sleep(2)
+            time.sleep(10)
             yield val
 
     return _factory

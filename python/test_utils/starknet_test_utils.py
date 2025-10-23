@@ -99,6 +99,7 @@ class StarknetTestUtils:
         starknet_chain_id: StarknetChainId,
         fork_network: Optional[str],
         fork_block: Optional[int],
+        request_body_size_limit: Optional[int],
     ):
         self.starknet = Starknet(
             port=port,
@@ -108,6 +109,7 @@ class StarknetTestUtils:
             starknet_chain_id=starknet_chain_id,
             fork_network=fork_network,
             fork_block=fork_block,
+            request_body_size_limit=request_body_size_limit,
         )
         self.accounts = self.starknet.accounts
 
@@ -125,6 +127,7 @@ class StarknetTestUtils:
         starknet_chain_id: StarknetChainId = StarknetChainId.SEPOLIA,
         fork_network: Optional[str] = None,
         fork_block: Optional[int] = None,
+        request_body_size_limit: Optional[int] = None,
         backoff: float = 0.1,
     ):
         """
@@ -142,6 +145,7 @@ class StarknetTestUtils:
                     starknet_chain_id=starknet_chain_id,
                     fork_network=fork_network,
                     fork_block=fork_block,
+                    request_body_size_limit=request_body_size_limit,
                 )
                 yield res
                 return
@@ -175,6 +179,7 @@ class Starknet:
         starknet_chain_id: StarknetChainId = StarknetChainId.SEPOLIA,
         fork_network: Optional[str] = None,
         fork_block: Optional[int] = None,
+        request_body_size_limit: Optional[int] = None,
     ):
         """
         Runs starknet.
@@ -205,6 +210,8 @@ class Starknet:
 
         if fork_block is not None:
             command.extend(["--fork-block", str(fork_block)])
+        if request_body_size_limit is not None:
+            command.extend(["--request-body-size-limit", str(request_body_size_limit)])
 
         self.starknet_proc = subprocess.Popen(
             command,

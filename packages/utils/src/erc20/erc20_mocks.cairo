@@ -1,3 +1,10 @@
+use starknet::ContractAddress;
+
+#[starknet::interface]
+pub trait IERC20Burnable<TContractState> {
+    fn burn(ref self: TContractState, account: ContractAddress, amount: u256);
+}
+
 #[starknet::contract]
 pub(crate) mod DualCaseERC20Mock {
     use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
@@ -36,6 +43,14 @@ pub(crate) mod DualCaseERC20Mock {
     ) {
         self.erc20.initializer(name, symbol);
         self.erc20.mint(recipient, initial_supply);
+    }
+
+    #[abi(embed_v0)]
+    impl IERC20BurnableImpl of super::IERC20Burnable<ContractState> {
+        fn burn(ref self: ContractState, account: ContractAddress, amount: u256) {
+            // TODO: Consider allowing only specific accounts to burn tokens.
+            self.erc20.burn(account, amount);
+        }
     }
 }
 

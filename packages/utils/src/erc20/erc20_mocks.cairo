@@ -1,9 +1,12 @@
 #[starknet::contract]
 pub(crate) mod DualCaseERC20Mock {
+    use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
+    use starkware_utils::interfaces::mintable_token::IMintableToken;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
@@ -12,11 +15,16 @@ pub(crate) mod DualCaseERC20Mock {
     #[abi(embed_v0)]
     impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
     impl InternalImpl = ERC20Component::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
         erc20: ERC20Component::Storage,
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage,
     }
 
     #[event]
@@ -24,6 +32,8 @@ pub(crate) mod DualCaseERC20Mock {
     enum Event {
         #[flat]
         ERC20Event: ERC20Component::Event,
+        #[flat]
+        OwnableEvent: OwnableComponent::Event,
     }
 
     #[constructor]
@@ -32,10 +42,28 @@ pub(crate) mod DualCaseERC20Mock {
         name: ByteArray,
         symbol: ByteArray,
         initial_supply: u256,
-        recipient: ContractAddress,
+        owner: ContractAddress,
     ) {
         self.erc20.initializer(name, symbol);
-        self.erc20.mint(recipient, initial_supply);
+        self.erc20.mint(recipient: owner, amount: initial_supply);
+        self.ownable.initializer(:owner);
+    }
+
+    #[abi(embed_v0)]
+    impl IMintableTokenImpl of IMintableToken<ContractState> {
+        fn permissioned_mint(ref self: ContractState, account: ContractAddress, amount: u256) {
+            self.ownable.assert_only_owner();
+            self.erc20.mint(recipient: account, :amount);
+        }
+
+        fn permissioned_burn(ref self: ContractState, account: ContractAddress, amount: u256) {
+            self.ownable.assert_only_owner();
+            self.erc20.burn(:account, :amount);
+        }
+
+        fn is_permitted_minter(self: @ContractState, account: ContractAddress) -> bool {
+            self.ownable.owner() == account
+        }
     }
 }
 

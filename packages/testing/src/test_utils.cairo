@@ -189,6 +189,7 @@ pub fn assert_expected_event_emitted<T, +starknet::Event<T>, +Drop<T>, +Debug<T>
 pub struct TokenConfig {
     pub name: ByteArray,
     pub symbol: ByteArray,
+    pub decimals: u8,
     pub initial_supply: u256,
     pub owner: ContractAddress,
 }
@@ -210,6 +211,7 @@ pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
         let mut calldata = ArrayTrait::new();
         self.name.serialize(ref calldata);
         self.symbol.serialize(ref calldata);
+        self.decimals.serialize(ref calldata);
         self.initial_supply.serialize(ref calldata);
         self.owner.serialize(ref calldata);
         let token_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();

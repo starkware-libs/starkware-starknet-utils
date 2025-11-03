@@ -5,8 +5,8 @@ pub(crate) mod RolesComponent {
         AppRoleAdminRemoved, GOVERNANCE_ADMIN, GovernanceAdminAdded, GovernanceAdminRemoved, IRoles,
         OPERATOR, OperatorAdded, OperatorRemoved, RoleId, SECURITY_ADMIN, SECURITY_AGENT,
         SecurityAdminAdded, SecurityAdminRemoved, SecurityAgentAdded, SecurityAgentRemoved,
-        TOKEN_ADMIN, TokenAdminAdded, TokenAdminRemoved, UPGRADE_GOVERNOR, UpgradeGovernorAdded,
-        UpgradeGovernorRemoved,
+        TOKEN_ADMIN, TokenAdminAdded, TokenAdminRemoved,UPGRADE_AGENT, UPGRADE_GOVERNOR, UpgradeAgentAdded, UpgradeGovernorAdded,
+        UpgradeGovernorRemoved, UpgradeAgentRemoved,
     };
     use core::num::traits::Zero;
     use starknet::storage::StorageMapReadAccess;
@@ -40,6 +40,8 @@ pub(crate) mod RolesComponent {
         TokenAdminRemoved: TokenAdminRemoved,
         UpgradeGovernorAdded: UpgradeGovernorAdded,
         UpgradeGovernorRemoved: UpgradeGovernorRemoved,
+        UpgradeAgentAdded: UpgradeAgentAdded,
+        UpgradeAgentRemoved: UpgradeAgentRemoved,
     }
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::access::accesscontrol::AccessControlComponent::{
@@ -98,6 +100,13 @@ pub(crate) mod RolesComponent {
         fn is_token_admin(self: @ComponentState<TContractState>, account: ContractAddress) -> bool {
             let access_comp = get_dep_component!(self, Access);
             access_comp.has_role(role: TOKEN_ADMIN, :account)
+        }
+
+        fn is_upgrade_agent(
+            self: @ComponentState<TContractState>, account: ContractAddress,
+        ) -> bool {
+            let access_comp = get_dep_component!(self, Access);
+            access_comp.has_role(role: UPGRADE_AGENT, :account)
         }
 
         fn is_upgrade_governor(
@@ -228,6 +237,24 @@ pub(crate) mod RolesComponent {
                 TokenAdminRemoved { removed_account: account, removed_by: get_caller_address() },
             );
             self._revoke_role_and_emit(role: TOKEN_ADMIN, :account, :event);
+        }
+
+        fn register_upgrade_agent(
+            ref self: ComponentState<TContractState>, account: ContractAddress,
+        ) {
+            let event = Event::UpgradeAgentAdded(
+                UpgradeAgentAdded { added_account: account, added_by: get_caller_address() },
+            );
+            self._grant_role_and_emit(role: UPGRADE_AGENT, :account, :event);
+        }
+
+        fn remove_upgrade_agent(
+            ref self: ComponentState<TContractState>, account: ContractAddress,
+        ) {
+            let event = Event::UpgradeAgentRemoved(
+                UpgradeAgentRemoved { removed_account: account, removed_by: get_caller_address() },
+            );
+            self._revoke_role_and_emit(role: UPGRADE_AGENT, :account, :event);
         }
 
         fn register_upgrade_governor(
@@ -361,19 +388,31 @@ pub(crate) mod RolesComponent {
                 self.is_app_governor(get_caller_address()), "{}", AccessErrors::ONLY_APP_GOVERNOR,
             );
         }
+
         fn only_operator(self: @ComponentState<TContractState>) {
             assert!(self.is_operator(get_caller_address()), "{}", AccessErrors::ONLY_OPERATOR);
         }
+
         fn only_token_admin(self: @ComponentState<TContractState>) {
             assert!(
                 self.is_token_admin(get_caller_address()), "{}", AccessErrors::ONLY_TOKEN_ADMIN,
             );
         }
+
         fn only_upgrade_governor(self: @ComponentState<TContractState>) {
             assert!(
                 self.is_upgrade_governor(get_caller_address()),
                 "{}",
                 AccessErrors::ONLY_UPGRADE_GOVERNOR,
+            );
+        }
+
+        fn only_upgrader(self: @ComponentState<TContractState>) {
+            assert!(
+                self.is_upgrade_agent(get_caller_address())
+                    || self.is_upgrade_governor(get_caller_address()),
+                "{}",
+                AccessErrors::ONLY_UPGRADER,
             );
         }
 

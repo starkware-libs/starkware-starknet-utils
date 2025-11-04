@@ -210,6 +210,100 @@ fn test_remove_upgrade_governor() {
     assert!(!roles_dispatcher.is_upgrade_governor(account: upgrade_governor));
 }
 
+#[feature("safe_dispatcher")]
+#[test]
+fn test_register_upgrade_agent() {
+    // Deploy mock contract.
+    let contract_address = test_utils::deploy_mock_contract();
+    let roles_dispatcher = IRolesDispatcher { contract_address };
+    let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let upgrade_governor = constants::UPGRADE_GOVERNOR;
+    let wrong_admin = constants::WRONG_ADMIN;
+
+    // Try to add zero address as upgrade governor.
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    let result = roles_safe_dispatcher.register_upgrade_governor(account: Zero::zero());
+    assert_panic_with_error(:result, expected_error: AccessErrors::ZERO_ADDRESS.describe());
+
+    // Try to add upgrade governor with unqualified caller.
+    cheat_caller_address_once(:contract_address, caller_address: wrong_admin);
+    let result = roles_safe_dispatcher.register_upgrade_governor(account: upgrade_governor);
+    assert_panic_with_felt_error(:result, expected_error: OZAccessErrors::MISSING_ROLE);
+
+    // Register upgrade governor and perform the corresponding checks.
+    let mut spy = snforge_std::spy_events();
+    assert!(!roles_dispatcher.is_upgrade_governor(account: upgrade_governor));
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    roles_dispatcher.register_upgrade_governor(account: upgrade_governor);
+
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    // We only check events[1] because events[0] is an event emitted by OZ AccessControl.
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "test_register_upgrade_governor first",
+    );
+    event_test_utils::assert_upgrade_governor_added_event(
+        events[1], added_account: upgrade_governor, added_by: governance_admin,
+    );
+    assert!(roles_dispatcher.is_upgrade_governor(account: upgrade_governor));
+
+    // Register upgrade governor that is already registered (should not emit events).
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    roles_dispatcher.register_upgrade_governor(account: upgrade_governor);
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 0, message: "test_register_upgrade_governor second",
+    );
+}
+
+
+#[feature("safe_dispatcher")]
+#[test]
+fn test_remove_upgrade_agent() {
+    // Deploy mock contract.
+    let contract_address = test_utils::deploy_mock_contract();
+    let roles_dispatcher = IRolesDispatcher { contract_address };
+    let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let upgrade_agent = constants::UPGRADE_AGENT;
+    let wrong_admin = constants::WRONG_ADMIN;
+
+    // Remove upgrade governor that was not registered (should not emit events).
+    assert!(!roles_dispatcher.is_upgrade_agent(account: upgrade_agent));
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    roles_dispatcher.remove_upgrade_agent(account: upgrade_agent);
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 0, message: "test_remove_upgrade_agent first",
+    );
+
+    // Register upgrade governor.
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    roles_dispatcher.register_upgrade_agent(account: upgrade_agent);
+
+    // Try to remove upgrade governor with unqualified caller.
+    cheat_caller_address_once(:contract_address, caller_address: wrong_admin);
+    let result = roles_safe_dispatcher.remove_upgrade_agent(account: upgrade_agent);
+    assert_panic_with_felt_error(:result, expected_error: OZAccessErrors::MISSING_ROLE);
+
+    // Remove upgrade governor and perform the corresponding checks.
+    assert!(roles_dispatcher.is_upgrade_agent(account: upgrade_agent));
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    roles_dispatcher.remove_upgrade_agent(account: upgrade_agent);
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    // We only check events[1] because events[0] is an event emitted by OZ AccessControl.
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "test_remove_upgrade_agent second",
+    );
+    event_test_utils::assert_upgrade_agent_removed_event(
+        events[1], removed_account: upgrade_agent, removed_by: governance_admin,
+    );
+    assert!(!roles_dispatcher.is_upgrade_agent(account: upgrade_agent));
+}
+
 
 #[test]
 #[feature("safe_dispatcher")]

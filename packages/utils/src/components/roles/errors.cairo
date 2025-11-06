@@ -37,6 +37,7 @@ impl DescribableError of Describable<AccessErrors> {
             AccessErrors::ONLY_UPGRADER => "ONLY_UPGRADER",
             AccessErrors::ONLY_SECURITY_ADMIN => "ONLY_SECURITY_ADMIN",
             AccessErrors::ONLY_SECURITY_AGENT => "ONLY_SECURITY_AGENT",
+            AccessErrors::ONLY_SECURITY_GOVERNOR => "ONLY_SECURITY_GOVERNOR",
             AccessErrors::ONLY_MINTER => "MINTER_ONLY",
             AccessErrors::ONLY_SELF_CAN_RENOUNCE => "ONLY_SELF_CAN_RENOUNCE",
             AccessErrors::GOV_ADMIN_CANNOT_RENOUNCE => "GOV_ADMIN_CANNOT_SELF_REMOVE",

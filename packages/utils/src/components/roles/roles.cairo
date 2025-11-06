@@ -4,9 +4,10 @@ pub(crate) mod RolesComponent {
         APP_GOVERNOR, APP_ROLE_ADMIN, AppGovernorAdded, AppGovernorRemoved, AppRoleAdminAdded,
         AppRoleAdminRemoved, GOVERNANCE_ADMIN, GovernanceAdminAdded, GovernanceAdminRemoved, IRoles,
         OPERATOR, OperatorAdded, OperatorRemoved, RoleId, SECURITY_ADMIN, SECURITY_AGENT,
-        SecurityAdminAdded, SecurityAdminRemoved, SecurityAgentAdded, SecurityAgentRemoved,
-        TOKEN_ADMIN, TokenAdminAdded, TokenAdminRemoved, UPGRADE_AGENT, UPGRADE_GOVERNOR,
-        UpgradeAgentAdded, UpgradeAgentRemoved, UpgradeGovernorAdded, UpgradeGovernorRemoved,
+        SECURITY_GOVERNOR, SecurityAdminAdded, SecurityAdminRemoved, SecurityAgentAdded,
+        SecurityAgentRemoved, SecurityGovernorAdded, SecurityGovernorRemoved, TOKEN_ADMIN,
+        TokenAdminAdded, TokenAdminRemoved, UPGRADE_AGENT, UPGRADE_GOVERNOR, UpgradeAgentAdded,
+        UpgradeAgentRemoved, UpgradeGovernorAdded, UpgradeGovernorRemoved,
     };
     use core::num::traits::Zero;
     use starknet::storage::StorageMapReadAccess;
@@ -36,6 +37,8 @@ pub(crate) mod RolesComponent {
         SecurityAdminRemoved: SecurityAdminRemoved,
         SecurityAgentAdded: SecurityAgentAdded,
         SecurityAgentRemoved: SecurityAgentRemoved,
+        SecurityGovernorAdded: SecurityGovernorAdded,
+        SecurityGovernorRemoved: SecurityGovernorRemoved,
         TokenAdminAdded: TokenAdminAdded,
         TokenAdminRemoved: TokenAdminRemoved,
         UpgradeGovernorAdded: UpgradeGovernorAdded,
@@ -95,6 +98,13 @@ pub(crate) mod RolesComponent {
         ) -> bool {
             let access_comp = get_dep_component!(self, Access);
             access_comp.has_role(role: SECURITY_AGENT, :account)
+        }
+
+        fn is_security_governor(
+            self: @ComponentState<TContractState>, account: ContractAddress,
+        ) -> bool {
+            let access_comp = get_dep_component!(self, Access);
+            access_comp.has_role(role: SECURITY_GOVERNOR, :account)
         }
 
         fn is_token_admin(self: @ComponentState<TContractState>, account: ContractAddress) -> bool {
@@ -186,6 +196,25 @@ pub(crate) mod RolesComponent {
             self._revoke_role_and_emit(role: SECURITY_AGENT, :account, :event);
         }
 
+        fn register_security_governor(
+            ref self: ComponentState<TContractState>, account: ContractAddress,
+        ) {
+            let event = Event::SecurityGovernorAdded(
+                SecurityGovernorAdded { added_account: account, added_by: get_caller_address() },
+            );
+            self._grant_role_and_emit(role: SECURITY_GOVERNOR, :account, :event);
+        }
+
+        fn remove_security_governor(
+            ref self: ComponentState<TContractState>, account: ContractAddress,
+        ) {
+            let event = Event::SecurityGovernorRemoved(
+                SecurityGovernorRemoved {
+                    removed_account: account, removed_by: get_caller_address(),
+                },
+            );
+            self._revoke_role_and_emit(role: SECURITY_GOVERNOR, :account, :event);
+        }
 
         fn register_governance_admin(
             ref self: ComponentState<TContractState>, account: ContractAddress,
@@ -382,6 +411,7 @@ pub(crate) mod RolesComponent {
             access_comp._grant_role(role: SECURITY_ADMIN, account: governance_admin);
             access_comp.set_role_admin(role: SECURITY_ADMIN, admin_role: SECURITY_ADMIN);
             access_comp.set_role_admin(role: SECURITY_AGENT, admin_role: SECURITY_ADMIN);
+            access_comp.set_role_admin(role: SECURITY_GOVERNOR, admin_role: SECURITY_ADMIN);
         }
 
         fn only_app_governor(self: @ComponentState<TContractState>) {
@@ -430,6 +460,14 @@ pub(crate) mod RolesComponent {
                 self.is_security_agent(get_caller_address()),
                 "{}",
                 AccessErrors::ONLY_SECURITY_AGENT,
+            );
+        }
+
+        fn only_security_governor(self: @ComponentState<TContractState>) {
+            assert!(
+                self.is_security_governor(get_caller_address()),
+                "{}",
+                AccessErrors::ONLY_SECURITY_GOVERNOR,
             );
         }
     }

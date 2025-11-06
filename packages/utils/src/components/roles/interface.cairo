@@ -12,6 +12,7 @@ pub type RoleId = felt252;
 // TOKEN_ADMIN         |   APP_ROLE_ADMIN
 // SECURITY_ADMIN      |   SECURITY_ADMIN
 // SECURITY_AGENT      |   SECURITY_ADMIN.
+// SECURITY_GOVERNOR   |   SECURITY_ADMIN.
 
 // int.from_bytes(Web3.keccak(text="ROLE_APP_GOVERNOR"), "big") & MASK_250 .
 pub const APP_GOVERNOR: RoleId = 0xd2ead78c620e94b02d0a996e99298c59ddccfa1d8a0149080ac3a20de06068;
@@ -45,6 +46,10 @@ pub const SECURITY_ADMIN: RoleId =
 pub const SECURITY_AGENT: RoleId =
     0x37693ba312785932d430dccf0f56ffedd0aa7c0f8b6da2cc4530c2717689b96;
 
+// int.from_bytes(Web3.keccak(text="ROLE_SECURITY_GOVERNOR"), "big") & MASK_250 .
+pub const SECURITY_GOVERNOR: RoleId =
+    0xa5a83e9807e87f281d865ab54b7b0ed2f7f4bbfef73888810ca16e95e734eb;
+
 #[starknet::interface]
 pub trait IRoles<TContractState> {
     fn is_app_governor(self: @TContractState, account: ContractAddress) -> bool;
@@ -56,6 +61,7 @@ pub trait IRoles<TContractState> {
     fn is_upgrade_governor(self: @TContractState, account: ContractAddress) -> bool;
     fn is_security_admin(self: @TContractState, account: ContractAddress) -> bool;
     fn is_security_agent(self: @TContractState, account: ContractAddress) -> bool;
+    fn is_security_governor(self: @TContractState, account: ContractAddress) -> bool;
     fn register_app_governor(ref self: TContractState, account: ContractAddress);
     fn remove_app_governor(ref self: TContractState, account: ContractAddress);
     fn register_app_role_admin(ref self: TContractState, account: ContractAddress);
@@ -75,6 +81,8 @@ pub trait IRoles<TContractState> {
     fn remove_security_admin(ref self: TContractState, account: ContractAddress);
     fn register_security_agent(ref self: TContractState, account: ContractAddress);
     fn remove_security_agent(ref self: TContractState, account: ContractAddress);
+    fn register_security_governor(ref self: TContractState, account: ContractAddress);
+    fn remove_security_governor(ref self: TContractState, account: ContractAddress);
     fn has_legacy_role(self: @TContractState, account: ContractAddress, role: RoleId) -> bool;
     fn reclaim_legacy_roles(ref self: TContractState);
 }
@@ -142,6 +150,18 @@ pub(crate) struct SecurityAgentAdded {
 
 #[derive(Copy, Drop, PartialEq, starknet::Event)]
 pub(crate) struct SecurityAgentRemoved {
+    pub removed_account: ContractAddress,
+    pub removed_by: ContractAddress,
+}
+
+#[derive(Copy, Drop, PartialEq, starknet::Event)]
+pub(crate) struct SecurityGovernorAdded {
+    pub added_account: ContractAddress,
+    pub added_by: ContractAddress,
+}
+
+#[derive(Copy, Drop, PartialEq, starknet::Event)]
+pub(crate) struct SecurityGovernorRemoved {
     pub removed_account: ContractAddress,
     pub removed_by: ContractAddress,
 }

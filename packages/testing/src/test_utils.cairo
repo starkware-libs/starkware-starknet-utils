@@ -214,7 +214,7 @@ pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
         self.decimals.serialize(ref calldata);
         self.initial_supply.serialize(ref calldata);
         self.owner.serialize(ref calldata);
-        let token_contract = snforge_std::declare("ERC20DecimalsMock").unwrap().contract_class();
+        let token_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();
         let (address, _) = token_contract.deploy(@calldata).unwrap();
         TokenState { address, owner: *self.owner }
     }

@@ -2,10 +2,7 @@ use core::fmt::Debug;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::byte_array::try_deserialize_bytearray_error;
 use snforge_std::cheatcodes::events::Event;
-use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address,
-    start_cheat_block_number_global,
-};
+use snforge_std::{CheatSpan, cheat_caller_address, start_cheat_block_number_global};
 use starknet::ContractAddress;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starkware_utils::erc20::test_utils::deploy_mock_erc20_contract;
@@ -214,6 +211,7 @@ pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
             owner_address: *self.owner,
             name: self.name.clone(),
             symbol: self.symbol.clone(),
+            decimals: *self.decimals,
         );
         TokenState { address, owner: *self.owner }
     }

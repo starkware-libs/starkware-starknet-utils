@@ -8,6 +8,7 @@ use snforge_std::{
 };
 use starknet::ContractAddress;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starkware_utils::erc20::test_utils::deploy_mock_erc20_contract;
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use starkware_utils_testing::constants as testing_constants;
 
@@ -208,14 +209,12 @@ pub trait Deployable<T, V> {
 
 pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
     fn deploy(self: @TokenConfig) -> TokenState {
-        let mut calldata = ArrayTrait::new();
-        self.name.serialize(ref calldata);
-        self.symbol.serialize(ref calldata);
-        self.decimals.serialize(ref calldata);
-        self.initial_supply.serialize(ref calldata);
-        self.owner.serialize(ref calldata);
-        let token_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();
-        let (address, _) = token_contract.deploy(@calldata).unwrap();
+        let address = deploy_mock_erc20_contract(
+            initial_supply: *self.initial_supply,
+            owner_address: *self.owner,
+            name: self.name.clone(),
+            symbol: self.symbol.clone(),
+        );
         TokenState { address, owner: *self.owner }
     }
 }

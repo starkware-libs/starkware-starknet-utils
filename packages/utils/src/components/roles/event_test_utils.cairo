@@ -197,6 +197,50 @@ pub(crate) fn assert_upgrade_governor_added_event(
     }
 }
 
+pub(crate) fn assert_upgrade_agent_added_event(
+    spied_event: @(ContractAddress, Event),
+    added_account: ContractAddress,
+    added_by: ContractAddress,
+) {
+    let expected_event = @MockContract::Event::RolesEvent(
+        RolesEvent::UpgradeAgentAdded(
+            RolesInterface::UpgradeAgentAdded { added_account, added_by },
+        ),
+    );
+    let (expected_emitted_by, raw_event) = spied_event;
+    let wrapped_spied_event = Events { events: array![(*expected_emitted_by, raw_event.clone())] };
+    let emitted = is_emitted(self: @wrapped_spied_event, :expected_emitted_by, :expected_event);
+    if !emitted {
+        let details = format!(
+            "UpgradeAgentAdded{{added_account: {:?}, added_by: {:?}}}", added_account, added_by,
+        );
+        panic_with_event_details(:expected_emitted_by, :details);
+    }
+}
+
+pub(crate) fn assert_upgrade_agent_removed_event(
+    spied_event: @(ContractAddress, Event),
+    removed_account: ContractAddress,
+    removed_by: ContractAddress,
+) {
+    let expected_event = @MockContract::Event::RolesEvent(
+        RolesEvent::UpgradeAgentRemoved(
+            RolesInterface::UpgradeAgentRemoved { removed_account, removed_by },
+        ),
+    );
+    let (expected_emitted_by, raw_event) = spied_event;
+    let wrapped_spied_event = Events { events: array![(*expected_emitted_by, raw_event.clone())] };
+    let emitted = is_emitted(self: @wrapped_spied_event, :expected_emitted_by, :expected_event);
+    if !emitted {
+        let details = format!(
+            "UpgradeAgentRemoved{{removed_account: {:?}, removed_by: {:?}}}",
+            removed_account,
+            removed_by,
+        );
+        panic_with_event_details(:expected_emitted_by, :details);
+    }
+}
+
 pub(crate) fn assert_upgrade_governor_removed_event(
     spied_event: @(ContractAddress, Event),
     removed_account: ContractAddress,

@@ -206,16 +206,35 @@ pub trait Deployable<T, V> {
     fn deploy(self: @T) -> V;
 }
 
+
+pub fn deploy_mock_erc20_contract(
+    initial_supply: u256,
+    owner_address: ContractAddress,
+    name: ByteArray,
+    symbol: ByteArray,
+    decimals: u8,
+) -> ContractAddress {
+    let mut calldata = ArrayTrait::new();
+    name.serialize(ref calldata);
+    symbol.serialize(ref calldata);
+    decimals.serialize(ref calldata);
+    initial_supply.serialize(ref calldata);
+    owner_address.serialize(ref calldata);
+    let erc20_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();
+    let (token_address, _) = erc20_contract.deploy(@calldata).unwrap();
+    token_address
+}
+
+
 pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
     fn deploy(self: @TokenConfig) -> TokenState {
-        let mut calldata = ArrayTrait::new();
-        self.name.serialize(ref calldata);
-        self.symbol.serialize(ref calldata);
-        self.decimals.serialize(ref calldata);
-        self.initial_supply.serialize(ref calldata);
-        self.owner.serialize(ref calldata);
-        let token_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();
-        let (address, _) = token_contract.deploy(@calldata).unwrap();
+        let address = deploy_mock_erc20_contract(
+            initial_supply: *self.initial_supply,
+            owner_address: *self.owner,
+            name: self.name.clone(),
+            symbol: self.symbol.clone(),
+            decimals: *self.decimals,
+        );
         TokenState { address, owner: *self.owner }
     }
 }

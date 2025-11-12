@@ -12,7 +12,9 @@ dependencies = [
     "pytest-asyncio",
     "starknet-py>=0.28.0",
     "requests",
-    "pytest-xdist"
+    "pytest-xdist",
+    "pydantic>=2.0",
+    "dune-client==1.7.10",
 ]
 
 [tool.setuptools]

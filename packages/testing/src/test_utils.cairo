@@ -3,10 +3,10 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use snforge_std::byte_array::try_deserialize_bytearray_error;
 use snforge_std::cheatcodes::events::Event;
 use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address,
+    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address, load,
     start_cheat_block_number_global,
 };
-use starknet::ContractAddress;
+use starknet::{ContractAddress, Store};
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use starkware_utils_testing::constants as testing_constants;
@@ -262,4 +262,11 @@ pub impl TokenImpl of TokenTrait<TokenState> {
         let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
         erc20_dispatcher.balance_of(account: account).try_into().unwrap()
     }
+}
+
+pub fn generic_load<T, +Store<T>, +Serde<T>>(
+    target: ContractAddress, storage_address: felt252,
+) -> T {
+    let mut value = load(:target, :storage_address, size: Store::<T>::size().into()).span();
+    Serde::deserialize(ref value).unwrap()
 }

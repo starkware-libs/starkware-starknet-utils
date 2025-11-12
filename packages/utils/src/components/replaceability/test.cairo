@@ -312,7 +312,7 @@ mod ReplaceabilityTests {
     }
 
     #[test]
-    #[should_panic(expected: "ONLY_UPGRADE_GOVERNOR")]
+    #[should_panic(expected: "ONLY_UPGRADER")]
     fn test_replace_to_not_upgrade_governor() {
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;

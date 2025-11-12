@@ -2,6 +2,7 @@ from starknet_py.net.full_node_client import FullNodeClient
 from starknet_py.net.account.account import Account
 from starknet_py.net.models.chains import StarknetChainId
 from starknet_py.net.signer.key_pair import KeyPair
+from starknet_py.net.signer.ledger_signer import LedgerSigner
 from starknet_py.contract import Contract, PreparedFunctionInvokeV3, DeclareResult
 from starknet_py.hash.selector import get_selector_from_name
 from starknet_py.net.client_models import TransactionStatus
@@ -76,46 +77,6 @@ def set_event_chunk_size(chunk_size: int):
     FETCH_EVENTS_CHUNK_SIZE = chunk_size
 
 
-async def wait_for_tx_acceptance(
-    tx_hash: str | int,
-    node: FullNodeClient,
-    check_interval: float = 2,
-    retries: int = 500,
-):
-    """
-    Awaits for transaction to get accepted by polling its status..
-
-    :param tx_hash: The hash of the transaction to wait for.
-    :param node: The node to wait for the transaction on.
-    :param check_interval: Defines interval between checks.
-    :param retries: Defines how many times the transaction is checked until an error is thrown.
-    """
-    if check_interval <= 0:
-        raise ValueError("Argument check_interval has to be greater than 0.")
-    if retries <= 0:
-        raise ValueError("Argument retries has to be greater than 0.")
-
-    tx_status = await node.get_transaction_status(tx_hash=tx_hash)
-
-    while True:
-        retries -= 1
-        if tx_status.finality_status == TransactionStatus.REJECTED:
-            raise TransactionRejectedError()
-
-        if (
-            tx_status.finality_status == TransactionStatus.ACCEPTED_ON_L2
-            or tx_status.finality_status == TransactionStatus.ACCEPTED_ON_L1
-        ):
-            if tx_status.execution_status == TransactionExecutionStatus.REVERTED:
-                raise TransactionRevertedError()
-            return
-
-        if retries == 0:
-            raise ValueError("Transaction not accepted.")
-
-        await asyncio.sleep(check_interval)
-
-
 def get_chain_id(chain: str) -> StarknetChainId:
     """
     Get the chain id.
@@ -183,25 +144,25 @@ def setup_keystore_account(
     return account
 
 
-# def setup_ledger_account(
-#     chain: StarknetChainId,
-#     node: FullNodeClient,
-#     account_address: str,
-#     derivation_path: str,
-# ) -> Account:
-#     # Set the signer.
-#     signer = LedgerSigner(
-#         derivation_path_str=derivation_path,
-#         chain_id=chain,
-#     )
-#     # Create an `Account` instance with the ledger signer.
-#     account = Account(
-#         client=node,
-#         address=account_address,
-#         signer=signer,
-#         chain=chain,
-#     )
-#     return account
+def setup_ledger_account(
+    chain: StarknetChainId,
+    node: FullNodeClient,
+    account_address: str,
+    derivation_path: str,
+) -> Account:
+    # Set the signer.
+    signer = LedgerSigner(
+        derivation_path_str=derivation_path,
+        chain_id=chain,
+    )
+    # Create an `Account` instance with the ledger signer.
+    account = Account(
+        client=node,
+        address=account_address,
+        signer=signer,
+        chain=chain,
+    )
+    return account
 
 
 def get_contract_abi(
@@ -251,7 +212,7 @@ async def get_contract_from_address(
     Get a contract instance from a contract address.
 
     :param contract_address: The address of the contract to get the instance for.
-    :param account: The starknet.py account.
+    :param provider: The starknet.py account.
     :return: The contract instance.
     """
     return await Contract.from_address(address=contract_address, provider=provider)
@@ -308,7 +269,6 @@ async def _declare_contract(
             auto_estimate=True,
         )
         await declare_result.wait_for_acceptance()
-        await wait_for_tx_acceptance(declare_result.hash, account.client)
         return declare_result
 
     except Exception as e:
@@ -396,7 +356,6 @@ async def deploy_contract(
         auto_estimate=True,
     )
     await deploy_result.wait_for_acceptance()
-    await wait_for_tx_acceptance(deploy_result.hash, account.client)
     contract = deploy_result.deployed_contract
     print_debug(f"Deployed contract: {to_hex(contract.address)}")
 
@@ -442,7 +401,6 @@ async def declare_and_deploy_contract(
     )
 
     await deploy_result.wait_for_acceptance()
-    await wait_for_tx_acceptance(deploy_result.hash, account.client)
     contract = deploy_result.deployed_contract
     print_debug(f"Declared and deployed contract: {to_hex(contract.address)}")
 
@@ -476,7 +434,6 @@ async def invoke_function(
                 auto_estimate=True,
             )
     await invocation.wait_for_acceptance()
-    await wait_for_tx_acceptance(invocation.hash, contract.client)
 
     print_debug(f"Function {function_name} invoked.")
 
@@ -645,25 +602,24 @@ async def execute_multicall(calls: list, account: Account):
     )
     print_debug(f"Transaction hash: {to_hex(transaction_response.transaction_hash)}")
     await account.client.wait_for_tx(transaction_response.transaction_hash)
-    await wait_for_tx_acceptance(transaction_response.transaction_hash, account.client)
 
     print_debug(f"Multicall executed.")
 
 
-# async def get_transaction_hash(
-#     calls: list, account: Account, chain: StarknetChainId
-# ) -> str:
-#     """
-#     Get the transaction hash of a transaction.
+async def get_transaction_hash(
+    calls: list, account: Account, chain: StarknetChainId
+) -> str:
+    """
+    Get the transaction hash of a transaction.
 
-#     :param calls: The list of calls of the transaction.
-#     :param account: The account to execute the transaction from.
-#     :param chain: The chain to use.
-#     :return: The transaction hash.
-#     """
-#     prepared_tx = await account._prepare_invoke_v3(calls=calls, auto_estimate=True)
-#     tx_hash = prepared_tx.calculate_hash(chain)
-#     return to_hex(tx_hash)
+    :param calls: The list of calls of the transaction.
+    :param account: The account to execute the transaction from.
+    :param chain: The chain to use.
+    :return: The transaction hash.
+    """
+    prepared_tx = await account._prepare_invoke_v3(calls=calls, auto_estimate=True)
+    tx_hash = prepared_tx.calculate_hash(chain)
+    return to_hex(tx_hash)
 
 
 async def fetch_events(
@@ -1045,5 +1001,5 @@ async def send_invoke_transaction(tx: InvokeV3, node: FullNodeClient):
     wait_for_acceptance = input("Wait for acceptance? (y/n): ")
     if wait_for_acceptance == "y":
         print_debug(f"Waiting for transaction acceptance...")
-        await wait_for_tx_acceptance(response.transaction_hash, node)
+        await node.wait_for_tx(response.transaction_hash)
     print_debug(f"Invoke transaction sent.")

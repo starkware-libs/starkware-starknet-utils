@@ -154,6 +154,23 @@ impl SameSignImpl<
     }
 }
 
+pub trait Clamp<T> {
+    fn clamp(self: T, min: T, max: T) -> T;
+}
+
+impl ClampImpl<T, +PartialOrd<T>, +Drop<T>, +Copy<T>> of Clamp<T> {
+    fn clamp(self: T, min: T, max: T) -> T {
+        assert!(min <= max, "min must be less than or equal to max");
+        if self < min {
+            min
+        } else if self > max {
+            max
+        } else {
+            self
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use starkware_utils::constants::{MAX_U128, MAX_U64};
@@ -414,5 +431,19 @@ mod tests {
         let num5: i64 = 0;
         let num6: u64 = 0;
         assert_eq!(num5.same_sign(num6), true, "same_sign failed");
+    }
+
+    #[test]
+    fn clamp_test() {
+        assert_eq!(10_u64.clamp(0_u64, 20_u64), 10_u64, "clamp failed");
+        assert_eq!((-10_i64).clamp(0_i64, 20_i64), 0_i64, "clamp failed");
+        assert_eq!(30_i64.clamp(0_i64, 20_i64), 20_i64, "clamp failed");
+        assert_eq!(10_u256.clamp(20_u256, 20_u256), 20_u256, "clamp failed");
+    }
+
+    #[test]
+    #[should_panic(expected: "min must be less than or equal to max")]
+    fn clamp_test_panic() {
+        10_i64.clamp(20_i64, 0_i64);
     }
 }

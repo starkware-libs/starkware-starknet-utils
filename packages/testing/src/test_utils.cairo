@@ -3,10 +3,10 @@ use openzeppelin::interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherT
 use snforge_std::byte_array::try_deserialize_bytearray_error;
 use snforge_std::cheatcodes::events::Event;
 use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address,
+    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address, load,
     start_cheat_block_number_global,
 };
-use starknet::ContractAddress;
+use starknet::{ContractAddress, Store};
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use starkware_utils_testing::constants as testing_constants;
@@ -189,6 +189,7 @@ pub fn assert_expected_event_emitted<T, +starknet::Event<T>, +Drop<T>, +Debug<T>
 pub struct TokenConfig {
     pub name: ByteArray,
     pub symbol: ByteArray,
+    pub decimals: u8,
     pub initial_supply: u256,
     pub owner: ContractAddress,
 }
@@ -205,15 +206,35 @@ pub trait Deployable<T, V> {
     fn deploy(self: @T) -> V;
 }
 
+
+pub fn deploy_mock_erc20_contract(
+    initial_supply: u256,
+    owner_address: ContractAddress,
+    name: ByteArray,
+    symbol: ByteArray,
+    decimals: u8,
+) -> ContractAddress {
+    let mut calldata = ArrayTrait::new();
+    name.serialize(ref calldata);
+    symbol.serialize(ref calldata);
+    decimals.serialize(ref calldata);
+    initial_supply.serialize(ref calldata);
+    owner_address.serialize(ref calldata);
+    let erc20_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();
+    let (token_address, _) = erc20_contract.deploy(@calldata).unwrap();
+    token_address
+}
+
+
 pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
     fn deploy(self: @TokenConfig) -> TokenState {
-        let mut calldata = ArrayTrait::new();
-        self.name.serialize(ref calldata);
-        self.symbol.serialize(ref calldata);
-        self.initial_supply.serialize(ref calldata);
-        self.owner.serialize(ref calldata);
-        let token_contract = snforge_std::declare("DualCaseERC20Mock").unwrap().contract_class();
-        let (address, _) = token_contract.deploy(@calldata).unwrap();
+        let address = deploy_mock_erc20_contract(
+            initial_supply: *self.initial_supply,
+            owner_address: *self.owner,
+            name: self.name.clone(),
+            symbol: self.symbol.clone(),
+            decimals: *self.decimals,
+        );
         TokenState { address, owner: *self.owner }
     }
 }
@@ -241,4 +262,11 @@ pub impl TokenImpl of TokenTrait<TokenState> {
         let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
         erc20_dispatcher.balance_of(account: account).try_into().unwrap()
     }
+}
+
+pub fn generic_load<T, +Store<T>, +Serde<T>>(
+    target: ContractAddress, storage_address: felt252,
+) -> T {
+    let mut value = load(:target, :storage_address, size: Store::<T>::size().into()).span();
+    Serde::deserialize(ref value).unwrap()
 }

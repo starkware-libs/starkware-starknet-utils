@@ -107,9 +107,9 @@ pub(crate) mod ReplaceabilityComponent {
         fn replace_to(
             ref self: ComponentState<TContractState>, implementation_data: ImplementationData,
         ) {
-            // The call is restricted to the upgrade governor.
+            // The call is restricted to the upgrade agent or upgrade governor.
             let roles_comp = get_dep_component!(@self, Roles);
-            roles_comp.only_upgrade_governor();
+            roles_comp.only_upgrader();
 
             // Validate implementation is not finalized.
             assert!(!self.is_finalized(), "{}", ReplaceErrors::FINALIZED);
@@ -136,22 +136,19 @@ pub(crate) mod ReplaceabilityComponent {
             }
 
             // Handle EIC.
-            match implementation_data.eic_data {
-                Option::Some(eic_data) => {
-                    // Wrap the calldata as a span, as preparation for the library_call_syscall
-                    // invocation.
-                    let mut calldata_wrapper = ArrayTrait::new();
-                    eic_data.eic_init_data.serialize(ref calldata_wrapper);
+            if let Option::Some(eic_data) = implementation_data.eic_data {
+                // Wrap the calldata as a span, as preparation for the library_call_syscall
+                // invocation.
+                let mut calldata_wrapper = ArrayTrait::new();
+                eic_data.eic_init_data.serialize(ref calldata_wrapper);
 
-                    // Invoke the EIC's initialize function as a library call.
-                    let res = library_call_syscall(
-                        class_hash: eic_data.eic_hash,
-                        function_selector: EIC_INITIALIZE_SELECTOR,
-                        calldata: calldata_wrapper.span(),
-                    );
-                    assert!(res.is_ok(), "{}", ReplaceErrors::EIC_LIB_CALL_FAILED);
-                },
-                Option::None(()) => {},
+                // Invoke the EIC's initialize function as a library call.
+                let res = library_call_syscall(
+                    class_hash: eic_data.eic_hash,
+                    function_selector: EIC_INITIALIZE_SELECTOR,
+                    calldata: calldata_wrapper.span(),
+                );
+                assert!(res.is_ok(), "{}", ReplaceErrors::EIC_LIB_CALL_FAILED);
             }
 
             // Replace the class hash.

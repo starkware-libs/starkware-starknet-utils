@@ -5,12 +5,14 @@ pub type RoleId = felt252;
 // ----------------------------------------
 // GOVERNANCE_ADMIN    |   GOVERNANCE_ADMIN
 // UPGRADE_GOVERNOR    |   GOVERNANCE_ADMIN
+// UPGRADE_AGENT       |   APP_ROLE_ADMIN
 // APP_ROLE_ADMIN      |   GOVERNANCE_ADMIN
 // APP_GOVERNOR        |   APP_ROLE_ADMIN
 // OPERATOR            |   APP_ROLE_ADMIN
 // TOKEN_ADMIN         |   APP_ROLE_ADMIN
 // SECURITY_ADMIN      |   SECURITY_ADMIN
 // SECURITY_AGENT      |   SECURITY_ADMIN.
+// SECURITY_GOVERNOR   |   SECURITY_ADMIN.
 
 // int.from_bytes(Web3.keccak(text="ROLE_APP_GOVERNOR"), "big") & MASK_250 .
 pub const APP_GOVERNOR: RoleId = 0xd2ead78c620e94b02d0a996e99298c59ddccfa1d8a0149080ac3a20de06068;
@@ -29,6 +31,9 @@ pub const OPERATOR: RoleId = 0x023edb77f7c8cc9e38e8afe78954f703aeeda7fffe014eeb6
 // int.from_bytes(Web3.keccak(text="ROLE_TOKEN_ADMIN"), "big") & MASK_250 .
 pub const TOKEN_ADMIN: RoleId = 0x0128d63adbf6b09002c26caf55c47e2f26635807e3ef1b027218aa74c8d61a3e;
 
+// int.from_bytes(Web3.keccak(text="ROLE_UPGRADE_AGENT"), "big") & MASK_250 .
+pub const UPGRADE_AGENT: RoleId = 0x1d8034a6db21585e9d97ca912eb8113361e6858f64c45c9b321a4d01e949484;
+
 // int.from_bytes(Web3.keccak(text="ROLE_UPGRADE_GOVERNOR"), "big") & MASK_250 .
 pub const UPGRADE_GOVERNOR: RoleId =
     0x251e864ca2a080f55bce5da2452e8cfcafdbc951a3e7fff5023d558452ec228;
@@ -41,6 +46,10 @@ pub const SECURITY_ADMIN: RoleId =
 pub const SECURITY_AGENT: RoleId =
     0x37693ba312785932d430dccf0f56ffedd0aa7c0f8b6da2cc4530c2717689b96;
 
+// int.from_bytes(Web3.keccak(text="ROLE_SECURITY_GOVERNOR"), "big") & MASK_250 .
+pub const SECURITY_GOVERNOR: RoleId =
+    0xa5a83e9807e87f281d865ab54b7b0ed2f7f4bbfef73888810ca16e95e734eb;
+
 #[starknet::interface]
 pub trait IRoles<TContractState> {
     fn is_app_governor(self: @TContractState, account: ContractAddress) -> bool;
@@ -48,9 +57,11 @@ pub trait IRoles<TContractState> {
     fn is_governance_admin(self: @TContractState, account: ContractAddress) -> bool;
     fn is_operator(self: @TContractState, account: ContractAddress) -> bool;
     fn is_token_admin(self: @TContractState, account: ContractAddress) -> bool;
+    fn is_upgrade_agent(self: @TContractState, account: ContractAddress) -> bool;
     fn is_upgrade_governor(self: @TContractState, account: ContractAddress) -> bool;
     fn is_security_admin(self: @TContractState, account: ContractAddress) -> bool;
     fn is_security_agent(self: @TContractState, account: ContractAddress) -> bool;
+    fn is_security_governor(self: @TContractState, account: ContractAddress) -> bool;
     fn register_app_governor(ref self: TContractState, account: ContractAddress);
     fn remove_app_governor(ref self: TContractState, account: ContractAddress);
     fn register_app_role_admin(ref self: TContractState, account: ContractAddress);
@@ -61,6 +72,8 @@ pub trait IRoles<TContractState> {
     fn remove_operator(ref self: TContractState, account: ContractAddress);
     fn register_token_admin(ref self: TContractState, account: ContractAddress);
     fn remove_token_admin(ref self: TContractState, account: ContractAddress);
+    fn register_upgrade_agent(ref self: TContractState, account: ContractAddress);
+    fn remove_upgrade_agent(ref self: TContractState, account: ContractAddress);
     fn register_upgrade_governor(ref self: TContractState, account: ContractAddress);
     fn remove_upgrade_governor(ref self: TContractState, account: ContractAddress);
     fn renounce(ref self: TContractState, role: RoleId);
@@ -68,6 +81,8 @@ pub trait IRoles<TContractState> {
     fn remove_security_admin(ref self: TContractState, account: ContractAddress);
     fn register_security_agent(ref self: TContractState, account: ContractAddress);
     fn remove_security_agent(ref self: TContractState, account: ContractAddress);
+    fn register_security_governor(ref self: TContractState, account: ContractAddress);
+    fn remove_security_governor(ref self: TContractState, account: ContractAddress);
     fn has_legacy_role(self: @TContractState, account: ContractAddress, role: RoleId) -> bool;
     fn reclaim_legacy_roles(ref self: TContractState);
 }
@@ -76,10 +91,13 @@ pub trait IRoles<TContractState> {
 pub trait IMinimalRoles<TContractState> {
     fn is_governance_admin(self: @TContractState, account: ContractAddress) -> bool;
     fn is_upgrade_governor(self: @TContractState, account: ContractAddress) -> bool;
+    fn is_upgrade_agent(self: @TContractState, account: ContractAddress) -> bool;
     fn register_governance_admin(ref self: TContractState, account: ContractAddress);
     fn remove_governance_admin(ref self: TContractState, account: ContractAddress);
     fn register_upgrade_governor(ref self: TContractState, account: ContractAddress);
     fn remove_upgrade_governor(ref self: TContractState, account: ContractAddress);
+    fn register_upgrade_agent(ref self: TContractState, account: ContractAddress);
+    fn remove_upgrade_agent(ref self: TContractState, account: ContractAddress);
     fn renounce(ref self: TContractState, role: RoleId);
 }
 
@@ -137,6 +155,18 @@ pub(crate) struct SecurityAgentRemoved {
 }
 
 #[derive(Copy, Drop, PartialEq, starknet::Event)]
+pub(crate) struct SecurityGovernorAdded {
+    pub added_account: ContractAddress,
+    pub added_by: ContractAddress,
+}
+
+#[derive(Copy, Drop, PartialEq, starknet::Event)]
+pub(crate) struct SecurityGovernorRemoved {
+    pub removed_account: ContractAddress,
+    pub removed_by: ContractAddress,
+}
+
+#[derive(Copy, Drop, PartialEq, starknet::Event)]
 pub(crate) struct SecurityAdminAdded {
     pub added_account: ContractAddress,
     pub added_by: ContractAddress,
@@ -174,6 +204,18 @@ pub(crate) struct UpgradeGovernorAdded {
 
 #[derive(Copy, Drop, PartialEq, starknet::Event)]
 pub(crate) struct UpgradeGovernorRemoved {
+    pub removed_account: ContractAddress,
+    pub removed_by: ContractAddress,
+}
+
+#[derive(Copy, Drop, PartialEq, starknet::Event)]
+pub(crate) struct UpgradeAgentAdded {
+    pub added_account: ContractAddress,
+    pub added_by: ContractAddress,
+}
+
+#[derive(Copy, Drop, PartialEq, starknet::Event)]
+pub(crate) struct UpgradeAgentRemoved {
     pub removed_account: ContractAddress,
     pub removed_by: ContractAddress,
 }

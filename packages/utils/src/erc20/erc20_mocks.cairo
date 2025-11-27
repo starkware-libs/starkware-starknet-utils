@@ -1,8 +1,10 @@
 #[starknet::contract]
 pub(crate) mod DualCaseERC20Mock {
     use openzeppelin::access::ownable::OwnableComponent;
+    use openzeppelin::interfaces::token::erc20::IERC20Metadata;
     use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starkware_utils::interfaces::mintable_token::{IMintableToken, IMintableTokenCamelOnly};
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -10,8 +12,6 @@ pub(crate) mod DualCaseERC20Mock {
 
     #[abi(embed_v0)]
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
     #[abi(embed_v0)]
     impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
     impl InternalImpl = ERC20Component::InternalImpl<ContractState>;
@@ -25,6 +25,7 @@ pub(crate) mod DualCaseERC20Mock {
         erc20: ERC20Component::Storage,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
+        decimals: u8,
     }
 
     #[event]
@@ -41,12 +42,29 @@ pub(crate) mod DualCaseERC20Mock {
         ref self: ContractState,
         name: ByteArray,
         symbol: ByteArray,
+        decimals: u8,
         initial_supply: u256,
         owner: ContractAddress,
     ) {
+        self.decimals.write(decimals);
         self.erc20.initializer(name, symbol);
         self.erc20.mint(recipient: owner, amount: initial_supply);
         self.ownable.initializer(:owner);
+    }
+
+    #[abi(embed_v0)]
+    impl ERC20CustomMetadataImpl of IERC20Metadata<ContractState> {
+        fn name(self: @ContractState) -> ByteArray {
+            self.erc20.ERC20_name.read()
+        }
+
+        fn symbol(self: @ContractState) -> ByteArray {
+            self.erc20.ERC20_symbol.read()
+        }
+
+        fn decimals(self: @ContractState) -> u8 {
+            self.decimals.read()
+        }
     }
 
     #[abi(embed_v0)]
@@ -78,72 +96,6 @@ pub(crate) mod DualCaseERC20Mock {
 
         fn isPermittedMinter(self: @ContractState, account: ContractAddress) -> bool {
             self.is_permitted_minter(account)
-        }
-    }
-}
-
-#[starknet::contract]
-mod ERC20DecimalsMock {
-    use openzeppelin::interfaces::token::erc20::IERC20Metadata;
-    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
-    use starknet::ContractAddress;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-
-    component!(path: ERC20Component, storage: erc20, event: ERC20Event);
-
-    #[abi(embed_v0)]
-    impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
-    impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
-
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        erc20: ERC20Component::Storage,
-        decimals: u8,
-    }
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        ERC20Event: ERC20Component::Event,
-    }
-
-    #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        name: ByteArray,
-        symbol: ByteArray,
-        decimals: u8,
-        initial_supply: u256,
-        recipient: ContractAddress,
-    ) {
-        self._set_decimals(decimals);
-        self.erc20.initializer(name, symbol);
-        self.erc20.mint(recipient, initial_supply);
-    }
-
-    #[abi(embed_v0)]
-    impl ERC20CustomMetadataImpl of IERC20Metadata<ContractState> {
-        fn name(self: @ContractState) -> ByteArray {
-            self.erc20.ERC20_name.read()
-        }
-
-        fn symbol(self: @ContractState) -> ByteArray {
-            self.erc20.ERC20_symbol.read()
-        }
-
-        fn decimals(self: @ContractState) -> u8 {
-            self.decimals.read()
-        }
-    }
-
-    #[generate_trait]
-    impl InternalImpl of InternalTrait {
-        fn _set_decimals(ref self: ContractState, decimals: u8) {
-            self.decimals.write(decimals);
         }
     }
 }

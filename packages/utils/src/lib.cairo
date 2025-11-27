@@ -7,6 +7,7 @@ pub mod hash;
 pub mod interfaces;
 pub mod math;
 pub mod signature;
+pub mod span;
 pub mod storage;
 pub mod time;
 pub mod trace;

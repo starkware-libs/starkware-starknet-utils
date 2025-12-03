@@ -414,6 +414,14 @@ pub(crate) mod RolesComponent {
             access_comp.set_role_admin(role: SECURITY_GOVERNOR, admin_role: SECURITY_ADMIN);
         }
 
+        fn only_governance_admin(self: @ComponentState<TContractState>) {
+            assert!(
+                self.is_governance_admin(get_caller_address()),
+                "{}",
+                AccessErrors::ONLY_GOVERNANCE_ADMIN,
+            );
+        }
+
         fn only_app_governor(self: @ComponentState<TContractState>) {
             assert!(
                 self.is_app_governor(get_caller_address()), "{}", AccessErrors::ONLY_APP_GOVERNOR,

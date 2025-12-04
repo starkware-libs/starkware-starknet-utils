@@ -19,11 +19,11 @@ jobs:
       SCARB_REGISTRY_AUTH_TOKEN: ${{ secrets.SCARB_REGISTRY_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-        
+
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.11.4"
-      
+          scarb-version: "2.12.2"
+
       - name: Extract current versions
         working-directory: ./packages/testing
         run: |
@@ -31,6 +31,6 @@ jobs:
           {
             echo "CURRENT_VERSION=$CURRENT_VERSION"
           } >> "$GITHUB_ENV"
-        
+
       - name: Publish Package
         run: scarb publish -p starkware_utils_testing

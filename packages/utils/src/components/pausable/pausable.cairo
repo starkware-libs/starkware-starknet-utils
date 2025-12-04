@@ -21,13 +21,13 @@ pub(crate) mod PausableComponent {
     }
 
     /// Emitted when paused, where `account` triggered the action.
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop, Debug, PartialEq, starknet::Event)]
     pub struct Paused {
         pub account: ContractAddress,
     }
 
     /// Emitted when un-paused, where `account` triggered the action.
-    #[derive(Drop, PartialEq, starknet::Event)]
+    #[derive(Drop, Debug, PartialEq, starknet::Event)]
     pub struct Unpaused {
         pub account: ContractAddress,
     }

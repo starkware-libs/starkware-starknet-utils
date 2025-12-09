@@ -75,7 +75,7 @@ pub(crate) mod PausableComponent {
         /// Emits an `Unpaused` event.
         fn unpause(ref self: ComponentState<TContractState>) {
             let roles = get_dep_component!(@self, Roles);
-            roles.only_security_admin();
+            roles.only_security_governor();
             self.assert_paused();
             self.paused.write(false);
             self.emit(Unpaused { account: get_caller_address() });

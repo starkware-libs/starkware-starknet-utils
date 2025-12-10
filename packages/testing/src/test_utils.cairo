@@ -35,6 +35,14 @@ pub fn set_account_as_security_agent(
     roles_dispatcher.register_security_agent(:account);
 }
 
+pub fn set_account_as_security_governor(
+    contract: ContractAddress, account: ContractAddress, security_admin: ContractAddress,
+) {
+    let roles_dispatcher = IRolesDispatcher { contract_address: contract };
+    cheat_caller_address_once(contract_address: contract, caller_address: security_admin);
+    roles_dispatcher.register_security_governor(:account);
+}
+
 pub fn set_account_as_app_role_admin(
     contract: ContractAddress, account: ContractAddress, governance_admin: ContractAddress,
 ) {
@@ -103,6 +111,11 @@ pub fn set_default_roles(contract: ContractAddress, governance_admin: ContractAd
     set_account_as_security_agent(
         :contract,
         account: testing_constants::SECURITY_AGENT,
+        security_admin: testing_constants::SECURITY_ADMIN,
+    );
+    set_account_as_security_governor(
+        :contract,
+        account: testing_constants::SECURITY_GOVERNOR,
         security_admin: testing_constants::SECURITY_ADMIN,
     );
 }

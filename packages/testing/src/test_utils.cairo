@@ -7,6 +7,7 @@ use snforge_std::{
     start_cheat_block_number_global,
 };
 use starknet::{ContractAddress, Store};
+use starkware_utils::byte_array::short_string_to_byte_array;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use starkware_utils_testing::constants as testing_constants;
@@ -156,7 +157,12 @@ pub fn assert_panic_with_felt_error<T, +Drop<T>>(
 ) {
     match result {
         Result::Ok(_) => panic!("Expected to fail with: {}", expected_error),
-        Result::Err(error_data) => assert!(*error_data[0] == expected_error),
+        Result::Err(error_data) => assert!(
+            *error_data[0] == expected_error,
+            "Expected error: {}\nActual error: {}",
+            short_string_to_byte_array(expected_error),
+            short_string_to_byte_array(*error_data[0]),
+        ),
     };
 }
 

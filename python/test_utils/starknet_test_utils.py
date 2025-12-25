@@ -100,6 +100,7 @@ class StarknetTestUtils:
         fork_network: Optional[str],
         fork_block: Optional[int],
         request_body_size_limit: Optional[int],
+        start_time: Optional[int],
     ):
         self.starknet = Starknet(
             port=port,
@@ -110,6 +111,7 @@ class StarknetTestUtils:
             fork_network=fork_network,
             fork_block=fork_block,
             request_body_size_limit=request_body_size_limit,
+            start_time=start_time,
         )
         self.accounts = self.starknet.accounts
 
@@ -128,6 +130,7 @@ class StarknetTestUtils:
         fork_network: Optional[str] = None,
         fork_block: Optional[int] = None,
         request_body_size_limit: Optional[int] = None,
+        start_time: Optional[int] = None,
         backoff: float = 0.1,
     ):
         """
@@ -146,6 +149,7 @@ class StarknetTestUtils:
                     fork_network=fork_network,
                     fork_block=fork_block,
                     request_body_size_limit=request_body_size_limit,
+                    start_time=start_time,
                 )
                 yield res
                 return
@@ -180,6 +184,7 @@ class Starknet:
         fork_network: Optional[str] = None,
         fork_block: Optional[int] = None,
         request_body_size_limit: Optional[int] = None,
+        start_time: Optional[int] = None,
     ):
         """
         Runs starknet.
@@ -212,6 +217,9 @@ class Starknet:
             command.extend(["--fork-block", str(fork_block)])
         if request_body_size_limit is not None:
             command.extend(["--request-body-size-limit", str(request_body_size_limit)])
+
+        if start_time is not None:
+            command.extend(["--start-time", str(start_time)])
 
         self.starknet_proc = subprocess.Popen(
             command,

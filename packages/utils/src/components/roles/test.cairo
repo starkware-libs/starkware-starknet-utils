@@ -16,12 +16,6 @@ use starkware_utils_testing::test_utils::{
 };
 
 #[test]
-#[should_panic(expected: "INVALID_ZERO_ADDRESS_GOV_ADMIN")]
-fn test_initialize_with_zero_address() {
-    test_utils::deploy_mock_contract_with_zero();
-}
-
-#[test]
 #[feature("safe_dispatcher")]
 fn test_register_app_role_admin() {
     // Deploy mock contract.

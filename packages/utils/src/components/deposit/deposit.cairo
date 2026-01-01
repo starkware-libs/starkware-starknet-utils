@@ -4,7 +4,7 @@ pub(crate) mod Deposit {
     use core::num::traits::Zero;
     use core::panic_with_felt252;
     use core::pedersen::PedersenTrait;
-    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin::interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,

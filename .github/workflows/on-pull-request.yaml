@@ -16,7 +16,7 @@ jobs:
           starknet-foundry-version: "0.54.1"
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.12.2"
+          scarb-version: "2.15.0"
 
       - name: Install cairo-coverage
         run: |

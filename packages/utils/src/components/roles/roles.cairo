@@ -50,7 +50,7 @@ pub(crate) mod RolesComponent {
     use openzeppelin::access::accesscontrol::AccessControlComponent::{
         AccessControlImpl, InternalTrait as AccessInternalTrait,
     };
-    use openzeppelin::access::accesscontrol::interface::IAccessControl;
+    use openzeppelin::interfaces::access::accesscontrol::IAccessControl;
     use openzeppelin::introspection::src5::SRC5Component;
 
     #[embeddable_as(RolesImpl)]

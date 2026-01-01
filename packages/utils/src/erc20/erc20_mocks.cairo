@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub(crate) mod DualCaseERC20Mock {
     use openzeppelin::access::ownable::OwnableComponent;
-    use openzeppelin::token::erc20::interface::IERC20Metadata;
+    use openzeppelin::interfaces::token::erc20::IERC20Metadata;
     use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};

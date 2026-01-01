@@ -1,4 +1,4 @@
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use openzeppelin::interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 use starknet::{ContractAddress, get_contract_address};
 use starkware_utils::erc20::erc20_errors::Erc20Error;
 use starkware_utils::errors::ErrorDisplay;

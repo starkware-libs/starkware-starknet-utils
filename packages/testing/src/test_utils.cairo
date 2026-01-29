@@ -291,7 +291,7 @@ pub fn generic_load<T, +Store<T>, +Serde<T>>(
 }
 
 #[generate_trait]
-pub(crate) impl TokenHelperImpl of TokenHelperTrait {
+pub impl TokenHelperImpl of TokenHelperTrait {
     fn balance_of(self: @Token, address: ContractAddress) -> u256 {
         IERC20Dispatcher { contract_address: self.contract_address() }.balance_of(account: address)
     }

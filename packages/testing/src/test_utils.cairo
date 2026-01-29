@@ -3,8 +3,8 @@ use openzeppelin::interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherT
 use snforge_std::byte_array::try_deserialize_bytearray_error;
 use snforge_std::cheatcodes::events::Event;
 use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address, load,
-    start_cheat_block_number_global,
+    CheatSpan, ContractClassTrait, DeclareResultTrait, Token, TokenTrait as SnforgeTokenTrait,
+    cheat_caller_address, load, set_balance, start_cheat_block_number_global,
 };
 use starknet::{ContractAddress, Store};
 use starkware_utils::byte_array::short_string_to_byte_array;
@@ -288,4 +288,20 @@ pub fn generic_load<T, +Store<T>, +Serde<T>>(
 ) -> T {
     let mut value = load(:target, :storage_address, size: Store::<T>::size().into()).span();
     Serde::deserialize(ref value).unwrap()
+}
+
+#[generate_trait]
+pub(crate) impl TokenHelperImpl of TokenHelperTrait {
+    fn balance_of(self: @Token, address: ContractAddress) -> u256 {
+        IERC20Dispatcher { contract_address: self.contract_address() }.balance_of(account: address)
+    }
+
+    fn supply(self: @Token, address: ContractAddress, amount: u128) {
+        let current_balance = self.balance_of(:address);
+        set_balance(target: address, new_balance: current_balance + amount.into(), token: *self);
+    }
+
+    fn set_balance(self: @Token, address: ContractAddress, amount: u128) {
+        set_balance(target: address, new_balance: amount.into(), token: *self);
+    }
 }

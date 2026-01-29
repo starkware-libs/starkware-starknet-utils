@@ -104,9 +104,56 @@ pub impl HeadTailLengthStorePacking of StorePacking<HeadTailLength, felt252> {
     }
 }
 
+// -----------------------------------------------------------------------------
+// Storage Packing (MapEntryFelt)
+// -----------------------------------------------------------------------------
+
+#[derive(Copy, Drop, Serde, PartialEq, Debug)]
+pub struct MapEntryFelt {
+    pub next: felt252,
+    pub value: (u128, u32), // Castable160 format
+    pub is_deleted: bool,
+    pub exists: bool,
+}
+
+pub impl MapEntryFeltStorePacking of StorePacking<MapEntryFelt, (felt252, felt252)> {
+    fn pack(value: MapEntryFelt) -> (felt252, felt252) {
+        let next = value.next;
+
+        let temp_entry = MapEntry {
+            value: value.value,
+            next: 0, // Dummy next
+            is_deleted: value.is_deleted,
+            exists: value.exists,
+        };
+
+        let packed_val_flags = MapEntryStorePacking::pack(temp_entry);
+
+        (next, packed_val_flags)
+    }
+
+    fn unpack(value: (felt252, felt252)) -> MapEntryFelt {
+        let (next, packed_felt) = value;
+
+        // We can use MapEntryStorePacking::unpack to get value and flags
+        // It will return a MapEntry with next=0 (since we packed it with 0)
+        let temp_entry = MapEntryStorePacking::unpack(packed_felt);
+
+        MapEntryFelt {
+            next,
+            value: temp_entry.value,
+            is_deleted: temp_entry.is_deleted,
+            exists: temp_entry.exists,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{HeadTailLength, HeadTailLengthStorePacking, MapEntry, MapEntryStorePacking};
+    use super::{
+        HeadTailLength, HeadTailLengthStorePacking, MapEntry, MapEntryFelt,
+        MapEntryFeltStorePacking, MapEntryStorePacking,
+    };
 
     #[test]
     fn test_map_entry_packing() {
@@ -192,5 +239,35 @@ mod tests {
         let unpacked = HeadTailLengthStorePacking::unpack(packed);
 
         assert_eq!(htl, unpacked);
+    }
+
+    #[test]
+    fn test_map_entry_felt_packing() {
+        let entry = MapEntryFelt {
+            next: 123456789, value: (987654321_u128, 123_u32), is_deleted: true, exists: true,
+        };
+
+        let packed = MapEntryFeltStorePacking::pack(entry);
+        let unpacked = MapEntryFeltStorePacking::unpack(packed);
+
+        assert_eq!(entry, unpacked);
+
+        let (next_packed, _) = packed;
+        assert_eq!(next_packed, 123456789);
+    }
+
+    #[test]
+    fn test_map_entry_felt_packing_max_values() {
+        let entry = MapEntryFelt {
+            next: 0x1234567890abcdef1234567890abcdef, // Big felt
+            value: (340282366920938463463374607431768211455_u128, 4294967295_u32),
+            is_deleted: true,
+            exists: true,
+        };
+
+        let packed = MapEntryFeltStorePacking::pack(entry);
+        let unpacked = MapEntryFeltStorePacking::unpack(packed);
+
+        assert_eq!(entry, unpacked);
     }
 }

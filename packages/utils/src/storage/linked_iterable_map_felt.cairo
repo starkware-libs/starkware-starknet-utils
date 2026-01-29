@@ -1,0 +1,321 @@
+use core::iter::{IntoIterator, Iterator};
+use starknet::storage::{
+    Map, Mutable, StorageAsPath, StoragePath, StoragePathEntry, StoragePathMutableConversion,
+    StoragePointerReadAccess, StoragePointerWriteAccess,
+};
+use super::linked_iterable_map::packing::{
+    MapEntryFelt, MapEntryFeltPacked, MapEntryFeltStorePacking, MapEntryPackingTrait, MapInfo,
+};
+use super::utils::{Castable160, CastableFelt};
+
+// -----------------------------------------------------------------------------
+// LinkedIterableMap Implementation
+// -----------------------------------------------------------------------------
+
+#[starknet::storage_node]
+pub struct LinkedIterableMapFelt<K, V, +CastableFelt<K>, +Castable160<V>> {
+    // Map from Key(felt) -> MapEntryFelt (packed into 2 felts)
+    _entries: Map<felt252, MapEntryFeltPacked>,
+    _head: felt252,
+    _info: MapInfo,
+}
+
+/// Trait for the interface of a linked iterable map.
+pub trait LinkedIterableMapTrait<T> {
+    fn len(self: T) -> u32;
+    fn is_empty(self: T) -> bool;
+}
+
+impl StoragePathLinkedIterableMapImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>,
+> of LinkedIterableMapTrait<StoragePath<LinkedIterableMapFelt<K, V>>> {
+    fn len(self: StoragePath<LinkedIterableMapFelt<K, V>>) -> u32 {
+        self._info.read().length
+    }
+    fn is_empty(self: StoragePath<LinkedIterableMapFelt<K, V>>) -> bool {
+        self.len() == 0
+    }
+}
+
+impl StoragePathMutableLinkedIterableMapImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>,
+> of LinkedIterableMapTrait<StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>> {
+    fn len(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>) -> u32 {
+        self.as_non_mut().len()
+    }
+    fn is_empty(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>) -> bool {
+        self.as_non_mut().is_empty()
+    }
+}
+
+// Generic implementation for any type that can be converted to StoragePath
+pub impl LinkedIterableMapTraitImpl<
+    T,
+    +Drop<T>,
+    impl StorageAsPathImpl: StorageAsPath<T>,
+    impl StoragePathImpl: LinkedIterableMapTrait<StoragePath<StorageAsPathImpl::Value>>,
+> of LinkedIterableMapTrait<T> {
+    fn len(self: T) -> u32 {
+        self.as_path().len()
+    }
+    fn is_empty(self: T) -> bool {
+        self.as_path().is_empty()
+    }
+}
+
+// --- Read Access ---
+
+pub trait LinkedIterableMapReadAccess<T, K, V> {
+    fn read(self: T, key: K) -> V;
+    fn contains(self: T, key: K) -> bool;
+}
+
+impl StoragePathLinkedIterableMapReadAccessImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>, +Drop<K>, +Drop<V>,
+> of LinkedIterableMapReadAccess<StoragePath<LinkedIterableMapFelt<K, V>>, K, V> {
+    fn read(self: StoragePath<LinkedIterableMapFelt<K, V>>, key: K) -> V {
+        let key_felt = CastableFelt::encode(key);
+        let packed_entry = self._entries.entry(key_felt).read();
+        let entry = MapEntryPackingTrait::unpack(packed_entry);
+
+        if !entry.exists || entry.is_deleted {
+            return Castable160::decode((0, 0));
+        }
+        let val: u256 = entry.value.into();
+        let low: u128 = val.low;
+        let high: u32 = val.high.try_into().unwrap();
+        Castable160::decode((low, high))
+    }
+
+    fn contains(self: StoragePath<LinkedIterableMapFelt<K, V>>, key: K) -> bool {
+        let key_felt = CastableFelt::encode(key);
+        let packed_entry = self._entries.entry(key_felt).read();
+        let entry = MapEntryPackingTrait::unpack(packed_entry);
+        entry.exists && !entry.is_deleted
+    }
+}
+
+impl StoragePathMutableLinkedIterableMapReadAccessImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>, +Drop<K>, +Drop<V>,
+> of LinkedIterableMapReadAccess<StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>, K, V> {
+    fn read(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>, key: K) -> V {
+        self.as_non_mut().read(key)
+    }
+    fn contains(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>, key: K) -> bool {
+        self.as_non_mut().contains(key)
+    }
+}
+
+pub impl LinkedIterableMapReadAccessGenericImpl<
+    T,
+    K,
+    V,
+    +Drop<T>,
+    +Drop<K>,
+    +Drop<V>,
+    impl StorageAsPathImpl: StorageAsPath<T>,
+    impl StoragePathImpl: LinkedIterableMapReadAccess<StoragePath<StorageAsPathImpl::Value>, K, V>,
+> of LinkedIterableMapReadAccess<T, K, V> {
+    fn read(self: T, key: K) -> V {
+        self.as_path().read(key)
+    }
+    fn contains(self: T, key: K) -> bool {
+        self.as_path().contains(key)
+    }
+}
+
+// --- Write Access ---
+
+pub trait LinkedIterableMapWriteAccess<T, K, V> {
+    fn write(self: T, key: K, value: V);
+    fn remove(self: T, key: K);
+    fn clear(self: T);
+}
+
+impl StoragePathLinkedIterableMapWriteAccessImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>, +Drop<K>, +Drop<V>,
+> of LinkedIterableMapWriteAccess<StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>, K, V> {
+    fn write(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>, key: K, value: V) {
+        let key_felt = CastableFelt::encode(key);
+        let (low, high) = Castable160::encode(value);
+        let val_u256 = u256 { low, high: high.into() };
+        let value_encoded: felt252 = val_u256.try_into().unwrap();
+
+        let entry_path = self._entries.entry(key_felt);
+        let packed_entry = entry_path.read();
+        let mut entry = MapEntryPackingTrait::unpack(packed_entry);
+
+        // 1. Update existing non-deleted
+        if entry.exists && !entry.is_deleted {
+            entry.value = value_encoded;
+            entry_path.write(entry.pack());
+            return;
+        }
+
+        let mut info = self._info.read();
+
+        // 2. Re-insert deleted (stays in same position in list)
+        if entry.exists {
+            entry.value = value_encoded;
+            entry.is_deleted = false;
+            entry_path.write(entry.pack());
+            info.length += 1;
+            self._info.write(info);
+            return;
+        }
+
+        let mut head = self._head.read();
+
+        // 3. New Insert (Stack Push / Head Insert)
+        let new_entry = MapEntryFelt {
+            next: head, // Point to old head
+            value: value_encoded, is_deleted: false, exists: true,
+        };
+
+        entry_path.write(new_entry.pack());
+
+        // Update head to new key
+        head = key_felt;
+        info.length += 1;
+        info.total_nodes += 1;
+
+        self._head.write(head);
+        self._info.write(info);
+    }
+
+    fn remove(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>, key: K) {
+        let key_felt = CastableFelt::encode(key);
+        let entry_path = self._entries.entry(key_felt);
+        let packed_entry = entry_path.read();
+        let mut entry = MapEntryPackingTrait::unpack(packed_entry);
+
+        if !entry.exists || entry.is_deleted {
+            return;
+        }
+
+        entry.is_deleted = true;
+        entry.value = 0; // Clear value
+        entry_path.write(entry.pack());
+
+        let mut info = self._info.read();
+        info.length -= 1;
+        self._info.write(info);
+    }
+
+    fn clear(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>) {
+        let mut head = self._head.read();
+        let mut info = self._info.read();
+        let mut current = head;
+        let mut nodes_remaining = info.total_nodes;
+
+        while nodes_remaining > 0 {
+            let entry_path = self._entries.entry(current);
+            let packed_entry = entry_path.read();
+            let entry = MapEntryPackingTrait::unpack(packed_entry);
+
+            // Zero out entry
+            let zero_entry = MapEntryFelt { next: 0, value: 0, is_deleted: false, exists: false };
+            entry_path.write(zero_entry.pack());
+
+            current = entry.next;
+            nodes_remaining -= 1;
+        }
+
+        self._head.write(0);
+        self._info.write(MapInfo { length: 0, total_nodes: 0 });
+    }
+}
+
+pub impl LinkedIterableMapWriteAccessGenericImpl<
+    T,
+    K,
+    V,
+    +Drop<T>,
+    +Drop<K>,
+    +Drop<V>,
+    impl StorageAsPathImpl: StorageAsPath<T>,
+    impl StoragePathImpl: LinkedIterableMapWriteAccess<StoragePath<StorageAsPathImpl::Value>, K, V>,
+> of LinkedIterableMapWriteAccess<T, K, V> {
+    fn write(self: T, key: K, value: V) {
+        self.as_path().write(key, value)
+    }
+    fn remove(self: T, key: K) {
+        self.as_path().remove(key)
+    }
+    fn clear(self: T) {
+        self.as_path().clear()
+    }
+}
+
+// --- Iterator ---
+
+#[derive(Copy, Drop)]
+struct LinkedMapIterator<K, V> {
+    _entries: StoragePath<Map<felt252, MapEntryFeltPacked>>,
+    _current: felt252,
+    _nodes_to_visit: u32,
+}
+
+impl LinkedMapIteratorImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>, +Drop<K>, +Drop<V>,
+> of Iterator<LinkedMapIterator<K, V>> {
+    type Item = (K, V);
+    fn next(ref self: LinkedMapIterator<K, V>) -> Option<Self::Item> {
+        loop {
+            if self._nodes_to_visit == 0 {
+                return Option::None;
+            }
+
+            let key_felt = self._current;
+            let packed_entry = self._entries.entry(key_felt).read();
+            let entry = MapEntryPackingTrait::unpack(packed_entry);
+
+            self._current = entry.next;
+            self._nodes_to_visit -= 1;
+
+            if !entry.is_deleted {
+                let val: u256 = entry.value.into();
+                let low: u128 = val.low;
+                let high: u32 = val.high.try_into().unwrap();
+                return Option::Some(
+                    (CastableFelt::decode(key_felt), Castable160::decode((low, high))),
+                );
+            }
+        }
+    }
+}
+
+pub impl StoragePathLinkedIterableMapIntoIteratorImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>, +Drop<K>, +Drop<V>,
+> of IntoIterator<StoragePath<LinkedIterableMapFelt<K, V>>> {
+    type IntoIter = LinkedMapIterator<K, V>;
+    fn into_iter(self: StoragePath<LinkedIterableMapFelt<K, V>>) -> Self::IntoIter {
+        let head = self._head.read();
+        let info = self._info.read();
+        LinkedMapIterator {
+            _entries: self._entries.as_path(), _current: head, _nodes_to_visit: info.total_nodes,
+        }
+    }
+}
+
+pub impl StoragePathMutableLinkedIterableMapIntoIteratorImpl<
+    K, V, +CastableFelt<K>, +Castable160<V>, +Drop<K>, +Drop<V>,
+> of IntoIterator<StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>> {
+    type IntoIter = LinkedMapIterator<K, V>;
+    fn into_iter(self: StoragePath<Mutable<LinkedIterableMapFelt<K, V>>>) -> Self::IntoIter {
+        self.as_non_mut().into_iter()
+    }
+}
+
+pub impl LinkedIterableMapIntoIterImpl<
+    T,
+    +Drop<T>,
+    impl StorageAsPathImpl: StorageAsPath<T>,
+    impl StoragePathImpl: IntoIterator<StoragePath<StorageAsPathImpl::Value>>,
+    +LinkedIterableMapTrait<StoragePath<StorageAsPathImpl::Value>>,
+> of IntoIterator<T> {
+    type IntoIter = StoragePathImpl::IntoIter;
+    fn into_iter(self: T) -> Self::IntoIter {
+        self.as_path().into_iter()
+    }
+}

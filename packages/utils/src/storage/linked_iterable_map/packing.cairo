@@ -2,6 +2,7 @@ use core::num::traits::Pow;
 use starknet::storage_access::StorePacking;
 
 const TWO_POW_32: u128 = 2_u128.pow(32);
+const TWO_POW_33: u128 = 2_u128.pow(33);
 const TWO_POW_64: u128 = 2_u128.pow(64);
 const TWO_POW_96: u128 = 2_u128.pow(96);
 const TWO_POW_97: u128 = 2_u128.pow(97);
@@ -104,9 +105,103 @@ pub impl HeadTailLengthStorePacking of StorePacking<HeadTailLength, felt252> {
     }
 }
 
+const TWO_POW_32_U64: u64 = 2_u64.pow(32);
+const MASK_32_U64: u64 = TWO_POW_32_U64 - 1;
+
+#[derive(Copy, Drop, PartialEq, Serde, Debug)]
+pub struct MapInfo {
+    pub length: u32,
+    pub total_nodes: u32,
+}
+
+pub trait MapInfoPackingTrait {
+    fn pack(self: MapInfo) -> u64;
+    fn unpack(value: u64) -> MapInfo;
+}
+
+pub impl MapInfoPackingImpl of MapInfoPackingTrait {
+    fn pack(self: MapInfo) -> u64 {
+        let len: u64 = self.length.into();
+        let total: u64 = self.total_nodes.into();
+        len + (total * TWO_POW_32_U64)
+    }
+    fn unpack(value: u64) -> MapInfo {
+        let length: u32 = (value & MASK_32_U64).try_into().unwrap();
+        let total_nodes: u32 = (value / TWO_POW_32_U64).try_into().unwrap();
+        MapInfo { length, total_nodes }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// MapEntryFelt: like MapEntry — value (160 bits) then flags in u256
+// Layout: low = value[0..128), high = value[128..160) | is_deleted<<32 | exists<<33
+// -----------------------------------------------------------------------------
+
+#[derive(Copy, Drop, Serde, PartialEq, Debug)]
+pub struct MapEntryFelt {
+    pub next: felt252,
+    pub value: felt252,
+    pub is_deleted: bool,
+    pub exists: bool,
+}
+
+#[derive(Copy, Drop, Serde, PartialEq, Debug, starknet::Store)]
+pub struct MapEntryFeltPacked {
+    pub next: felt252,
+    pub value_and_flags: felt252,
+}
+
+pub trait MapEntryPackingTrait {
+    fn pack(self: MapEntryFelt) -> MapEntryFeltPacked;
+    fn unpack(value: MapEntryFeltPacked) -> MapEntryFelt;
+}
+
+pub impl MapEntryPackingImpl of MapEntryPackingTrait {
+    fn pack(self: MapEntryFelt) -> MapEntryFeltPacked {
+        let u256 { low, high } = self.value.into();
+        let high32 = high & MASK_32;
+        let high = high32
+            + if self.is_deleted {
+                TWO_POW_32
+            } else {
+                0
+            }
+            + if self.exists {
+                TWO_POW_33
+            } else {
+                0
+            };
+        MapEntryFeltPacked {
+            next: self.next, value_and_flags: u256 { low, high }.try_into().unwrap(),
+        }
+    }
+
+    fn unpack(value: MapEntryFeltPacked) -> MapEntryFelt {
+        let u256 { low, high } = value.value_and_flags.into();
+        MapEntryFelt {
+            next: value.next,
+            value: u256 { low, high: high & MASK_32 }.try_into().unwrap(),
+            is_deleted: (high & TWO_POW_32) != 0,
+            exists: (high & TWO_POW_33) != 0,
+        }
+    }
+}
+
+pub impl MapEntryFeltStorePacking of StorePacking<MapEntryFelt, MapEntryFeltPacked> {
+    fn pack(value: MapEntryFelt) -> MapEntryFeltPacked {
+        value.pack()
+    }
+    fn unpack(value: MapEntryFeltPacked) -> MapEntryFelt {
+        MapEntryPackingTrait::unpack(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{HeadTailLength, HeadTailLengthStorePacking, MapEntry, MapEntryStorePacking};
+    use super::{
+        HeadTailLength, HeadTailLengthStorePacking, MapEntry, MapEntryFelt,
+        MapEntryFeltStorePacking, MapEntryStorePacking, MapInfo, MapInfoPackingTrait,
+    };
 
     #[test]
     fn test_map_entry_packing() {
@@ -192,5 +287,57 @@ mod tests {
         let unpacked = HeadTailLengthStorePacking::unpack(packed);
 
         assert_eq!(htl, unpacked);
+    }
+
+    #[test]
+    fn test_map_info_packing() {
+        let info = MapInfo { length: 12345, total_nodes: 67890 };
+        let packed = info.pack();
+        let unpacked = MapInfoPackingTrait::unpack(packed);
+        assert_eq!(info, unpacked);
+    }
+
+    #[test]
+    fn test_map_info_packing_max() {
+        let info = MapInfo { length: 4294967295, total_nodes: 4294967295 };
+        let packed = info.pack();
+        let unpacked = MapInfoPackingTrait::unpack(packed);
+        assert_eq!(info, unpacked);
+    }
+
+    #[test]
+    fn test_map_entry_felt_packing() {
+        let entry = MapEntryFelt {
+            next: 123456789, value: 987654321, is_deleted: true, exists: true,
+        };
+
+        let packed = MapEntryFeltStorePacking::pack(entry);
+        let unpacked = MapEntryFeltStorePacking::unpack(packed);
+
+        assert_eq!(entry, unpacked);
+
+        let next_packed = packed.next;
+        assert_eq!(next_packed, 123456789);
+    }
+
+    #[test]
+    fn test_map_entry_felt_packing_max_values() {
+        // Max 160-bit value: low=u128::MAX, high=u32::MAX
+        let max_val: felt252 = u256 {
+            low: 340282366920938463463374607431768211455_u128, high: 4294967295_u128,
+        }
+            .try_into()
+            .unwrap();
+
+        let entry = MapEntryFelt {
+            next: 0x1234567890abcdef1234567890abcdef,
+            value: max_val,
+            is_deleted: true,
+            exists: true,
+        };
+
+        let packed = MapEntryFeltStorePacking::pack(entry);
+        let unpacked = MapEntryFeltStorePacking::unpack(packed);
+        assert_eq!(entry, unpacked);
     }
 }

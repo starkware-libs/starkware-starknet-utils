@@ -1,7 +1,9 @@
-use core::num::traits::WideMul;
 use core::num::traits::one::One;
 use core::num::traits::zero::Zero;
+use core::num::traits::{Pow, WideMul};
 use core::to_byte_array::FormatAsByteArray;
+
+const TWO_POW_32: u256 = u256 { low: 2_u128.pow(32), high: 0 };
 
 pub fn have_same_sign(x: i64, y: i64) -> bool {
     (x < 0) == (y < 0)
@@ -43,12 +45,12 @@ pub fn to_base_16_string(value: felt252) -> ByteArray {
 pub fn u256_from_u32_array(arr: [u32; 8]) -> u256 {
     let mut value: u256 = 0;
     // This loop iterates over the elements of `arr.span()` and constructs a single value by
-    // combining the elements. The multiplication by `0x100000000` shifts the current value
+    // combining the elements. The multiplication by TWO_POW_32 (2^32) shifts the current value
     // by 32 bits to the left (equivalent to appending 32 zero bits), making space for the
     // next word. This is typically done when reconstructing a larger number from smaller
     // chunks, such as converting an array of 32-bit words into a single 256-bit integer.
     for word in arr.span() {
-        value *= 0x100000000;
+        value *= TWO_POW_32;
         value = value + (*word).into();
     }
     value

@@ -10,16 +10,29 @@ pub(crate) mod RolesComponent {
         UpgradeAgentRemoved, UpgradeGovernorAdded, UpgradeGovernorRemoved,
     };
     use core::num::traits::Zero;
-    use starknet::storage::StorageMapReadAccess;
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use starknet::{ContractAddress, get_caller_address};
     use starkware_utils::components::roles::errors::AccessErrors;
     use starkware_utils::components::roles::interface as RolesInterface;
+
+    const ROLE_ADMIN_PAIRS: [(RoleId, RoleId); 10] = [
+        (APP_GOVERNOR, APP_ROLE_ADMIN), (APP_ROLE_ADMIN, GOVERNANCE_ADMIN),
+        (GOVERNANCE_ADMIN, GOVERNANCE_ADMIN), (OPERATOR, APP_ROLE_ADMIN),
+        (TOKEN_ADMIN, APP_ROLE_ADMIN), (UPGRADE_AGENT, APP_ROLE_ADMIN),
+        (UPGRADE_GOVERNOR, GOVERNANCE_ADMIN), (SECURITY_ADMIN, SECURITY_ADMIN),
+        (SECURITY_AGENT, SECURITY_ADMIN), (SECURITY_GOVERNOR, SECURITY_ADMIN),
+    ];
 
     #[storage]
     pub struct Storage {
         // LEGACY: This is the old storage for role members.
         // We need it to allow reclaim legacy roles.
         role_members: starknet::storage::Map<(RoleId, ContractAddress), bool>,
+        // Flag to disable legacy role reclaim. Once set, legacy roles cannot be reclaimed.
+        legacy_role_reclaim_disabled: bool,
     }
 
     #[event]
@@ -306,31 +319,32 @@ pub(crate) mod RolesComponent {
             self._revoke_role_and_emit(role: UPGRADE_GOVERNOR, :account, :event);
         }
 
-        // TODO -  change the fn name to renounce_role when we can have modularity.
-        // TODO -  change to GOVERNANCE_ADMIN_CANNOT_SELF_REMOVE when the 32 characters limitations
-        // is off.
         fn renounce(ref self: ComponentState<TContractState>, role: RoleId) {
             assert!(role != GOVERNANCE_ADMIN, "{}", AccessErrors::GOV_ADMIN_CANNOT_RENOUNCE);
             let mut access_comp = get_dep_component_mut!(ref self, Access);
             access_comp.renounce_role(:role, account: get_caller_address())
-            // TODO add another event? Currently there are two events when a role is removed but
-        // only one if it was renounced.
         }
-        fn has_legacy_role(
-            self: @ComponentState<TContractState>, account: ContractAddress, role: RoleId,
-        ) -> bool {
-            self.role_members.read((role, account))
-        }
+
         fn reclaim_legacy_roles(ref self: ComponentState<TContractState>) {
-            let account = get_caller_address();
-            self._reclaim_role(role: GOVERNANCE_ADMIN, :account);
-            self._reclaim_role(role: APP_GOVERNOR, :account);
-            self._reclaim_role(role: APP_ROLE_ADMIN, :account);
-            self._reclaim_role(role: OPERATOR, :account);
-            self._reclaim_role(role: TOKEN_ADMIN, :account);
-            self._reclaim_role(role: UPGRADE_GOVERNOR, :account);
-            self._reclaim_role(role: SECURITY_ADMIN, :account);
-            self._reclaim_role(role: SECURITY_AGENT, :account);
+            self.assert_role_reclaim_enabled();
+            self._reclaim_legacy_roles_for_account(get_caller_address());
+            let mut access_comp = get_dep_component_mut!(ref self, Access);
+            RolesInternalImpl::_set_role_admins(ref access_comp);
+        }
+
+        fn reclaim_legacy_roles_for_accounts(
+            ref self: ComponentState<TContractState>, accounts: Span<ContractAddress>,
+        ) {
+            self.only_security_governor();
+            self.assert_role_reclaim_enabled();
+            for account in accounts {
+                self._reclaim_legacy_roles_for_account(*account);
+            };
+        }
+
+        fn disable_legacy_role_reclaim(ref self: ComponentState<TContractState>) {
+            self.only_upgrade_governor();
+            self.legacy_role_reclaim_disabled.write(true);
         }
     }
 
@@ -342,12 +356,33 @@ pub(crate) mod RolesComponent {
         impl Access: AccessControlComponent::HasComponent<TContractState>,
         +SRC5Component::HasComponent<TContractState>,
     > of ClaimRoleInternal<TContractState> {
+        // Reinstate role membership per legacy role membership:
+        // 1. If the account held the legacy role, it will be granted in the current realm.
+        // 2. Role membership in the current realm will not be cleared if no legacy member held.
+        // 3. Legacy membership is cleared after reading, so reclaim can be done effectively only
+        //    once.
         fn _reclaim_role(
             ref self: ComponentState<TContractState>, role: RoleId, account: ContractAddress,
         ) {
-            if self.has_legacy_role(account, role) {
+            if self._has_legacy_role(account, role) {
+                // Clear legacy membership to prevent double claiming.
+                self.role_members.write((role, account), false);
                 let mut access_comp = get_dep_component_mut!(ref self, Access);
                 access_comp._grant_role(:role, :account);
+            }
+        }
+
+        fn _has_legacy_role(
+            self: @ComponentState<TContractState>, account: ContractAddress, role: RoleId,
+        ) -> bool {
+            self.role_members.read((role, account))
+        }
+
+        fn _reclaim_legacy_roles_for_account(
+            ref self: ComponentState<TContractState>, account: ContractAddress,
+        ) {
+            for (role, _) in ROLE_ADMIN_PAIRS.span() {
+                self._reclaim_role(role: *role, :account);
             }
         }
     }
@@ -389,6 +424,14 @@ pub(crate) mod RolesComponent {
             }
         }
 
+        fn assert_role_reclaim_enabled(self: @ComponentState<TContractState>) {
+            assert!(
+                !self.legacy_role_reclaim_disabled.read(),
+                "{}",
+                AccessErrors::LEGACY_ROLE_RECLAIM_DISABLED,
+            );
+        }
+
         // WARNING
         // The following internal method is unprotected and should only be used from the containing
         // contract's constructor (or, in context of tests, from the setup method).
@@ -400,18 +443,21 @@ pub(crate) mod RolesComponent {
             access_comp.initializer();
             assert!(governance_admin.is_non_zero(), "{}", AccessErrors::ZERO_ADDRESS_GOV_ADMIN);
             access_comp._grant_role(role: GOVERNANCE_ADMIN, account: governance_admin);
-            access_comp.set_role_admin(role: APP_GOVERNOR, admin_role: APP_ROLE_ADMIN);
-            access_comp.set_role_admin(role: APP_ROLE_ADMIN, admin_role: GOVERNANCE_ADMIN);
-            access_comp.set_role_admin(role: GOVERNANCE_ADMIN, admin_role: GOVERNANCE_ADMIN);
-            access_comp.set_role_admin(role: OPERATOR, admin_role: APP_ROLE_ADMIN);
-            access_comp.set_role_admin(role: TOKEN_ADMIN, admin_role: APP_ROLE_ADMIN);
-            access_comp.set_role_admin(role: UPGRADE_AGENT, admin_role: APP_ROLE_ADMIN);
-            access_comp.set_role_admin(role: UPGRADE_GOVERNOR, admin_role: GOVERNANCE_ADMIN);
-
             access_comp._grant_role(role: SECURITY_ADMIN, account: governance_admin);
-            access_comp.set_role_admin(role: SECURITY_ADMIN, admin_role: SECURITY_ADMIN);
-            access_comp.set_role_admin(role: SECURITY_AGENT, admin_role: SECURITY_ADMIN);
-            access_comp.set_role_admin(role: SECURITY_GOVERNOR, admin_role: SECURITY_ADMIN);
+            self.legacy_role_reclaim_disabled.write(true);
+            Self::_set_role_admins(ref access_comp);
+        }
+
+        // Recovers role_admin heirarcy.
+        // Set role_admin only if not set already.
+        fn _set_role_admins(
+            ref access_comp: AccessControlComponent::ComponentState<TContractState>,
+        ) {
+            for (role, admin_role) in ROLE_ADMIN_PAIRS.span() {
+                if access_comp.get_role_admin(role: *role).is_zero() {
+                    access_comp.set_role_admin(role: *role, admin_role: *admin_role);
+                }
+            }
         }
 
         fn only_app_governor(self: @ComponentState<TContractState>) {

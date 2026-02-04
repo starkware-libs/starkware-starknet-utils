@@ -20,6 +20,7 @@ pub enum AccessErrors {
     ONLY_SELF_CAN_RENOUNCE,
     GOV_ADMIN_CANNOT_RENOUNCE,
     MISSING_ROLE,
+    LEGACY_ROLE_RECLAIM_DISABLED,
 }
 
 impl DescribableError of Describable<AccessErrors> {
@@ -43,6 +44,7 @@ impl DescribableError of Describable<AccessErrors> {
             AccessErrors::ONLY_SELF_CAN_RENOUNCE => "ONLY_SELF_CAN_RENOUNCE",
             AccessErrors::GOV_ADMIN_CANNOT_RENOUNCE => "GOV_ADMIN_CANNOT_SELF_REMOVE",
             AccessErrors::MISSING_ROLE => "Caller is missing role",
+            AccessErrors::LEGACY_ROLE_RECLAIM_DISABLED => "LEGACY_ROLE_RECLAIM_DISABLED",
         }
     }
 }

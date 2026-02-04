@@ -83,8 +83,9 @@ pub trait IRoles<TContractState> {
     fn remove_security_agent(ref self: TContractState, account: ContractAddress);
     fn register_security_governor(ref self: TContractState, account: ContractAddress);
     fn remove_security_governor(ref self: TContractState, account: ContractAddress);
-    fn has_legacy_role(self: @TContractState, account: ContractAddress, role: RoleId) -> bool;
     fn reclaim_legacy_roles(ref self: TContractState);
+    fn reclaim_legacy_roles_for_accounts(ref self: TContractState, accounts: Span<ContractAddress>);
+    fn disable_legacy_role_reclaim(ref self: TContractState);
 }
 
 #[starknet::interface]

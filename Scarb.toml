@@ -19,7 +19,7 @@ version = "1.0.0"
 [workspace.dependencies]
 assert_macros = "2.15.1"
 openzeppelin = "3.0.0"
-snforge_std = "0.55.0"
+snforge_std = { version = "0.55.0+nightly-2026-02-03", registry = "https://scarbs.dev/" }
 starknet = "2.15.1"
 
 [workspace.tool.fmt]

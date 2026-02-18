@@ -1,7 +1,7 @@
 use starknet::storage::{
     Mutable, StorageAsPointer, StoragePointer, StoragePointerReadAccess, StoragePointerWriteAccess,
 };
-use starknet::{EthAddress, Store};
+use starknet::{ClassHash, ContractAddress, EthAddress, Store};
 
 
 pub trait AddToStorage<T> {
@@ -89,6 +89,42 @@ pub impl PrimitiveCastable160<T, +Into<T, u128>, +TryInto<u128, T>, +Drop<T>> of
         let (low, high) = value;
         assert(high == 0, 'Castable160: high bits not 0');
         low.try_into().unwrap()
+    }
+}
+
+/// Trait for types that can be cast to/from felt252.
+pub trait CastableFelt<T> {
+    fn encode(value: T) -> felt252;
+    fn decode(value: felt252) -> T;
+}
+
+/// Marker trait to enforce this pattern only for specific basic types
+pub trait IsBasicFeltType<T> {}
+
+impl IsBasicFeltTypeFelt252 of IsBasicFeltType<felt252>;
+impl IsBasicFeltTypeU8 of IsBasicFeltType<u8>;
+impl IsBasicFeltTypeU16 of IsBasicFeltType<u16>;
+impl IsBasicFeltTypeU32 of IsBasicFeltType<u32>;
+impl IsBasicFeltTypeU64 of IsBasicFeltType<u64>;
+impl IsBasicFeltTypeU128 of IsBasicFeltType<u128>;
+impl IsBasicFeltTypeI8 of IsBasicFeltType<i8>;
+impl IsBasicFeltTypeI16 of IsBasicFeltType<i16>;
+impl IsBasicFeltTypeI32 of IsBasicFeltType<i32>;
+impl IsBasicFeltTypeI64 of IsBasicFeltType<i64>;
+impl IsBasicFeltTypeI128 of IsBasicFeltType<i128>;
+impl IsBasicFeltTypeContractAddress of IsBasicFeltType<ContractAddress>;
+impl IsBasicFeltTypeClassHash of IsBasicFeltType<ClassHash>;
+impl IsBasicFeltTypeEthAddress of IsBasicFeltType<EthAddress>;
+
+/// Generic implementation for basic types that fit into felt252
+pub impl PrimitiveCastableFelt<
+    T, +IsBasicFeltType<T>, +Into<T, felt252>, +TryInto<felt252, T>, +Drop<T>,
+> of CastableFelt<T> {
+    fn encode(value: T) -> felt252 {
+        value.into()
+    }
+    fn decode(value: felt252) -> T {
+        value.try_into().unwrap()
     }
 }
 
@@ -210,5 +246,104 @@ pub impl SignedIntegerCastable64<
         let val_felt: felt252 = value.into();
         let offset = SignedIntegerOffset::<T>::offset();
         (val_felt - offset).try_into().unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use starknet::{ClassHash, ContractAddress, EthAddress};
+    use super::{CastableFelt, PrimitiveCastableFelt};
+
+    #[test]
+    fn test_castable_felt_primitives() {
+        // u8
+        let v_u8: u8 = 255;
+        let enc_u8 = CastableFelt::encode(v_u8);
+        let dec_u8: u8 = CastableFelt::decode(enc_u8);
+        assert_eq!(v_u8, dec_u8);
+
+        // u16
+        let v_u16: u16 = 65535;
+        let enc_u16 = CastableFelt::encode(v_u16);
+        let dec_u16: u16 = CastableFelt::decode(enc_u16);
+        assert_eq!(v_u16, dec_u16);
+
+        // u32
+        let v_u32: u32 = 4294967295;
+        let enc_u32 = CastableFelt::encode(v_u32);
+        let dec_u32: u32 = CastableFelt::decode(enc_u32);
+        assert_eq!(v_u32, dec_u32);
+
+        // u64
+        let v_u64: u64 = 18446744073709551615;
+        let enc_u64 = CastableFelt::encode(v_u64);
+        let dec_u64: u64 = CastableFelt::decode(enc_u64);
+        assert_eq!(v_u64, dec_u64);
+
+        // u128
+        let v_u128: u128 = 340282366920938463463374607431768211455;
+        let enc_u128 = CastableFelt::encode(v_u128);
+        let dec_u128: u128 = CastableFelt::decode(enc_u128);
+        assert_eq!(v_u128, dec_u128);
+
+        // felt252
+        let v_felt: felt252 = 123456789;
+        let enc_felt = CastableFelt::encode(v_felt);
+        let dec_felt: felt252 = CastableFelt::decode(enc_felt);
+        assert_eq!(v_felt, dec_felt);
+    }
+
+    #[test]
+    fn test_castable_felt_signed() {
+        // i8
+        let v_i8: i8 = -100;
+        let enc_i8 = CastableFelt::encode(v_i8);
+        let dec_i8: i8 = CastableFelt::decode(enc_i8);
+        assert_eq!(v_i8, dec_i8);
+
+        // i16
+        let v_i16: i16 = -30000;
+        let enc_i16 = CastableFelt::encode(v_i16);
+        let dec_i16: i16 = CastableFelt::decode(enc_i16);
+        assert_eq!(v_i16, dec_i16);
+
+        // i32
+        let v_i32: i32 = -2000000000;
+        let enc_i32 = CastableFelt::encode(v_i32);
+        let dec_i32: i32 = CastableFelt::decode(enc_i32);
+        assert_eq!(v_i32, dec_i32);
+
+        // i64
+        let v_i64: i64 = -9000000000000000000;
+        let enc_i64 = CastableFelt::encode(v_i64);
+        let dec_i64: i64 = CastableFelt::decode(enc_i64);
+        assert_eq!(v_i64, dec_i64);
+
+        // i128
+        let v_i128: i128 = -170141183460469231731687303715884100000;
+        let enc_i128 = CastableFelt::encode(v_i128);
+        let dec_i128: i128 = CastableFelt::decode(enc_i128);
+        assert_eq!(v_i128, dec_i128);
+    }
+
+    #[test]
+    fn test_castable_felt_addresses() {
+        // ContractAddress
+        let v_ca: ContractAddress = 12345.try_into().unwrap();
+        let enc_ca = CastableFelt::encode(v_ca);
+        let dec_ca: ContractAddress = CastableFelt::decode(enc_ca);
+        assert_eq!(v_ca, dec_ca);
+
+        // ClassHash
+        let v_ch: ClassHash = 67890.try_into().unwrap();
+        let enc_ch = CastableFelt::encode(v_ch);
+        let dec_ch: ClassHash = CastableFelt::decode(enc_ch);
+        assert_eq!(v_ch, dec_ch);
+
+        // EthAddress
+        let v_ea: EthAddress = 0x1234567890abcdef1234567890abcdef12345678.try_into().unwrap();
+        let enc_ea = CastableFelt::encode(v_ea);
+        let dec_ea: EthAddress = CastableFelt::decode(enc_ea);
+        assert_eq!(v_ea, dec_ea);
     }
 }

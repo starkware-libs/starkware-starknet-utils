@@ -28,6 +28,10 @@ mod tests {
         fn get_all_i128(self: @TContractState) -> Span<(i128, u128)>;
         fn get_len_i128(self: @TContractState) -> u32;
         fn remove_i128(ref self: TContractState, key: i128);
+        // Methods for signed VALUE type (felt252, i64)
+        fn write_signed_value(ref self: TContractState, key: felt252, value: i64);
+        fn read_signed_value(self: @TContractState, key: felt252) -> i64;
+        fn get_len_signed_value(self: @TContractState) -> u32;
     }
 
     #[starknet::contract]
@@ -48,6 +52,7 @@ mod tests {
             map_generic: LinkedIterableMapFelt<ContractAddress, u128>,
             map_eth: LinkedIterableMapFelt<felt252, EthAddress>,
             map_i128: LinkedIterableMapFelt<i128, u128>,
+            map_signed_value: LinkedIterableMapFelt<felt252, i64>,
         }
 
         #[abi(embed_v0)]
@@ -118,6 +123,16 @@ mod tests {
             }
             fn remove_i128(ref self: ContractState, key: i128) {
                 self.map_i128.remove(key);
+            }
+            // Implementations for signed VALUE type
+            fn write_signed_value(ref self: ContractState, key: felt252, value: i64) {
+                self.map_signed_value.write(key, value);
+            }
+            fn read_signed_value(self: @ContractState, key: felt252) -> i64 {
+                self.map_signed_value.read(key)
+            }
+            fn get_len_signed_value(self: @ContractState) -> u32 {
+                self.map_signed_value.len()
             }
         }
     }
@@ -426,5 +441,40 @@ mod tests {
         assert(dispatcher.read_i128(min_i128) == 1, 'read min');
         assert(dispatcher.read_i128(max_i128) == 2, 'read max');
         assert(dispatcher.get_len_i128() == 2, 'len 2');
+    }
+
+    #[test]
+    fn test_signed_value_read_nonexistent_returns_default() {
+        // Reading a non-existent key SHOULD return 0 (the default value for i64)
+        let dispatcher = deploy();
+
+        // Map is empty, reading a non-existent key should return 0
+        let nonexistent_value = dispatcher.read_signed_value('NONEXISTENT');
+        assert(nonexistent_value == 0_i64, 'nonexistent returns 0');
+
+        // Write a value and verify it works correctly
+        dispatcher.write_signed_value('A', 42);
+        assert(dispatcher.read_signed_value('A') == 42, 'read positive');
+        assert(dispatcher.get_len_signed_value() == 1, 'len 1');
+
+        // Write a negative value
+        dispatcher.write_signed_value('B', -100);
+        assert(dispatcher.read_signed_value('B') == -100, 'read negative');
+        assert(dispatcher.get_len_signed_value() == 2, 'len 2');
+
+        // Reading another non-existent key should also return 0
+        let another_nonexistent = dispatcher.read_signed_value('MISSING');
+        assert(another_nonexistent == 0_i64, 'another nonexistent');
+    }
+
+    #[test]
+    fn test_signed_value_zero_is_valid() {
+        // Test that 0 is a valid signed value and can be stored/retrieved correctly
+        let dispatcher = deploy();
+
+        // Store 0 as a signed value
+        dispatcher.write_signed_value('Z', 0);
+        assert(dispatcher.read_signed_value('Z') == 0, 'read zero');
+        assert(dispatcher.get_len_signed_value() == 1, 'len 1');
     }
 }

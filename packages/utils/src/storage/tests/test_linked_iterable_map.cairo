@@ -23,6 +23,11 @@ pub trait ILinkedIterableMapTestContract<TContractState> {
 
     fn get_all_values3(ref self: TContractState) -> Span<(i64, u128)>;
     fn get_len3(self: @TContractState) -> u32;
+
+    // Methods for the fourth map (u64, i64) - signed VALUE type
+    fn get_value_signed(ref self: TContractState, key: u64) -> i64;
+    fn set_value_signed(ref self: TContractState, key: u64, value: i64);
+    fn get_len_signed(self: @TContractState) -> u32;
 }
 
 #[starknet::contract]
@@ -39,6 +44,7 @@ mod LinkedIterableMapTestContract {
         linked_map: LinkedIterableMap<u64, u128>,
         linked_map2: LinkedIterableMap<u32, EthAddress>,
         linked_map3: LinkedIterableMap<i64, u128>,
+        linked_map_signed_value: LinkedIterableMap<u64, i64>,
     }
 
     #[abi(embed_v0)]
@@ -118,6 +124,19 @@ mod LinkedIterableMapTestContract {
 
         fn get_len3(self: @ContractState) -> u32 {
             LinkedIterableMapTrait::len(self.linked_map3)
+        }
+
+        // Implementations for the fourth map (u64, i64) - signed VALUE type
+        fn get_value_signed(ref self: ContractState, key: u64) -> i64 {
+            self.linked_map_signed_value.read(key)
+        }
+
+        fn set_value_signed(ref self: ContractState, key: u64, value: i64) {
+            self.linked_map_signed_value.write(key, value);
+        }
+
+        fn get_len_signed(self: @ContractState) -> u32 {
+            LinkedIterableMapTrait::len(self.linked_map_signed_value)
         }
     }
 }
@@ -719,4 +738,43 @@ fn test_i64_key() {
     let (k1, v1) = pairs.at(1);
     assert_eq!(*k1, -20_i64);
     assert_eq!(*v1, 200_u128);
+}
+
+#[test]
+fn test_signed_value_read_nonexistent_returns_default() {
+    // Reading a non-existent key SHOULD return 0 (the default value for i64)
+    let dispatcher = ILinkedIterableMapTestContractDispatcher {
+        contract_address: deploy_linked_iterable_map_test_contract(),
+    };
+
+    // Map is empty, reading a non-existent key should return 0
+    let nonexistent_value = dispatcher.get_value_signed(999_u64);
+    assert_eq!(nonexistent_value, 0_i64);
+
+    // Write a value and verify it works correctly
+    dispatcher.set_value_signed(1_u64, 42_i64);
+    assert_eq!(dispatcher.get_value_signed(1_u64), 42_i64);
+    assert_eq!(dispatcher.get_len_signed(), 1);
+
+    // Write a negative value
+    dispatcher.set_value_signed(2_u64, -100_i64);
+    assert_eq!(dispatcher.get_value_signed(2_u64), -100_i64);
+    assert_eq!(dispatcher.get_len_signed(), 2);
+
+    // Reading another non-existent key should also return 0
+    let another_nonexistent = dispatcher.get_value_signed(12345_u64);
+    assert_eq!(another_nonexistent, 0_i64);
+}
+
+#[test]
+fn test_signed_value_zero_is_valid() {
+    // Test that 0 is a valid signed value and can be stored/retrieved correctly
+    let dispatcher = ILinkedIterableMapTestContractDispatcher {
+        contract_address: deploy_linked_iterable_map_test_contract(),
+    };
+
+    // Store 0 as a signed value
+    dispatcher.set_value_signed(1_u64, 0_i64);
+    assert_eq!(dispatcher.get_value_signed(1_u64), 0_i64);
+    assert_eq!(dispatcher.get_len_signed(), 1);
 }

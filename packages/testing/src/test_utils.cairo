@@ -304,4 +304,10 @@ pub impl TokenHelperImpl of TokenHelperTrait {
     fn set_balance(self: @Token, address: ContractAddress, amount: u128) {
         set_balance(target: address, new_balance: amount.into(), token: *self);
     }
+
+    fn approve(self: @Token, owner: ContractAddress, spender: ContractAddress, amount: u128) {
+        cheat_caller_address_once(contract_address: self.contract_address(), caller_address: owner);
+        IERC20Dispatcher { contract_address: self.contract_address() }
+            .approve(:spender, amount: amount.into());
+    }
 }

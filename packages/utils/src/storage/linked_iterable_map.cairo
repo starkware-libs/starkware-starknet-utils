@@ -7,6 +7,20 @@ use super::utils::{Castable160, Castable64};
 pub mod packing;
 use packing::{HeadTailLengthStorePacking, MapEntry, MapEntryStorePacking};
 
+// ---------------------------------------------------------------------------
+// Module documentation
+// ---------------------------------------------------------------------------
+//
+// LinkedIterableMap is a linked iterable map keyed by types that implement `Castable64`.
+// It uses **tail insertion**: each new insert is appended to the tail, so iteration
+// order matches **insertion order (FIFO)**.
+//
+// **read() behavior for missing keys:** `read()` returns `Castable160::decode((0, 0))`
+// for keys that were never inserted or have been removed. For unsigned types and
+// `EthAddress`, this is the default value (0). However, for signed integer value types
+// (`i8`, `i16`, `i32`, `i64`, `i128`), `decode((0, 0))` returns the minimum value
+// (e.g., `i8::MIN = -128`), NOT `0`. Callers using signed integer values should use
+// `is_deleted()` to distinguish missing/deleted keys from actual stored values.
 
 #[starknet::storage_node]
 #[allow(starknet::invalid_storage_member_types)]

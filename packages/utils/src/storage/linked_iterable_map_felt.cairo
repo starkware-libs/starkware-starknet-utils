@@ -23,11 +23,11 @@ use super::utils::{Castable160, CastableFelt};
 // move it to the head; the existing `next` pointer is preserved, so the key's
 // position in the iteration order is unchanged.
 //
-// **read() ambiguity:** `read()` returns the default value (e.g. 0 for integers)
+// **read() behavior for missing keys:** `read()` returns `Castable160::decode((0, 0))`
 // for: (1) a key that was never inserted, (2) a key that was removed (deleted),
-// and (3) a key that is present with value 0. Callers cannot distinguish these
-// from `read()` alone. Use `is_deleted()` to detect (2), and `exists()` to
-// detect (1) vs (3).
+// and (3) a key that is present with a value that encodes to zero. Callers cannot
+// distinguish these cases from `read()` alone. Use `is_deleted()` to detect (2),
+// and `exists()` to detect (1) vs (3).
 
 /// Trait for the interface of a linked iterable map.
 pub trait LinkedIterableMapFeltTrait<T> {

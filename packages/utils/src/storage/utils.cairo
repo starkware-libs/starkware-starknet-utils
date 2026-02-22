@@ -71,6 +71,15 @@ pub impl StoragePathSubFromStorageImpl<
 /// - `encode` should be injective: distinct values map to distinct tuples.
 /// - `decode` should be the inverse of `encode` on its image:
 ///   decode(encode(v)) == v
+///
+/// # Recommendation for Default Value Encoding
+/// When used with storage structures like `LinkedIterableMap`, reading a non-existent
+/// key returns storage's zero value, which is then decoded. To ensure predictable
+/// behavior, implementations SHOULD satisfy:
+/// - `encode(Default::default())` returns the zero representation `(0, 0)`
+/// - `decode((0, 0))` returns `Default::default()`
+///
+/// This ensures that reading a missing key yields the type's default value.
 pub trait Castable160<V> {
     /// Convert a value into its 160-bit representation `(low, high)`.
     fn encode(value: V) -> (u128, u32);
@@ -128,61 +137,49 @@ pub impl PrimitiveCastableFelt<
     }
 }
 
-/// Trait to define the offset for signed integer.
-trait SignedIntegerOffset<T> {
-    fn offset() -> felt252;
-}
+trait Sigend<T> {}
+impl I8Signed of Sigend<i8> {}
+impl I16Signed of Sigend<i16> {}
+impl I32Signed of Sigend<i32> {}
+impl I64Signed of Sigend<i64> {}
+impl I128Signed of Sigend<i128> {}
 
-impl I8Offset of SignedIntegerOffset<i8> {
-    fn offset() -> felt252 {
-        // 2 ** 7
-        128
-    }
-}
 
-impl I16Offset of SignedIntegerOffset<i16> {
-    fn offset() -> felt252 {
-        // 2** 15
-        32768
-    }
-}
-
-impl I32Offset of SignedIntegerOffset<i32> {
-    fn offset() -> felt252 {
-        // 2** 31
-        2147483648
-    }
-}
-
-impl I64Offset of SignedIntegerOffset<i64> {
-    fn offset() -> felt252 {
-        // 2** 63
-        9223372036854775808
-    }
-}
-
-impl I128Offset of SignedIntegerOffset<i128> {
-    fn offset() -> felt252 {
-        // 2** 127
-        170141183460469231731687303715884105728
-    }
-}
-
+/// Zigzag encoding for signed integers: maps signed to unsigned while preserving 0 → 0.
+/// encode(0) = 0, encode(1) = 2, encode(-1) = 1, encode(2) = 4, encode(-2) = 3, etc.
 pub impl SignedIntegerCastable160<
-    T, +SignedIntegerOffset<T>, +Into<T, felt252>, +TryInto<felt252, T>, +Drop<T>,
+    T,
+    +Sigend<T>,
+    +Into<T, felt252>,
+    +TryInto<felt252, T>,
+    +Drop<T>,
+    +Copy<T>,
+    +PartialOrd<T>,
+    +Default<T>,
 > of Castable160<T> {
     fn encode(value: T) -> (u128, u32) {
         let val_felt: felt252 = value.into();
-        let offset = SignedIntegerOffset::<T>::offset();
-        let val_u128: u128 = (val_felt + offset).try_into().unwrap();
+        let val_u128: u128 = if value >= Default::default() {
+            // Non-negative: multiply by 2
+            (val_felt * 2).try_into().unwrap()
+        } else {
+            // Negative: (-value) * 2 - 1
+            ((-val_felt) * 2 - 1).try_into().unwrap()
+        };
         (val_u128, 0)
     }
     fn decode(value: (u128, u32)) -> T {
         let (low, high) = value;
         assert(high == 0, 'Castable160: high bits not 0');
-        let val_felt: felt252 = low.into();
-        let offset = SignedIntegerOffset::<T>::offset();
-        (val_felt - offset).try_into().unwrap()
+        let val_felt: felt252 = if low % 2 == 0 {
+            // Even: non-negative, divide by 2
+            (low / 2).into()
+        } else {
+            // Odd: negative, -((n + 1) / 2)
+            let positive: felt252 = ((low - 1) / 2).into() + 1;
+            -positive
+        };
+        val_felt.try_into().unwrap()
     }
 }
 
@@ -209,6 +206,15 @@ pub impl EthAddressCastable160 of Castable160<EthAddress> {
 /// - `encode` should be injective: distinct values map to distinct tuples.
 /// - `decode` should be the inverse of `encode` on its image:
 ///   decode(encode(v)) == v
+///
+/// # Recommendation for Default Value Encoding
+/// When used with storage structures like `LinkedIterableMap`, reading a non-existent
+/// key returns storage's zero value, which is then decoded. To ensure predictable
+/// behavior, implementations SHOULD satisfy:
+/// - `encode(Default::default())` returns `0`
+/// - `decode(0)` returns `Default::default()`
+///
+/// This ensures that reading a missing key yields the type's default value.
 pub trait Castable64<V> {
     /// Convert a value into its 64-bit representation.
     fn encode(value: V) -> u64;
@@ -233,26 +239,49 @@ impl I16FitsIn64 of FitsIn64<i16> {}
 impl I32FitsIn64 of FitsIn64<i32> {}
 impl I64FitsIn64 of FitsIn64<i64> {}
 
+/// Zigzag encoding for signed integers that fit in 64 bits.
+/// encode(0) = 0, encode(1) = 2, encode(-1) = 1, encode(2) = 4, encode(-2) = 3, etc.
 pub impl SignedIntegerCastable64<
-    T, +FitsIn64<T>, +SignedIntegerOffset<T>, +Into<T, felt252>, +TryInto<felt252, T>, +Drop<T>,
+    T,
+    +FitsIn64<T>,
+    +Into<T, felt252>,
+    +TryInto<felt252, T>,
+    +Drop<T>,
+    +Copy<T>,
+    +PartialOrd<T>,
+    +Default<T>,
 > of Castable64<T> {
     fn encode(value: T) -> u64 {
         let val_felt: felt252 = value.into();
-        let offset = SignedIntegerOffset::<T>::offset();
-        let val_u64: u64 = (val_felt + offset).try_into().unwrap();
-        val_u64
+        if value >= Default::default() {
+            // Non-negative: multiply by 2
+            (val_felt * 2).try_into().unwrap()
+        } else {
+            // Negative: (-value) * 2 - 1
+            ((-val_felt) * 2 - 1).try_into().unwrap()
+        }
     }
     fn decode(value: u64) -> T {
-        let val_felt: felt252 = value.into();
-        let offset = SignedIntegerOffset::<T>::offset();
-        (val_felt - offset).try_into().unwrap()
+        let val_felt: felt252 = if value % 2 == 0 {
+            // Even: non-negative, divide by 2
+            (value / 2).into()
+        } else {
+            // Odd: negative, -((n + 1) / 2)
+            let positive: felt252 = ((value - 1) / 2).into() + 1;
+            -positive
+        };
+        val_felt.try_into().unwrap()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use starknet::{ClassHash, ContractAddress, EthAddress};
-    use super::{CastableFelt, PrimitiveCastableFelt};
+    use super::{
+        Castable160, Castable64, CastableFelt, EthAddressCastable160, PrimitiveCastable160,
+        PrimitiveCastable64, PrimitiveCastableFelt, SignedIntegerCastable160,
+        SignedIntegerCastable64,
+    };
 
     #[test]
     fn test_castable_felt_primitives() {
@@ -345,5 +374,133 @@ mod tests {
         let enc_ea = CastableFelt::encode(v_ea);
         let dec_ea: EthAddress = CastableFelt::decode(enc_ea);
         assert_eq!(v_ea, dec_ea);
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests for encode(default) == 0 and decode(0) == default property
+    // -------------------------------------------------------------------------
+    // These tests verify the recommended property that decode(0) should return
+    // the type's default value. Unsigned types satisfy this property, while
+    // signed integer types do NOT (they return the minimum value instead).
+
+    #[test]
+    fn test_castable160_decode_zero_unsigned_types() {
+        // Unsigned types: decode((0, 0)) should return 0 (the default)
+        let dec_u8: u8 = Castable160::decode((0, 0));
+        assert_eq!(dec_u8, 0_u8);
+
+        let dec_u16: u16 = Castable160::decode((0, 0));
+        assert_eq!(dec_u16, 0_u16);
+
+        let dec_u32: u32 = Castable160::decode((0, 0));
+        assert_eq!(dec_u32, 0_u32);
+
+        let dec_u64: u64 = Castable160::decode((0, 0));
+        assert_eq!(dec_u64, 0_u64);
+
+        let dec_u128: u128 = Castable160::decode((0, 0));
+        assert_eq!(dec_u128, 0_u128);
+
+        // EthAddress: decode((0, 0)) should return zero address
+        let dec_eth: EthAddress = Castable160::decode((0, 0));
+        let zero_eth: EthAddress = 0.try_into().unwrap();
+        assert_eq!(dec_eth, zero_eth);
+    }
+
+    #[test]
+    fn test_castable160_encode_default_unsigned_types() {
+        // Unsigned types: encode(0) should return (0, 0)
+        assert_eq!(Castable160::encode(0_u8), (0, 0));
+        assert_eq!(Castable160::encode(0_u16), (0, 0));
+        assert_eq!(Castable160::encode(0_u32), (0, 0));
+        assert_eq!(Castable160::encode(0_u64), (0, 0));
+        assert_eq!(Castable160::encode(0_u128), (0, 0));
+
+        // EthAddress: encode(zero) should return (0, 0)
+        let zero_eth: EthAddress = 0.try_into().unwrap();
+        assert_eq!(Castable160::encode(zero_eth), (0, 0));
+    }
+
+    #[test]
+    fn test_castable160_decode_zero_signed_types() {
+        // Signed types: decode((0, 0)) SHOULD return 0 (the default value)
+
+        let dec_i8: i8 = Castable160::decode((0, 0));
+        assert_eq!(dec_i8, 0_i8);
+
+        let dec_i16: i16 = Castable160::decode((0, 0));
+        assert_eq!(dec_i16, 0_i16);
+
+        let dec_i32: i32 = Castable160::decode((0, 0));
+        assert_eq!(dec_i32, 0_i32);
+
+        let dec_i64: i64 = Castable160::decode((0, 0));
+        assert_eq!(dec_i64, 0_i64);
+
+        let dec_i128: i128 = Castable160::decode((0, 0));
+        assert_eq!(dec_i128, 0_i128);
+    }
+
+    #[test]
+    fn test_castable160_encode_default_signed_types() {
+        // Signed types: encode(0) SHOULD return (0, 0)
+
+        assert_eq!(Castable160::encode(0_i8), (0, 0));
+        assert_eq!(Castable160::encode(0_i16), (0, 0));
+        assert_eq!(Castable160::encode(0_i32), (0, 0));
+        assert_eq!(Castable160::encode(0_i64), (0, 0));
+        assert_eq!(Castable160::encode(0_i128), (0, 0));
+    }
+
+    #[test]
+    fn test_castable64_decode_zero_unsigned_types() {
+        // Unsigned types: decode(0) should return 0 (the default)
+        let dec_u8: u8 = Castable64::decode(0);
+        assert_eq!(dec_u8, 0_u8);
+
+        let dec_u16: u16 = Castable64::decode(0);
+        assert_eq!(dec_u16, 0_u16);
+
+        let dec_u32: u32 = Castable64::decode(0);
+        assert_eq!(dec_u32, 0_u32);
+
+        let dec_u64: u64 = Castable64::decode(0);
+        assert_eq!(dec_u64, 0_u64);
+    }
+
+    #[test]
+    fn test_castable64_encode_default_unsigned_types() {
+        // Unsigned types: encode(0) should return 0
+        assert_eq!(Castable64::encode(0_u8), 0);
+        assert_eq!(Castable64::encode(0_u16), 0);
+        assert_eq!(Castable64::encode(0_u32), 0);
+        assert_eq!(Castable64::encode(0_u64), 0);
+    }
+
+    #[test]
+    fn test_castable64_decode_zero_signed_types() {
+        // Signed types: decode(0) SHOULD return 0 (the default value)
+
+        let dec_i8: i8 = Castable64::decode(0);
+        assert_eq!(dec_i8, 0_i8);
+
+        let dec_i16: i16 = Castable64::decode(0);
+        assert_eq!(dec_i16, 0_i16);
+
+        let dec_i32: i32 = Castable64::decode(0);
+        assert_eq!(dec_i32, 0_i32);
+
+        let dec_i64: i64 = Castable64::decode(0);
+        assert_eq!(dec_i64, 0_i64);
+    }
+
+    #[test]
+    fn test_castable64_encode_default_signed_types() {
+        // Signed types: encode(0) SHOULD return 0
+
+        assert_eq!(Castable64::encode(0_i8), 0);
+        assert_eq!(Castable64::encode(0_i16), 0);
+        assert_eq!(Castable64::encode(0_i32), 0);
+        assert_eq!(Castable64::encode(0_i64), 0);
     }
 }

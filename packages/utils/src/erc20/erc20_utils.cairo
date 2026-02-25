@@ -56,28 +56,53 @@ pub fn strict_transfer_from(
     );
 }
 
+/// This trait is deprecated (adding methods to existing dispatchers is not a good practice) and
+/// will be removed in the future.
+/// Use the checked_transfer_from and checked_transfer functions instead.
 #[generate_trait]
 pub impl CheckedIERC20DispatcherImpl of CheckedIERC20DispatcherTrait {
     fn checked_transfer_from(
         self: IERC20Dispatcher, sender: ContractAddress, recipient: ContractAddress, amount: u256,
     ) {
-        assert!(amount <= self.balance_of(account: sender), "{}", Erc20Error::INSUFFICIENT_BALANCE);
-        assert!(
-            amount <= self.allowance(owner: sender, spender: get_contract_address()),
-            "{}",
-            Erc20Error::INSUFFICIENT_ALLOWANCE,
+        checked_transfer_from(
+            token_address: self.contract_address,
+            sender: sender,
+            recipient: recipient,
+            amount: amount,
         );
-        let success = self.transfer_from(:sender, :recipient, :amount);
-        assert!(success, "{}", Erc20Error::TRANSFER_FAILED);
     }
 
     fn checked_transfer(self: IERC20Dispatcher, recipient: ContractAddress, amount: u256) {
-        assert!(
-            amount <= self.balance_of(account: get_contract_address()),
-            "{}",
-            Erc20Error::INSUFFICIENT_BALANCE,
+        checked_transfer(
+            token_address: self.contract_address, recipient: recipient, amount: amount,
         );
-        let success = self.transfer(:recipient, :amount);
-        assert!(success, "{}", Erc20Error::TRANSFER_FAILED);
     }
+}
+
+pub fn checked_transfer_from(
+    token_address: ContractAddress,
+    sender: ContractAddress,
+    recipient: ContractAddress,
+    amount: u256,
+) {
+    let token = IERC20Dispatcher { contract_address: token_address };
+    assert!(amount <= token.balance_of(account: sender), "{}", Erc20Error::INSUFFICIENT_BALANCE);
+    assert!(
+        amount <= token.allowance(owner: sender, spender: get_contract_address()),
+        "{}",
+        Erc20Error::INSUFFICIENT_ALLOWANCE,
+    );
+    let success = token.transfer_from(:sender, :recipient, :amount);
+    assert!(success, "{}", Erc20Error::TRANSFER_FAILED);
+}
+
+pub fn checked_transfer(token_address: ContractAddress, recipient: ContractAddress, amount: u256) {
+    let token = IERC20Dispatcher { contract_address: token_address };
+    assert!(
+        amount <= token.balance_of(account: get_contract_address()),
+        "{}",
+        Erc20Error::INSUFFICIENT_BALANCE,
+    );
+    let success = token.transfer(:recipient, :amount);
+    assert!(success, "{}", Erc20Error::TRANSFER_FAILED);
 }

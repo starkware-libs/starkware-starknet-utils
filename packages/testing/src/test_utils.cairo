@@ -9,6 +9,7 @@ use snforge_std::{
 use starknet::{ContractAddress, Store};
 use starkware_utils::byte_array::short_string_to_byte_array;
 use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starkware_utils::erc20::erc20_utils::{checked_transfer, checked_transfer_from};
 use starkware_utils::interfaces::identity::{IdentityDispatcher, IdentityDispatcherTrait};
 use starkware_utils_testing::constants as testing_constants;
 
@@ -309,5 +310,15 @@ pub impl TokenHelperImpl of TokenHelperTrait {
         let contract_address = self.contract_address();
         cheat_caller_address_once(:contract_address, caller_address: owner);
         IERC20Dispatcher { contract_address }.approve(:spender, :amount);
+    }
+
+    fn checked_transfer(self: @Token, recipient: ContractAddress, amount: u256) {
+        checked_transfer(token_address: self.contract_address(), :recipient, :amount);
+    }
+
+    fn checked_transfer_from(
+        self: @Token, sender: ContractAddress, recipient: ContractAddress, amount: u256,
+    ) {
+        checked_transfer_from(token_address: self.contract_address(), :sender, :recipient, :amount);
     }
 }

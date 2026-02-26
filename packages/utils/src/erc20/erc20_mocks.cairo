@@ -1,3 +1,5 @@
+use starknet::ContractAddress;
+
 #[starknet::contract]
 pub(crate) mod DualCaseERC20Mock {
     use openzeppelin::access::ownable::OwnableComponent;
@@ -298,6 +300,52 @@ pub(crate) mod CamelERC20Panic {
             amount: u256,
         ) {
             panic!("Some error");
+        }
+    }
+}
+
+#[starknet::interface]
+pub trait IErc20UtilsCaller<TState> {
+    fn run_checked_transfer(
+        self: @TState, token_address: ContractAddress, recipient: ContractAddress, amount: u256,
+    );
+    fn run_checked_transfer_from(
+        self: @TState,
+        token_address: ContractAddress,
+        sender: ContractAddress,
+        recipient: ContractAddress,
+        amount: u256,
+    );
+}
+
+#[starknet::contract]
+pub(crate) mod erc20_utils_caller {
+    use starknet::ContractAddress;
+    use starkware_utils::erc20::erc20_utils::{checked_transfer, checked_transfer_from};
+    use super::IErc20UtilsCaller;
+
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl Erc20UtilsCallerImpl of IErc20UtilsCaller<ContractState> {
+        fn run_checked_transfer(
+            self: @ContractState,
+            token_address: ContractAddress,
+            recipient: ContractAddress,
+            amount: u256,
+        ) {
+            checked_transfer(:token_address, :recipient, :amount);
+        }
+
+        fn run_checked_transfer_from(
+            self: @ContractState,
+            token_address: ContractAddress,
+            sender: ContractAddress,
+            recipient: ContractAddress,
+            amount: u256,
+        ) {
+            checked_transfer_from(:token_address, :sender, :recipient, :amount);
         }
     }
 }

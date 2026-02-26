@@ -3,3 +3,6 @@ pub mod erc20_errors;
 #[cfg(target: 'test')]
 pub(crate) mod erc20_mocks;
 pub mod erc20_utils;
+
+#[cfg(test)]
+mod tests;

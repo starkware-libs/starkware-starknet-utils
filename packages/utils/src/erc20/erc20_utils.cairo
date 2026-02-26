@@ -56,6 +56,9 @@ pub fn strict_transfer_from(
     );
 }
 
+/// This trait is deprecated (adding methods to existing dispatchers is not a good practice) and
+/// will be removed in the future.
+/// Use the checked_transfer_from and checked_transfer functions instead.
 #[generate_trait]
 pub impl CheckedIERC20DispatcherImpl of CheckedIERC20DispatcherTrait {
     fn checked_transfer_from(
@@ -80,4 +83,18 @@ pub impl CheckedIERC20DispatcherImpl of CheckedIERC20DispatcherTrait {
         let success = self.transfer(:recipient, :amount);
         assert!(success, "{}", Erc20Error::TRANSFER_FAILED);
     }
+}
+
+pub fn checked_transfer_from(
+    token_address: ContractAddress,
+    sender: ContractAddress,
+    recipient: ContractAddress,
+    amount: u256,
+) {
+    IERC20Dispatcher { contract_address: token_address }
+        .checked_transfer_from(:sender, :recipient, :amount);
+}
+
+pub fn checked_transfer(token_address: ContractAddress, recipient: ContractAddress, amount: u256) {
+    IERC20Dispatcher { contract_address: token_address }.checked_transfer(:recipient, :amount);
 }

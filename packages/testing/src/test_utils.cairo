@@ -263,6 +263,7 @@ pub trait TokenTrait<TTokenState> {
     fn fund(self: TTokenState, recipient: ContractAddress, amount: u128);
     fn approve(self: TTokenState, owner: ContractAddress, spender: ContractAddress, amount: u128);
     fn balance_of(self: TTokenState, account: ContractAddress) -> u128;
+    fn allowance(self: TTokenState, owner: ContractAddress, spender: ContractAddress) -> u128;
 }
 
 pub impl TokenImpl of TokenTrait<TokenState> {
@@ -281,6 +282,11 @@ pub impl TokenImpl of TokenTrait<TokenState> {
     fn balance_of(self: TokenState, account: ContractAddress) -> u128 {
         let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
         erc20_dispatcher.balance_of(account: account).try_into().unwrap()
+    }
+
+    fn allowance(self: TokenState, owner: ContractAddress, spender: ContractAddress) -> u128 {
+        let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
+        erc20_dispatcher.allowance(:owner, :spender).try_into().unwrap()
     }
 }
 

@@ -263,24 +263,30 @@ pub trait TokenTrait<TTokenState> {
     fn fund(self: TTokenState, recipient: ContractAddress, amount: u128);
     fn approve(self: TTokenState, owner: ContractAddress, spender: ContractAddress, amount: u128);
     fn balance_of(self: TTokenState, account: ContractAddress) -> u128;
+    fn allowance(self: TTokenState, owner: ContractAddress, spender: ContractAddress) -> u128;
 }
 
 pub impl TokenImpl of TokenTrait<TokenState> {
     fn fund(self: TokenState, recipient: ContractAddress, amount: u128) {
         let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
         cheat_caller_address_once(contract_address: self.address, caller_address: self.owner);
-        erc20_dispatcher.transfer(recipient: recipient, amount: amount.into());
+        erc20_dispatcher.transfer(:recipient, amount: amount.into());
     }
 
     fn approve(self: TokenState, owner: ContractAddress, spender: ContractAddress, amount: u128) {
         let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
         cheat_caller_address_once(contract_address: self.address, caller_address: owner);
-        erc20_dispatcher.approve(spender: spender, amount: amount.into());
+        erc20_dispatcher.approve(:spender, amount: amount.into());
     }
 
     fn balance_of(self: TokenState, account: ContractAddress) -> u128 {
         let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
-        erc20_dispatcher.balance_of(account: account).try_into().unwrap()
+        erc20_dispatcher.balance_of(:account).try_into().unwrap()
+    }
+
+    fn allowance(self: TokenState, owner: ContractAddress, spender: ContractAddress) -> u128 {
+        let erc20_dispatcher = IERC20Dispatcher { contract_address: self.address };
+        erc20_dispatcher.allowance(:owner, :spender).try_into().unwrap()
     }
 }
 

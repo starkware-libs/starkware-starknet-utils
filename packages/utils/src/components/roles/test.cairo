@@ -1,6 +1,8 @@
 use core::num::traits::zero::Zero;
 use interface::{
-    IRolesDispatcher, IRolesDispatcherTrait, IRolesSafeDispatcher, IRolesSafeDispatcherTrait,
+    IAppRolesDispatcher, IAppRolesDispatcherTrait, IGovernanceRolesDispatcher,
+    IGovernanceRolesDispatcherTrait, IRolesDispatcher, IRolesDispatcherTrait, IRolesSafeDispatcher,
+    IRolesSafeDispatcherTrait, ISecurityRolesDispatcher, ISecurityRolesDispatcherTrait,
 };
 use openzeppelin::access::accesscontrol::AccessControlComponent::Errors as OZAccessErrors;
 use roles::{event_test_utils, interface};
@@ -923,7 +925,7 @@ fn test_renounce() {
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
     let result = roles_safe_dispatcher.renounce(role: interface::GOVERNANCE_ADMIN);
     assert_panic_with_error(
-        :result, expected_error: AccessErrors::GOV_ADMIN_CANNOT_RENOUNCE.describe(),
+        :result, expected_error: AccessErrors::ROLE_CANNOT_BE_RENOUNCED.describe(),
     );
 
     // Renounce role without being registered.
@@ -948,5 +950,186 @@ fn test_renounce() {
     // We don't assert any specific event, because the only event emitted is by accesss control.
     assert_number_of_events(
         actual: events.len(), expected: 1, message: "test_remove_security_admin second",
+    );
+}
+
+// ─── Category interface parity tests
+// ─────────────────────────────────────────
+//
+// These tests verify that dispatching via a category interface (e.g. IUpgradeRoles)
+// against a contract that embeds RolesComponent produces identical results to
+// dispatching via IRoles — same state changes, same named events.
+
+// ── IUpgradeRoles ──
+
+#[test]
+fn test_upgrade_roles_parity_register_via_category() {
+    let contract_address = test_utils::deploy_mock_contract();
+    let roles = IRolesDispatcher { contract_address };
+    let upgrade_roles = IGovernanceRolesDispatcher { contract_address };
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let account = constants::UPGRADE_GOVERNOR;
+
+    assert!(!roles.is_upgrade_governor(:account));
+    assert!(!upgrade_roles.is_upgrade_governor(:account));
+
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    upgrade_roles.register_upgrade_governor(:account);
+
+    assert!(roles.is_upgrade_governor(:account));
+    assert!(upgrade_roles.is_upgrade_governor(:account));
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "upgrade_roles parity register",
+    );
+    event_test_utils::assert_upgrade_governor_added_event(
+        events[1], added_account: account, added_by: governance_admin,
+    );
+}
+
+#[test]
+fn test_upgrade_roles_parity_remove_via_category() {
+    let contract_address = test_utils::deploy_mock_contract();
+    let roles = IRolesDispatcher { contract_address };
+    let upgrade_roles = IGovernanceRolesDispatcher { contract_address };
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let account = constants::UPGRADE_GOVERNOR;
+
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    roles.register_upgrade_governor(:account);
+
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    upgrade_roles.remove_upgrade_governor(:account);
+
+    assert!(!roles.is_upgrade_governor(:account));
+    assert!(!upgrade_roles.is_upgrade_governor(:account));
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "upgrade_roles parity remove",
+    );
+    event_test_utils::assert_upgrade_governor_removed_event(
+        events[1], removed_account: account, removed_by: governance_admin,
+    );
+}
+
+#[test]
+fn test_upgrade_agent_parity_register_via_category() {
+    let contract_address = test_utils::deploy_mock_contract();
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = constants::APP_ROLE_ADMIN;
+    let account = constants::UPGRADE_AGENT;
+
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    IRolesDispatcher { contract_address }.register_app_role_admin(account: app_role_admin);
+
+    let roles = IRolesDispatcher { contract_address };
+    let upgrade_roles = IGovernanceRolesDispatcher { contract_address };
+
+    assert!(!roles.is_upgrade_agent(:account));
+    assert!(!upgrade_roles.is_upgrade_agent(:account));
+
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: app_role_admin);
+    upgrade_roles.register_upgrade_agent(:account);
+
+    assert!(roles.is_upgrade_agent(:account));
+    assert!(upgrade_roles.is_upgrade_agent(:account));
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "upgrade_agent parity register",
+    );
+    event_test_utils::assert_upgrade_agent_added_event(
+        events[1], added_account: account, added_by: app_role_admin,
+    );
+}
+
+// ── ISecurityRoles ──
+
+#[test]
+fn test_security_roles_parity_register_via_category() {
+    let contract_address = test_utils::deploy_mock_contract();
+    let roles = IRolesDispatcher { contract_address };
+    let security_roles = ISecurityRolesDispatcher { contract_address };
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let account = constants::SECURITY_AGENT;
+
+    assert!(!roles.is_security_agent(:account));
+    assert!(!security_roles.is_security_agent(:account));
+
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    security_roles.register_security_agent(:account);
+
+    assert!(roles.is_security_agent(:account));
+    assert!(security_roles.is_security_agent(:account));
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "security_roles parity register",
+    );
+    event_test_utils::assert_security_agent_added_event(
+        events[1], added_account: account, added_by: governance_admin,
+    );
+}
+
+// ── IGovernanceRoles ──
+
+#[test]
+fn test_governance_roles_parity_register_via_category() {
+    let contract_address = test_utils::deploy_mock_contract();
+    let roles = IRolesDispatcher { contract_address };
+    let gov_roles = IGovernanceRolesDispatcher { contract_address };
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let account = constants::APP_ROLE_ADMIN;
+
+    assert!(!roles.is_app_role_admin(:account));
+    assert!(!gov_roles.is_app_role_admin(:account));
+
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    gov_roles.register_app_role_admin(:account);
+
+    assert!(roles.is_app_role_admin(:account));
+    assert!(gov_roles.is_app_role_admin(:account));
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "governance_roles parity register",
+    );
+    event_test_utils::assert_app_role_admin_added_event(
+        events[1], added_account: account, added_by: governance_admin,
+    );
+}
+
+// ── IAppRoles ──
+
+#[test]
+fn test_app_roles_parity_register_via_category() {
+    let contract_address = test_utils::deploy_mock_contract();
+    let governance_admin = constants::INITIAL_ROOT_ADMIN;
+    let app_role_admin = constants::APP_ROLE_ADMIN;
+    let account = constants::APP_GOVERNOR;
+
+    cheat_caller_address_once(:contract_address, caller_address: governance_admin);
+    IRolesDispatcher { contract_address }.register_app_role_admin(account: app_role_admin);
+
+    let roles = IRolesDispatcher { contract_address };
+    let app_roles = IAppRolesDispatcher { contract_address };
+
+    assert!(!roles.is_app_governor(:account));
+    assert!(!app_roles.is_app_governor(:account));
+
+    let mut spy = snforge_std::spy_events();
+    cheat_caller_address_once(:contract_address, caller_address: app_role_admin);
+    app_roles.register_app_governor(:account);
+
+    assert!(roles.is_app_governor(:account));
+    assert!(app_roles.is_app_governor(:account));
+    let events = spy.get_events().emitted_by(:contract_address).events;
+    assert_number_of_events(
+        actual: events.len(), expected: 2, message: "app_roles parity register",
+    );
+    event_test_utils::assert_app_governor_added_event(
+        events[1], added_account: account, added_by: app_role_admin,
     );
 }

@@ -10,7 +10,7 @@ mod ReplaceabilityTests {
     use replaceability::mock::ReplaceabilityMock;
     use replaceability::test_utils::Constants::{
         DEFAULT_UPGRADE_DELAY, DUMMY_FINAL_IMPLEMENTATION_DATA, DUMMY_NONFINAL_IMPLEMENTATION_DATA,
-        EIC_UPGRADE_DELAY_ADDITION, NOT_UPGRADE_GOVERNOR_ACCOUNT,
+        EIC_UPGRADE_DELAY_ADDITION, GOVERNANCE_ADMIN, NOT_UPGRADE_GOVERNOR_ACCOUNT,
     };
     use replaceability::test_utils::{
         assert_finalized_status, assert_implementation_finalized_event_emitted,
@@ -24,6 +24,9 @@ mod ReplaceabilityTests {
         cheat_caller_address, get_class_hash, spy_events,
     };
     use starkware_utils::components::replaceability;
+    use starkware_utils::components::roles::interface::{
+        ICommonRolesDispatcher, ICommonRolesDispatcherTrait, Role,
+    };
     use starkware_utils_testing::test_utils::cheat_caller_address_once;
 
     #[test]
@@ -481,5 +484,25 @@ mod ReplaceabilityTests {
 
         // Should revert with FINALIZED as the implementation is already finalized.
         replaceable_dispatcher.replace_to(:implementation_data);
+    }
+
+    // ─── Replaceability role enforcement
+    // ──────────────────────────────────────
+
+    #[test]
+    fn test_upgrade_governor_can_use_replaceability() {
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+        let account = NOT_UPGRADE_GOVERNOR_ACCOUNT;
+
+        // Grant upgrade governor via ICommonRoles.
+        cheat_caller_address_once(:contract_address, caller_address: GOVERNANCE_ADMIN);
+        ICommonRolesDispatcher { contract_address }
+            .grant_role(role: Role::UpgradeGovernor, :account);
+
+        // Verify the granted account can call add_new_implementation.
+        cheat_caller_address_once(:contract_address, caller_address: account);
+        replaceable_dispatcher
+            .add_new_implementation(implementation_data: DUMMY_NONFINAL_IMPLEMENTATION_DATA());
     }
 }

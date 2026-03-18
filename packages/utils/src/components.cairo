@@ -1,4 +1,5 @@
 pub mod blocklist;
+pub mod common_roles;
 pub mod deposit;
 pub mod nonce;
 pub mod pausable;

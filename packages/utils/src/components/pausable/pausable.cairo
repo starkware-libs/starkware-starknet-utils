@@ -1,12 +1,12 @@
 #[starknet::component]
 pub(crate) mod PausableComponent {
-    use RolesComponent::InternalTrait as RolesInternalTrait;
+    use CommonRolesComponent::InternalTrait as CommonRolesInternalTrait;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
+    use starkware_utils::components::common_roles::CommonRolesComponent;
     use starkware_utils::components::pausable::interface::IPausable;
-    use starkware_utils::components::roles::RolesComponent;
 
     #[storage]
     pub struct Storage {
@@ -42,7 +42,7 @@ pub(crate) mod PausableComponent {
         TContractState,
         +HasComponent<TContractState>,
         +Drop<TContractState>,
-        impl Roles: RolesComponent::HasComponent<TContractState>,
+        impl CommonRoles: CommonRolesComponent::HasComponent<TContractState>,
         +AccessControlComponent::HasComponent<TContractState>,
         +SRC5Component::HasComponent<TContractState>,
     > of IPausable<ComponentState<TContractState>> {
@@ -59,8 +59,8 @@ pub(crate) mod PausableComponent {
         ///
         /// Emits a `Paused` event.
         fn pause(ref self: ComponentState<TContractState>) {
-            let roles = get_dep_component!(@self, Roles);
-            roles.only_security_agent();
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_security_agent();
             self.assert_not_paused();
             self.paused.write(true);
             self.emit(Paused { account: get_caller_address() });
@@ -74,8 +74,8 @@ pub(crate) mod PausableComponent {
         ///
         /// Emits an `Unpaused` event.
         fn unpause(ref self: ComponentState<TContractState>) {
-            let roles = get_dep_component!(@self, Roles);
-            roles.only_security_governor();
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_security_governor();
             self.assert_paused();
             self.paused.write(false);
             self.emit(Unpaused { account: get_caller_address() });

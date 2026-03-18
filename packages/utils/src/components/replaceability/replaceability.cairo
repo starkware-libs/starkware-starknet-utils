@@ -10,13 +10,13 @@ pub(crate) mod ReplaceabilityComponent {
         StoragePointerWriteAccess,
     };
     use starknet::syscalls::{library_call_syscall, replace_class_syscall};
+    use starkware_utils::components::common_roles::CommonRolesComponent;
+    use starkware_utils::components::common_roles::CommonRolesComponent::InternalTrait;
     use starkware_utils::components::replaceability::errors::ReplaceErrors;
     use starkware_utils::components::replaceability::interface::{
         EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION, IReplaceable, ImplementationAdded,
         ImplementationData, ImplementationFinalized, ImplementationRemoved, ImplementationReplaced,
     };
-    use starkware_utils::components::roles::RolesComponent;
-    use starkware_utils::components::roles::RolesComponent::InternalTrait;
 
 
     #[storage]
@@ -53,7 +53,7 @@ pub(crate) mod ReplaceabilityComponent {
     pub impl Replaceability<
         TContractState,
         +HasComponent<TContractState>,
-        impl Roles: RolesComponent::HasComponent<TContractState>,
+        impl CommonRoles: CommonRolesComponent::HasComponent<TContractState>,
         +AccessControlComponent::HasComponent<TContractState>,
         +SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
@@ -73,8 +73,8 @@ pub(crate) mod ReplaceabilityComponent {
             ref self: ComponentState<TContractState>, implementation_data: ImplementationData,
         ) {
             // The call is restricted to the upgrade governor.
-            let roles_comp = get_dep_component!(@self, Roles);
-            roles_comp.only_upgrade_governor();
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_upgrade_governor();
 
             let activation_time = get_block_timestamp() + self.get_upgrade_delay();
             let expiration_time = activation_time + IMPLEMENTATION_EXPIRATION;
@@ -89,8 +89,8 @@ pub(crate) mod ReplaceabilityComponent {
             ref self: ComponentState<TContractState>, implementation_data: ImplementationData,
         ) {
             // The call is restricted to the upgrade governor.
-            let roles_comp = get_dep_component!(@self, Roles);
-            roles_comp.only_upgrade_governor();
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_upgrade_governor();
 
             // Read implementation activation time.
             let impl_activation_time = self.get_impl_activation_time(:implementation_data);
@@ -108,8 +108,8 @@ pub(crate) mod ReplaceabilityComponent {
             ref self: ComponentState<TContractState>, implementation_data: ImplementationData,
         ) {
             // The call is restricted to the upgrade agent or upgrade governor.
-            let roles_comp = get_dep_component!(@self, Roles);
-            roles_comp.only_upgrader();
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_upgrader();
 
             // Validate implementation is not finalized.
             assert!(!self.is_finalized(), "{}", ReplaceErrors::FINALIZED);

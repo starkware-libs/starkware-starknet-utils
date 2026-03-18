@@ -1,15 +1,15 @@
 #[starknet::contract]
 pub(crate) mod ReplaceabilityMock {
-    use RolesComponent::InternalTrait as RolesInternalTrait;
+    use CommonRolesComponent::InternalTrait as CommonRolesInternalTrait;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::ContractAddress;
+    use starkware_utils::components::common_roles::CommonRolesComponent;
     use starkware_utils::components::replaceability::ReplaceabilityComponent;
     use starkware_utils::components::replaceability::ReplaceabilityComponent::InternalReplaceabilityTrait;
-    use starkware_utils::components::roles::RolesComponent;
 
     component!(path: ReplaceabilityComponent, storage: replaceability, event: ReplaceabilityEvent);
-    component!(path: RolesComponent, storage: roles, event: RolesEvent);
+    component!(path: CommonRolesComponent, storage: common_roles, event: CommonRolesEvent);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
@@ -18,7 +18,7 @@ pub(crate) mod ReplaceabilityMock {
         #[substorage(v0)]
         replaceability: ReplaceabilityComponent::Storage,
         #[substorage(v0)]
-        roles: RolesComponent::Storage,
+        common_roles: CommonRolesComponent::Storage,
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
@@ -29,14 +29,14 @@ pub(crate) mod ReplaceabilityMock {
     #[derive(Drop, starknet::Event)]
     pub(crate) enum Event {
         ReplaceabilityEvent: ReplaceabilityComponent::Event,
-        RolesEvent: RolesComponent::Event,
+        CommonRolesEvent: CommonRolesComponent::Event,
         AccessControlEvent: AccessControlComponent::Event,
         SRC5Event: SRC5Component::Event,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState, upgrade_delay: u64, governance_admin: ContractAddress) {
-        self.roles.initialize(:governance_admin);
+        self.common_roles.initialize(:governance_admin);
         self.replaceability.initialize(:upgrade_delay);
     }
 
@@ -45,5 +45,5 @@ pub(crate) mod ReplaceabilityMock {
         ReplaceabilityComponent::ReplaceabilityImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl RolesImpl = RolesComponent::RolesImpl<ContractState>;
+    impl CommonRolesImpl = CommonRolesComponent::CommonRolesImpl<ContractState>;
 }

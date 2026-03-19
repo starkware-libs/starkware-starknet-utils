@@ -1,13 +1,13 @@
 #[starknet::component]
 pub mod blocklist {
-    use RolesComponent::InternalTrait as RolesInternalTrait;
+    use CommonRolesComponent::InternalTrait as CommonRolesInternalTrait;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use starkware_utils::components::blocklist::events::{Blocklisted, Unblocklisted};
     use starkware_utils::components::blocklist::interface::IBlocklist;
-    use starkware_utils::components::roles::RolesComponent;
+    use starkware_utils::components::common_roles::CommonRolesComponent;
 
     #[storage]
     pub struct Storage {
@@ -30,7 +30,7 @@ pub mod blocklist {
         TContractState,
         +HasComponent<TContractState>,
         +Drop<TContractState>,
-        impl Roles: RolesComponent::HasComponent<TContractState>,
+        impl CommonRoles: CommonRolesComponent::HasComponent<TContractState>,
         +AccessControlComponent::HasComponent<TContractState>,
         +SRC5Component::HasComponent<TContractState>,
     > of IBlocklist<ComponentState<TContractState>> {
@@ -43,8 +43,8 @@ pub mod blocklist {
         ///
         /// Can be called only by security admin.
         fn add_to_blocklist(ref self: ComponentState<TContractState>, account: ContractAddress) {
-            let roles = get_dep_component!(@self, Roles);
-            roles.only_security_admin();
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_security_admin();
             self.blocklist.write(account, true);
             self.emit(Blocklisted { account, caller: get_caller_address() });
         }
@@ -55,8 +55,8 @@ pub mod blocklist {
         fn remove_from_blocklist(
             ref self: ComponentState<TContractState>, account: ContractAddress,
         ) {
-            let roles = get_dep_component!(@self, Roles);
-            roles.only_security_admin();
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_security_admin();
             self.blocklist.write(account, false);
             self.emit(Unblocklisted { account, caller: get_caller_address() });
         }

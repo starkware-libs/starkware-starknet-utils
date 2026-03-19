@@ -6,6 +6,7 @@ pub mod blocklist_mock_contract {
     use starknet::ContractAddress;
     use starkware_utils::components::blocklist::blocklist::blocklist as BlocklistComponent;
     use starkware_utils::components::blocklist::blocklist::blocklist::InternalTrait as BlocklistInternalTrait;
+    use starkware_utils::components::common_roles::CommonRolesComponent;
     use starkware_utils::components::roles::RolesComponent;
     use starkware_utils::components::roles::RolesComponent::InternalTrait as RolesInternalTrait;
     use starkware_utils::interfaces::mintable_token::IMintableToken;
@@ -13,6 +14,7 @@ pub mod blocklist_mock_contract {
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: BlocklistComponent, storage: blocklist, event: BlocklistEvent);
     component!(path: RolesComponent, storage: roles, event: RolesEvent);
+    component!(path: CommonRolesComponent, storage: common_roles, event: CommonRolesEvent);
     component!(path: AccessControlComponent, storage: access_control, event: AccessControlEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
@@ -20,7 +22,6 @@ pub mod blocklist_mock_contract {
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
     #[abi(embed_v0)]
     impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
-
 
     #[abi(embed_v0)]
     impl BlocklistImpl = BlocklistComponent::BlocklistImpl<ContractState>;
@@ -39,6 +40,8 @@ pub mod blocklist_mock_contract {
         #[substorage(v0)]
         roles: RolesComponent::Storage,
         #[substorage(v0)]
+        common_roles: CommonRolesComponent::Storage,
+        #[substorage(v0)]
         access_control: AccessControlComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
@@ -53,6 +56,8 @@ pub mod blocklist_mock_contract {
         BlocklistEvent: BlocklistComponent::Event,
         #[flat]
         RolesEvent: RolesComponent::Event,
+        #[flat]
+        CommonRolesEvent: CommonRolesComponent::Event,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]

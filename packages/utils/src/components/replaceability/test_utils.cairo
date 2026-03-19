@@ -8,7 +8,9 @@ use starkware_utils::components::replaceability::interface::{
     ImplementationReplaced,
 };
 use starkware_utils::components::replaceability::mock::ReplaceabilityMock;
-use starkware_utils::components::roles::interface::{IRolesDispatcher, IRolesDispatcherTrait};
+use starkware_utils::components::roles::interface::{
+    ICommonRolesDispatcher, ICommonRolesDispatcherTrait, Role,
+};
 use starkware_utils_testing::event_test_utils::is_emitted;
 use starkware_utils_testing::test_utils::cheat_caller_address_once;
 
@@ -68,9 +70,9 @@ pub(crate) fn get_upgrade_governor_account(contract_address: ContractAddress) ->
 }
 
 fn set_caller_as_upgrade_governor(contract_address: ContractAddress, caller: ContractAddress) {
-    let roles_dispatcher = IRolesDispatcher { contract_address: contract_address };
+    let dispatcher = ICommonRolesDispatcher { contract_address };
     cheat_caller_address_once(:contract_address, caller_address: Constants::GOVERNANCE_ADMIN);
-    roles_dispatcher.register_upgrade_governor(account: caller);
+    dispatcher.grant_role(Role::UpgradeGovernor, caller);
 }
 
 pub(crate) fn dummy_final_implementation_data_with_class_hash(

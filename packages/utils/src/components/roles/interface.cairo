@@ -76,30 +76,12 @@ pub trait IRoles<TContractState> {
     fn remove_upgrade_agent(ref self: TContractState, account: ContractAddress);
     fn register_upgrade_governor(ref self: TContractState, account: ContractAddress);
     fn remove_upgrade_governor(ref self: TContractState, account: ContractAddress);
-    fn renounce(ref self: TContractState, role: RoleId);
     fn register_security_admin(ref self: TContractState, account: ContractAddress);
     fn remove_security_admin(ref self: TContractState, account: ContractAddress);
     fn register_security_agent(ref self: TContractState, account: ContractAddress);
     fn remove_security_agent(ref self: TContractState, account: ContractAddress);
     fn register_security_governor(ref self: TContractState, account: ContractAddress);
     fn remove_security_governor(ref self: TContractState, account: ContractAddress);
-    fn reclaim_legacy_roles(ref self: TContractState);
-    fn reclaim_legacy_roles_for_accounts(ref self: TContractState, accounts: Span<ContractAddress>);
-    fn disable_legacy_role_reclaim(ref self: TContractState);
-}
-
-#[starknet::interface]
-pub trait IMinimalRoles<TContractState> {
-    fn is_governance_admin(self: @TContractState, account: ContractAddress) -> bool;
-    fn is_upgrade_governor(self: @TContractState, account: ContractAddress) -> bool;
-    fn is_upgrade_agent(self: @TContractState, account: ContractAddress) -> bool;
-    fn register_governance_admin(ref self: TContractState, account: ContractAddress);
-    fn remove_governance_admin(ref self: TContractState, account: ContractAddress);
-    fn register_upgrade_governor(ref self: TContractState, account: ContractAddress);
-    fn remove_upgrade_governor(ref self: TContractState, account: ContractAddress);
-    fn register_upgrade_agent(ref self: TContractState, account: ContractAddress);
-    fn remove_upgrade_agent(ref self: TContractState, account: ContractAddress);
-    fn renounce(ref self: TContractState, role: RoleId);
 }
 
 #[derive(Copy, Drop, PartialEq, starknet::Event)]
@@ -219,4 +201,151 @@ pub(crate) struct UpgradeAgentAdded {
 pub(crate) struct UpgradeAgentRemoved {
     pub removed_account: ContractAddress,
     pub removed_by: ContractAddress,
+}
+
+// ─── CommonRoles types
+// ──────────────────────────────────
+
+#[derive(Copy, Drop, PartialEq)]
+pub enum Role {
+    AppGovernor,
+    AppRoleAdmin,
+    GovernanceAdmin,
+    Operator,
+    TokenAdmin,
+    UpgradeAgent,
+    UpgradeGovernor,
+    SecurityAdmin,
+    SecurityAgent,
+    SecurityGovernor,
+}
+
+pub impl RoleSerde of Serde<Role> {
+    fn serialize(self: @Role, ref output: Array<felt252>) {
+        let role_id: RoleId = (*self).into();
+        role_id.serialize(ref output);
+    }
+
+    fn deserialize(ref serialized: Span<felt252>) -> Option<Role> {
+        let role_id: RoleId = Serde::deserialize(ref serialized)?;
+        if role_id == APP_GOVERNOR {
+            return Option::Some(Role::AppGovernor);
+        }
+        if role_id == APP_ROLE_ADMIN {
+            return Option::Some(Role::AppRoleAdmin);
+        }
+        if role_id == GOVERNANCE_ADMIN {
+            return Option::Some(Role::GovernanceAdmin);
+        }
+        if role_id == OPERATOR {
+            return Option::Some(Role::Operator);
+        }
+        if role_id == TOKEN_ADMIN {
+            return Option::Some(Role::TokenAdmin);
+        }
+        if role_id == UPGRADE_AGENT {
+            return Option::Some(Role::UpgradeAgent);
+        }
+        if role_id == UPGRADE_GOVERNOR {
+            return Option::Some(Role::UpgradeGovernor);
+        }
+        if role_id == SECURITY_ADMIN {
+            return Option::Some(Role::SecurityAdmin);
+        }
+        if role_id == SECURITY_AGENT {
+            return Option::Some(Role::SecurityAgent);
+        }
+        if role_id == SECURITY_GOVERNOR {
+            return Option::Some(Role::SecurityGovernor);
+        }
+        Option::None
+    }
+}
+
+pub impl RoleIntoRoleId of Into<Role, RoleId> {
+    fn into(self: Role) -> RoleId {
+        match self {
+            Role::AppGovernor => APP_GOVERNOR,
+            Role::AppRoleAdmin => APP_ROLE_ADMIN,
+            Role::GovernanceAdmin => GOVERNANCE_ADMIN,
+            Role::Operator => OPERATOR,
+            Role::TokenAdmin => TOKEN_ADMIN,
+            Role::UpgradeAgent => UPGRADE_AGENT,
+            Role::UpgradeGovernor => UPGRADE_GOVERNOR,
+            Role::SecurityAdmin => SECURITY_ADMIN,
+            Role::SecurityAgent => SECURITY_AGENT,
+            Role::SecurityGovernor => SECURITY_GOVERNOR,
+        }
+    }
+}
+
+pub fn is_renounceable(role: Role) -> bool {
+    match role {
+        Role::AppGovernor => true,
+        Role::AppRoleAdmin => true,
+        Role::GovernanceAdmin => false,
+        Role::Operator => true,
+        Role::TokenAdmin => true,
+        Role::UpgradeAgent => true,
+        Role::UpgradeGovernor => true,
+        Role::SecurityAdmin => false,
+        Role::SecurityAgent => true,
+        Role::SecurityGovernor => true,
+    }
+}
+
+#[starknet::interface]
+pub trait ICommonRoles<TState> {
+    fn grant_role(ref self: TState, role: Role, account: ContractAddress);
+    fn revoke_role(ref self: TState, role: Role, account: ContractAddress);
+    fn has_role(self: @TState, role: Role, account: ContractAddress) -> bool;
+    fn renounce(ref self: TState, role: Role);
+    // Always present — rescue path for contracts upgrading from legacy role storage.
+    fn reclaim_legacy_roles(ref self: TState);
+    fn reclaim_legacy_roles_for_accounts(ref self: TState, accounts: Span<ContractAddress>);
+    fn disable_legacy_role_reclaim(ref self: TState);
+}
+
+// ─── Category-scoped role interfaces ─────
+
+#[starknet::interface]
+pub trait ISecurityRoles<TState> {
+    fn is_security_admin(self: @TState, account: ContractAddress) -> bool;
+    fn register_security_admin(ref self: TState, account: ContractAddress);
+    fn remove_security_admin(ref self: TState, account: ContractAddress);
+    fn is_security_agent(self: @TState, account: ContractAddress) -> bool;
+    fn register_security_agent(ref self: TState, account: ContractAddress);
+    fn remove_security_agent(ref self: TState, account: ContractAddress);
+    fn is_security_governor(self: @TState, account: ContractAddress) -> bool;
+    fn register_security_governor(ref self: TState, account: ContractAddress);
+    fn remove_security_governor(ref self: TState, account: ContractAddress);
+}
+
+#[starknet::interface]
+pub trait IGovernanceRoles<TState> {
+    fn is_governance_admin(self: @TState, account: ContractAddress) -> bool;
+    fn register_governance_admin(ref self: TState, account: ContractAddress);
+    fn remove_governance_admin(ref self: TState, account: ContractAddress);
+    fn is_app_role_admin(self: @TState, account: ContractAddress) -> bool;
+    fn register_app_role_admin(ref self: TState, account: ContractAddress);
+    fn remove_app_role_admin(ref self: TState, account: ContractAddress);
+    fn is_upgrade_governor(self: @TState, account: ContractAddress) -> bool;
+    fn register_upgrade_governor(ref self: TState, account: ContractAddress);
+    fn remove_upgrade_governor(ref self: TState, account: ContractAddress);
+    fn is_upgrade_agent(self: @TState, account: ContractAddress) -> bool;
+    fn register_upgrade_agent(ref self: TState, account: ContractAddress);
+    fn remove_upgrade_agent(ref self: TState, account: ContractAddress);
+}
+
+#[starknet::interface]
+pub trait IAppRoles<TState> {
+    fn is_app_governor(self: @TState, account: ContractAddress) -> bool;
+    fn register_app_governor(ref self: TState, account: ContractAddress);
+    fn remove_app_governor(ref self: TState, account: ContractAddress);
+    fn is_operator(self: @TState, account: ContractAddress) -> bool;
+    fn register_operator(ref self: TState, account: ContractAddress);
+    fn remove_operator(ref self: TState, account: ContractAddress);
+    fn is_token_admin(self: @TState, account: ContractAddress) -> bool;
+    fn register_token_admin(ref self: TState, account: ContractAddress);
+    fn remove_token_admin(ref self: TState, account: ContractAddress);
 }

@@ -18,6 +18,10 @@ pub(crate) mod CommonRolesComponent {
         UPGRADE_GOVERNOR, is_renounceable,
     };
 
+    // Maps each role to its admin role — used both at initialization (to configure OZ
+    // AccessControl)
+    // and during legacy role reclaim (to ensure admin pairs are set on upgraded contracts).
+    // `GOVERNANCE_ADMIN` and `SECURITY_ADMIN` are self-administered (admin == role).
     pub const ROLE_ADMIN_PAIRS: [(RoleId, RoleId); 10] = [
         (APP_GOVERNOR, APP_ROLE_ADMIN), (APP_ROLE_ADMIN, GOVERNANCE_ADMIN),
         (GOVERNANCE_ADMIN, GOVERNANCE_ADMIN), (OPERATOR, APP_ROLE_ADMIN),
@@ -28,10 +32,14 @@ pub(crate) mod CommonRolesComponent {
 
     #[storage]
     pub struct Storage {
-        // LEGACY: Old role-membership map from before OZ AccessControl integration.
-        // Kept to allow one-time reclaim migration. Read-only after initialize().
+        // LEGACY: Role-membership map from before OZ AccessControl integration.
+        // Written only by the legacy reclaim path (_reclaim_role erases each entry as it migrates
+        // it to OZ storage). Private — test mocks access it via the #[rename] storage-collision
+        // trick rather than requiring pub visibility on production code.
         role_members: starknet::storage::Map<(RoleId, ContractAddress), bool>,
-        // Once set, legacy reclaim is permanently disabled.
+        // Guards the one-time reclaim window. Fresh contracts set this to `true` in `initialize`;
+        // legacy-upgraded contracts leave it `false` until the upgrade is complete and
+        // `disable_legacy_role_reclaim` is called by an upgrade governor.
         legacy_role_reclaim_disabled: bool,
     }
 
@@ -39,6 +47,12 @@ pub(crate) mod CommonRolesComponent {
     #[derive(Drop, starknet::Event)]
     pub enum Event {}
 
+    // ─── Public ABI (ICommonRoles)
+    // ────────────────────────────────────────────
+    // These 7 entry points are the minimal role-management surface. They are the
+    // only role-related entry points on Tier-A contracts (CommonRolesComponent
+    // only), and they complement the named-role entry points on Tier-B/C contracts
+    // (RolesComponent adds IRoles / category interfaces on top).
     #[embeddable_as(CommonRolesImpl)]
     pub impl CommonRoles<
         TContractState,
@@ -66,18 +80,26 @@ pub(crate) mod CommonRolesComponent {
         }
 
         fn renounce(ref self: ComponentState<TContractState>, role: Role) {
+            // GOVERNANCE_ADMIN and SECURITY_ADMIN are non-renounceable — self-removal of those
+            // roles would leave the contract permanently ungovernable / un-paused.
             assert!(is_renounceable(role), "{}", AccessErrors::ROLE_CANNOT_BE_RENOUNCED);
             let role_id: RoleId = role.into();
             let mut access_comp = get_dep_component_mut!(ref self, Access);
             access_comp.renounce_role(role: role_id, account: get_caller_address());
         }
 
+        // Allows the caller to migrate their own roles from legacy storage to OZ AccessControl.
+        // Also calls ensure_role_admins in case this is the first account to reclaim on a
+        // contract that was upgraded without going through initialize().
         fn reclaim_legacy_roles(ref self: ComponentState<TContractState>) {
             InternalTrait::assert_role_reclaim_enabled(@self);
             InternalTrait::_reclaim_legacy_roles_for_account(ref self, get_caller_address());
             InternalTrait::ensure_role_admins(ref self);
         }
 
+        // Batch version gated behind SECURITY_GOVERNOR — intended for the upgrade governor to
+        // migrate multiple accounts in one tx. ensure_role_admins is not called here because the
+        // upgrade constructor always calls it before any account can reach this path.
         fn reclaim_legacy_roles_for_accounts(
             ref self: ComponentState<TContractState>, accounts: Span<ContractAddress>,
         ) {
@@ -88,12 +110,16 @@ pub(crate) mod CommonRolesComponent {
             };
         }
 
+        // Permanently closes the reclaim window. Idempotent. Called by an upgrade governor
+        // once all legacy roles have been migrated.
         fn disable_legacy_role_reclaim(ref self: ComponentState<TContractState>) {
             InternalTrait::only_upgrade_governor(@self);
             self.legacy_role_reclaim_disabled.write(true);
         }
     }
 
+    // ─── Internal helpers
+    // ─────────────────────────────────────────────────────
     #[generate_trait]
     pub impl InternalImpl<
         TContractState,
@@ -103,9 +129,14 @@ pub(crate) mod CommonRolesComponent {
         +SRC5Component::HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
         // WARNING
-        // Unprotected — call only from constructor (or test setup).
+        // Unprotected — call only from a constructor (or test setup).
+        // Sets up OZ AccessControl (initializer + role admin pairs), grants GOVERNANCE_ADMIN and
+        // SECURITY_ADMIN to `governance_admin`, then immediately disables legacy role reclaim
+        // (fresh contracts have no legacy storage to migrate).
         fn initialize(ref self: ComponentState<TContractState>, governance_admin: ContractAddress) {
             let mut access_comp = get_dep_component_mut!(ref self, Access);
+            // Detect double-initialization: if GOVERNANCE_ADMIN already has an admin it means
+            // initialize() was already called on this deployment.
             let uninitialized = access_comp.get_role_admin(role: GOVERNANCE_ADMIN).is_zero();
             assert!(uninitialized, "{}", AccessErrors::ALREADY_INITIALIZED);
             access_comp.initializer();
@@ -117,6 +148,8 @@ pub(crate) mod CommonRolesComponent {
             self.legacy_role_reclaim_disabled.write(true);
         }
 
+        // Idempotent: only sets admin pairs whose current admin is zero. This lets it be called
+        // on both fresh deployments and upgrades without overwriting intentional customization.
         fn _set_role_admins(
             ref access_comp: AccessControlComponent::ComponentState<TContractState>,
         ) {
@@ -145,6 +178,8 @@ pub(crate) mod CommonRolesComponent {
         }
 
         /// Grants `role` to `account`. Enforces caller is the role's admin (via OZ grant_role).
+        /// Rejects the zero address — granting a role to zero is always a mistake and can make
+        /// the role permanently inaccessible if it is self-administered (e.g., GOVERNANCE_ADMIN).
         fn grant_role(
             ref self: ComponentState<TContractState>, role: Role, account: ContractAddress,
         ) {
@@ -169,6 +204,11 @@ pub(crate) mod CommonRolesComponent {
             access_comp.revoke_role(:role, :account);
         }
 
+        // ─── Role guards
+        // ─────────────────────────────────────────────────────
+        // These are the canonical authorization checks. Both `CommonRolesComponent` and
+        // `RolesComponent` expose them as internal methods so sibling components can call
+        // them without going through the public ABI.
         fn only_role(self: @ComponentState<TContractState>, role: Role) {
             let role_id: RoleId = role.into();
             let access_comp = get_dep_component!(self, Access);
@@ -261,12 +301,17 @@ pub(crate) mod CommonRolesComponent {
             );
         }
 
+        // NOTE: parameter order is (account, role) but the storage key is (role, account) —
+        // intentional, but keep in mind when reading call sites.
         fn _has_legacy_role(
             self: @ComponentState<TContractState>, account: ContractAddress, role: RoleId,
         ) -> bool {
             self.role_members.read((role, account))
         }
 
+        // Migrates a single (role, account) entry: clears the legacy map entry and grants
+        // the role in OZ AccessControl. No-op if the account doesn't hold the role in legacy
+        // storage — safe to call unconditionally for all roles.
         fn _reclaim_role(
             ref self: ComponentState<TContractState>, role: RoleId, account: ContractAddress,
         ) {
@@ -277,6 +322,8 @@ pub(crate) mod CommonRolesComponent {
             }
         }
 
+        // Iterates all 10 known roles for one account. O(10) regardless of which roles the
+        // account actually holds — acceptable for a one-time migration path.
         fn _reclaim_legacy_roles_for_account(
             ref self: ComponentState<TContractState>, account: ContractAddress,
         ) {

@@ -45,6 +45,13 @@ pub(crate) mod RolesComponent {
         UpgradeAgentRemoved: UpgradeAgentRemoved,
     }
 
+    // ─── IRoles (full 30-EP interface)
+    // ────────────────────────────────────────
+    // Each method either reads from or delegates writes to CommonRolesComponent.
+    // Reads go through `get_dep_component!(self, CommonRoles).has_role(...)`.
+    // Writes go through `_register_role` / `_remove_role` (see InternalTrait below),
+    // which call `CommonRolesComponent::InternalTrait::grant_role` / `revoke_role`
+    // and emit the corresponding named event only on an actual state change.
     #[embeddable_as(RolesImpl)]
     pub impl Roles<
         TContractState,
@@ -401,7 +408,11 @@ pub(crate) mod RolesComponent {
         }
     }
 
-    // ─── Category-scoped role impls ────────────
+    // ─── Category-scoped implementations
+    // ─────────────────────────────────────
+    // These three embeddable implementations cover ISecurityRoles / IGovernanceRoles /
+    // IAppRoles. A contract that does not need all 30 IRoles entry points can embed just
+    // the category implementation it needs instead of RolesImpl.
 
     #[embeddable_as(SecurityRolesImpl)]
     pub impl SecurityRoles<
@@ -779,6 +790,8 @@ pub(crate) mod RolesComponent {
         }
     }
 
+    // ─── Internal helpers
+    // ─────────────────────────────────────────────────────
     #[generate_trait]
     pub impl RolesInternalImpl<
         TContractState,
@@ -788,6 +801,9 @@ pub(crate) mod RolesComponent {
         impl CommonRoles: CommonRolesComponent::HasComponent<TContractState>,
         +SRC5Component::HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
+        // Idempotent grant: no-op (and no event) if `account` already holds `role`.
+        // The caller constructs the event before calling, so the only branching needed here
+        // is the early-return guard — avoids closures or runtime event dispatch.
         fn _register_role(
             ref self: ComponentState<TContractState>,
             role: Role,
@@ -802,6 +818,9 @@ pub(crate) mod RolesComponent {
             self.emit(event);
         }
 
+        // Idempotent revoke: no-op (and no event) if `account` does not hold `role`.
+        // Authorization (caller must be role admin) is enforced inside
+        // `CommonRolesComponent::InternalTrait::revoke_role` via OZ AccessControl.
         fn _remove_role(
             ref self: ComponentState<TContractState>,
             role: Role,
@@ -817,13 +836,18 @@ pub(crate) mod RolesComponent {
         }
 
         // WARNING
-        // The following internal method is unprotected and should only be used from the containing
-        // contract's constructor (or, in context of tests, from the setup method).
+        // Unprotected — call only from a constructor (or test setup).
+        // Thin wrapper that forwards to CommonRolesComponent::initialize, which seeds
+        // GOVERNANCE_ADMIN and SECURITY_ADMIN and sets all role admin pairs.
         fn initialize(ref self: ComponentState<TContractState>, governance_admin: ContractAddress) {
             let mut common_roles = get_dep_component_mut!(ref self, CommonRoles);
             common_roles.initialize(:governance_admin);
         }
 
+        // ─── Role guards (delegates to CommonRolesComponent)
+        // ─────────────────
+        // Embeddable methods on a sibling component are not directly callable via
+        // `get_dep_component!`, so each guard is re-exposed here as a thin wrapper.
         fn only_app_governor(self: @ComponentState<TContractState>) {
             get_dep_component!(self, CommonRoles).only_app_governor();
         }

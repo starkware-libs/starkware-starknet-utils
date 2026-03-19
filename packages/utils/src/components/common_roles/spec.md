@@ -7,6 +7,10 @@ The role system is split into two layers:
 - **`CommonRolesComponent`** — lean infrastructure. Owns the role constants, the `Role` enum, role admin configuration, role guards (`only_X`), a 7-method ABI (`ICommonRoles`: `grant_role`, `revoke_role`, `has_role`, `renounce`, and the three legacy reclaim entry points), and the legacy reclaim storage (`role_members` map + `legacy_role_reclaim_disabled` flag).
 - **`RolesComponent`** — full-featured layer. Delegates all role state to `CommonRolesComponent` internally. Adds named role events (20 variants) and category-scoped embeddable implementations (`IGovernanceRoles`, `ISecurityRoles`, `IAppRoles`), and the fat `IRoles` interface (~30 EPs).
 
+### Role wire format
+
+`Role` serializes as its corresponding `RoleId` felt (the keccak selector constant, e.g. `GOVERNANCE_ADMIN = 0x371…`), **not** as a zero-based variant index. This makes calldata self-documenting, stable across enum reordering, and backward-compatible with the felt values already in use by operators and indexers.
+
 The design lets contracts pick exactly the role surface they need — from zero ABI overhead up to the full named interface — without duplicating any role logic.
 
 ---

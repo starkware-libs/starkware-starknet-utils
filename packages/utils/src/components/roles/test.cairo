@@ -1,8 +1,10 @@
 use core::num::traits::zero::Zero;
 use interface::{
-    IAppRolesDispatcher, IAppRolesDispatcherTrait, IGovernanceRolesDispatcher,
-    IGovernanceRolesDispatcherTrait, IRolesDispatcher, IRolesDispatcherTrait, IRolesSafeDispatcher,
-    IRolesSafeDispatcherTrait, ISecurityRolesDispatcher, ISecurityRolesDispatcherTrait,
+    IAppRolesDispatcher, IAppRolesDispatcherTrait, ICommonRolesDispatcher,
+    ICommonRolesDispatcherTrait, ICommonRolesSafeDispatcher, ICommonRolesSafeDispatcherTrait,
+    IGovernanceRolesDispatcher, IGovernanceRolesDispatcherTrait, IRolesDispatcher,
+    IRolesDispatcherTrait, IRolesSafeDispatcher, IRolesSafeDispatcherTrait,
+    ISecurityRolesDispatcher, ISecurityRolesDispatcherTrait, Role,
 };
 use openzeppelin::access::accesscontrol::AccessControlComponent::Errors as OZAccessErrors;
 use roles::{event_test_utils, interface};
@@ -909,6 +911,21 @@ fn test_remove_security_admin() {
     assert!(!roles_dispatcher.is_security_admin(account: security_admin));
 }
 
+#[feature("safe_dispatcher")]
+#[test]
+fn test_remove_security_admin_self_panics() {
+    // A security admin cannot remove themselves via remove_security_admin.
+    let contract_address = test_utils::deploy_mock_contract();
+    let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
+    let security_admin = constants::INITIAL_ROOT_ADMIN;
+
+    cheat_caller_address_once(:contract_address, caller_address: security_admin);
+    let result = roles_safe_dispatcher.remove_security_admin(account: security_admin);
+    assert_panic_with_error(
+        :result, expected_error: AccessErrors::ROLE_CANNOT_BE_RENOUNCED.describe(),
+    );
+}
+
 
 #[feature("safe_dispatcher")]
 #[test]
@@ -916,14 +933,15 @@ fn test_renounce() {
     // Deploy mock contract.
     let contract_address = test_utils::deploy_mock_contract();
     let roles_dispatcher = IRolesDispatcher { contract_address };
-    let roles_safe_dispatcher = IRolesSafeDispatcher { contract_address };
+    let common_roles_dispatcher = ICommonRolesDispatcher { contract_address };
+    let common_roles_safe_dispatcher = ICommonRolesSafeDispatcher { contract_address };
     let governance_admin = constants::INITIAL_ROOT_ADMIN;
     let app_role_admin = constants::APP_ROLE_ADMIN;
 
     // Try to renounce governance admin.
     // Note: the caller doesn't have to be a governance admin for this error as it's checked first.
     cheat_caller_address_once(:contract_address, caller_address: governance_admin);
-    let result = roles_safe_dispatcher.renounce(role: interface::GOVERNANCE_ADMIN);
+    let result = common_roles_safe_dispatcher.renounce(role: Role::GovernanceAdmin);
     assert_panic_with_error(
         :result, expected_error: AccessErrors::ROLE_CANNOT_BE_RENOUNCED.describe(),
     );
@@ -931,7 +949,7 @@ fn test_renounce() {
     // Renounce role without being registered.
     let mut spy = snforge_std::spy_events();
     cheat_caller_address_once(:contract_address, caller_address: app_role_admin);
-    roles_dispatcher.renounce(role: interface::APP_ROLE_ADMIN);
+    common_roles_dispatcher.renounce(role: Role::AppRoleAdmin);
     let events = spy.get_events().emitted_by(:contract_address).events;
     assert_number_of_events(
         actual: events.len(), expected: 0, message: "test_remove_security_admin second",
@@ -944,7 +962,7 @@ fn test_renounce() {
     // Renounce app role admin.
     let mut spy = snforge_std::spy_events();
     cheat_caller_address_once(:contract_address, caller_address: app_role_admin);
-    roles_dispatcher.renounce(role: interface::APP_ROLE_ADMIN);
+    common_roles_dispatcher.renounce(role: Role::AppRoleAdmin);
     let events = spy.get_events().emitted_by(:contract_address).events;
 
     // We don't assert any specific event, because the only event emitted is by accesss control.
@@ -953,8 +971,7 @@ fn test_renounce() {
     );
 }
 
-// ─── Category interface parity tests
-// ─────────────────────────────────────────
+// ─── Category interface parity tests ─────
 //
 // These tests verify that dispatching via a category interface (e.g. IUpgradeRoles)
 // against a contract that embeds RolesComponent produces identical results to

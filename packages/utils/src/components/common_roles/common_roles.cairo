@@ -6,6 +6,10 @@ pub(crate) mod CommonRolesComponent {
         AccessControlImpl, InternalTrait as AccessInternalTrait,
     };
     use openzeppelin::introspection::src5::SRC5Component;
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use starknet::{ContractAddress, get_caller_address};
     use starkware_utils::components::roles::errors::AccessErrors;
     use starkware_utils::components::roles::interface::{
@@ -23,7 +27,13 @@ pub(crate) mod CommonRolesComponent {
     ];
 
     #[storage]
-    pub struct Storage {}
+    pub struct Storage {
+        // LEGACY: Old role-membership map from before OZ AccessControl integration.
+        // Kept to allow one-time reclaim migration. Read-only after initialize().
+        role_members: starknet::storage::Map<(RoleId, ContractAddress), bool>,
+        // Once set, legacy reclaim is permanently disabled.
+        legacy_role_reclaim_disabled: bool,
+    }
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -40,26 +50,19 @@ pub(crate) mod CommonRolesComponent {
         fn grant_role(
             ref self: ComponentState<TContractState>, role: Role, account: ContractAddress,
         ) {
-            let role_id: RoleId = role.into();
-            assert!(account.is_non_zero(), "{}", AccessErrors::ZERO_ADDRESS);
-            let mut access_comp = get_dep_component_mut!(ref self, Access);
-            access_comp.grant_role(role: role_id, :account);
+            InternalTrait::grant_role(ref self, :role, :account);
         }
 
         fn revoke_role(
             ref self: ComponentState<TContractState>, role: Role, account: ContractAddress,
         ) {
-            let role_id: RoleId = role.into();
-            let mut access_comp = get_dep_component_mut!(ref self, Access);
-            access_comp.revoke_role(role: role_id, :account);
+            InternalTrait::revoke_role(ref self, :role, :account);
         }
 
         fn has_role(
             self: @ComponentState<TContractState>, role: Role, account: ContractAddress,
         ) -> bool {
-            let role_id: RoleId = role.into();
-            let access_comp = get_dep_component!(self, Access);
-            access_comp.has_role(role: role_id, :account)
+            InternalTrait::has_role(self, role, account)
         }
 
         fn renounce(ref self: ComponentState<TContractState>, role: Role) {
@@ -67,6 +70,27 @@ pub(crate) mod CommonRolesComponent {
             let role_id: RoleId = role.into();
             let mut access_comp = get_dep_component_mut!(ref self, Access);
             access_comp.renounce_role(role: role_id, account: get_caller_address());
+        }
+
+        fn reclaim_legacy_roles(ref self: ComponentState<TContractState>) {
+            InternalTrait::assert_role_reclaim_enabled(@self);
+            InternalTrait::_reclaim_legacy_roles_for_account(ref self, get_caller_address());
+            InternalTrait::ensure_role_admins(ref self);
+        }
+
+        fn reclaim_legacy_roles_for_accounts(
+            ref self: ComponentState<TContractState>, accounts: Span<ContractAddress>,
+        ) {
+            InternalTrait::only_security_governor(@self);
+            InternalTrait::assert_role_reclaim_enabled(@self);
+            for account in accounts {
+                InternalTrait::_reclaim_legacy_roles_for_account(ref self, *account);
+            };
+        }
+
+        fn disable_legacy_role_reclaim(ref self: ComponentState<TContractState>) {
+            InternalTrait::only_upgrade_governor(@self);
+            self.legacy_role_reclaim_disabled.write(true);
         }
     }
 
@@ -82,13 +106,15 @@ pub(crate) mod CommonRolesComponent {
         // Unprotected — call only from constructor (or test setup).
         fn initialize(ref self: ComponentState<TContractState>, governance_admin: ContractAddress) {
             let mut access_comp = get_dep_component_mut!(ref self, Access);
-            let un_initialized = access_comp.get_role_admin(role: GOVERNANCE_ADMIN).is_zero();
-            assert!(un_initialized, "{}", AccessErrors::ALREADY_INITIALIZED);
+            let uninitialized = access_comp.get_role_admin(role: GOVERNANCE_ADMIN).is_zero();
+            assert!(uninitialized, "{}", AccessErrors::ALREADY_INITIALIZED);
             access_comp.initializer();
             assert!(governance_admin.is_non_zero(), "{}", AccessErrors::ZERO_ADDRESS_GOV_ADMIN);
             access_comp._grant_role(role: GOVERNANCE_ADMIN, account: governance_admin);
             access_comp._grant_role(role: SECURITY_ADMIN, account: governance_admin);
             Self::_set_role_admins(ref access_comp);
+            // Fresh contracts have no legacy storage — disable reclaim immediately.
+            self.legacy_role_reclaim_disabled.write(true);
         }
 
         fn _set_role_admins(
@@ -110,18 +136,37 @@ pub(crate) mod CommonRolesComponent {
             Self::_set_role_admins(ref access_comp);
         }
 
-        fn _grant_role(
-            ref self: ComponentState<TContractState>, role: RoleId, account: ContractAddress,
-        ) {
-            let mut access_comp = get_dep_component_mut!(ref self, Access);
-            access_comp._grant_role(:role, :account);
+        fn has_role(
+            self: @ComponentState<TContractState>, role: Role, account: ContractAddress,
+        ) -> bool {
+            let role_id: RoleId = role.into();
+            let access_comp = get_dep_component!(self, Access);
+            access_comp.has_role(role: role_id, :account)
         }
 
-        fn _revoke_role(
-            ref self: ComponentState<TContractState>, role: RoleId, account: ContractAddress,
+        /// Grants `role` to `account`. Enforces caller is the role's admin (via OZ grant_role).
+        fn grant_role(
+            ref self: ComponentState<TContractState>, role: Role, account: ContractAddress,
         ) {
+            assert!(account.is_non_zero(), "{}", AccessErrors::ZERO_ADDRESS);
+            let role: RoleId = role.into();
             let mut access_comp = get_dep_component_mut!(ref self, Access);
-            access_comp._revoke_role(:role, :account);
+            access_comp.grant_role(:role, :account);
+        }
+
+        /// Revokes `role` from `account`. Blocks self-revoke of non-renounceable roles.
+        /// Enforces caller is the role's admin (via OZ revoke_role).
+        fn revoke_role(
+            ref self: ComponentState<TContractState>, role: Role, account: ContractAddress,
+        ) {
+            assert!(
+                get_caller_address() != account || is_renounceable(role),
+                "{}",
+                AccessErrors::ROLE_CANNOT_BE_RENOUNCED,
+            );
+            let role: RoleId = role.into();
+            let mut access_comp = get_dep_component_mut!(ref self, Access);
+            access_comp.revoke_role(:role, :account);
         }
 
         fn only_role(self: @ComponentState<TContractState>, role: Role) {
@@ -206,6 +251,38 @@ pub(crate) mod CommonRolesComponent {
                 "{}",
                 AccessErrors::ONLY_SECURITY_GOVERNOR,
             );
+        }
+
+        fn assert_role_reclaim_enabled(self: @ComponentState<TContractState>) {
+            assert!(
+                !self.legacy_role_reclaim_disabled.read(),
+                "{}",
+                AccessErrors::LEGACY_ROLE_RECLAIM_DISABLED,
+            );
+        }
+
+        fn _has_legacy_role(
+            self: @ComponentState<TContractState>, account: ContractAddress, role: RoleId,
+        ) -> bool {
+            self.role_members.read((role, account))
+        }
+
+        fn _reclaim_role(
+            ref self: ComponentState<TContractState>, role: RoleId, account: ContractAddress,
+        ) {
+            if self._has_legacy_role(account, role) {
+                self.role_members.write((role, account), false);
+                let mut access_comp = get_dep_component_mut!(ref self, Access);
+                access_comp._grant_role(:role, :account);
+            }
+        }
+
+        fn _reclaim_legacy_roles_for_account(
+            ref self: ComponentState<TContractState>, account: ContractAddress,
+        ) {
+            for (role, _) in ROLE_ADMIN_PAIRS.span() {
+                self._reclaim_role(role: *role, :account);
+            }
         }
     }
 }

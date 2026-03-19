@@ -4,8 +4,8 @@
 
 The role system is split into two layers:
 
-- **`CommonRolesComponent`** — lean infrastructure. No own storage, empty event enum. Owns the role constants, the `Role` enum, role admin configuration, role guards (`only_X`), and a generic 4-method ABI (`ICommonRoles`).
-- **`RolesComponent`** — full-featured layer. Delegates all role state to `CommonRolesComponent` internally. Adds named role events (20 variants), category-scoped embeddable impls (`IGovernanceRoles`, `ISecurityRoles`, `IAppRoles`), the fat `IRoles` interface (~30 EPs), and legacy role reclaim support.
+- **`CommonRolesComponent`** — lean infrastructure. Owns the role constants, the `Role` enum, role admin configuration, role guards (`only_X`), a 7-method ABI (`ICommonRoles`: `grant_role`, `revoke_role`, `has_role`, `renounce`, and the three legacy reclaim entry points), and the legacy reclaim storage (`role_members` map + `legacy_role_reclaim_disabled` flag).
+- **`RolesComponent`** — full-featured layer. Delegates all role state to `CommonRolesComponent` internally. Adds named role events (20 variants) and category-scoped embeddable implementations (`IGovernanceRoles`, `ISecurityRoles`, `IAppRoles`), and the fat `IRoles` interface (~30 EPs).
 
 The design lets contracts pick exactly the role surface they need — from zero ABI overhead up to the full named interface — without duplicating any role logic.
 
@@ -50,7 +50,7 @@ For components that only need role *checks*, with no named role management ABI o
 
 **Wire:** `CommonRolesComponent` + `AccessControlComponent` + `SRC5Component`. No `RolesComponent`.
 
-**Embed:** `CommonRolesImpl` → 4 generic entry points: `grant_role`, `revoke_role`, `has_role`, `renounce`.
+**Embed:** `CommonRolesImpl` → 7 entry points: `grant_role`, `revoke_role`, `has_role`, `renounce`, `reclaim_legacy_roles`, `reclaim_legacy_roles_for_accounts`, `disable_legacy_role_reclaim`.
 
 **Role management:** callers use `ICommonRoles::grant_role(Role::UpgradeGovernor, account)`.
 
@@ -60,8 +60,6 @@ fn constructor(ref self: ContractState, governance_admin: ContractAddress) {
     self.common_roles.initialize(:governance_admin);
 }
 ```
-
-**Overhead:** none. `CommonRolesComponent::Event` is empty; `CommonRolesComponent` has no storage.
 
 ---
 
@@ -81,20 +79,14 @@ impl CommonRolesImpl = CommonRolesComponent::CommonRolesImpl<ContractState>;
 // NO RolesImpl
 ```
 
-**ABI result:** `IGovernanceRoles` (12 EPs) + `ICommonRoles` (4 EPs). Named events (`UpgradeGovernorAdded`, etc.) are emitted by the category impl methods. Unused event variants are dead-code eliminated from Sierra.
+**ABI result:** `IGovernanceRoles` (12 EPs) + `ICommonRoles` (7 EPs). Named events (`UpgradeGovernorAdded`, etc.) are emitted by the category impl methods. Unused event variants are dead-code eliminated from Sierra.
 
 **Constructor:**
 ```cairo
 fn constructor(ref self: ContractState, governance_admin: ContractAddress) {
-    self.roles.initialize(:governance_admin); // NOT common_roles.initialize
+    self.roles.initialize(:governance_admin);
 }
 ```
-
-> **Why `roles.initialize` and not `common_roles.initialize`?**
->
-> `roles.initialize` does two things: calls `common_roles.initialize` (role setup) and then writes `legacy_role_reclaim_disabled = true`. If a future upgrade adds `RolesImpl` to the ABI, this flag blocks inadvertent legacy role reclaim. Calling `common_roles.initialize` directly skips the flag, leaving a latent upgrade footgun — harmless today, but dangerous if `RolesImpl` is ever added.
-
-**Overhead:** 2 legacy storage slots in `RolesComponent` (`role_members` map + `legacy_role_reclaim_disabled` bool). Neither is ever written in normal operation, so there is no runtime storage cost.
 
 ---
 
@@ -117,7 +109,7 @@ fn constructor(ref self: ContractState, governance_admin: ContractAddress) {
 
 ## Key Invariants
 
-- `CommonRolesComponent` carries no role state of its own — all state lives in `AccessControlComponent`.
+- `CommonRolesComponent` owns all role state — `AccessControlComponent` holds the active role memberships; `CommonRolesComponent` holds the legacy reclaim storage (`role_members` map + `legacy_role_reclaim_disabled` flag).
 - `RolesComponent` never duplicates role state — it reads and writes through `CommonRolesComponent`'s internal methods.
 - Named events exist only in `RolesComponent::Event`. `CommonRolesComponent::Event` is always empty.
 - Category impls exist only in `RolesComponent`. There is no duplication between layers.

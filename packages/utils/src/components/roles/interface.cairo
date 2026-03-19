@@ -76,16 +76,12 @@ pub trait IRoles<TContractState> {
     fn remove_upgrade_agent(ref self: TContractState, account: ContractAddress);
     fn register_upgrade_governor(ref self: TContractState, account: ContractAddress);
     fn remove_upgrade_governor(ref self: TContractState, account: ContractAddress);
-    fn renounce(ref self: TContractState, role: RoleId);
     fn register_security_admin(ref self: TContractState, account: ContractAddress);
     fn remove_security_admin(ref self: TContractState, account: ContractAddress);
     fn register_security_agent(ref self: TContractState, account: ContractAddress);
     fn remove_security_agent(ref self: TContractState, account: ContractAddress);
     fn register_security_governor(ref self: TContractState, account: ContractAddress);
     fn remove_security_governor(ref self: TContractState, account: ContractAddress);
-    fn reclaim_legacy_roles(ref self: TContractState);
-    fn reclaim_legacy_roles_for_accounts(ref self: TContractState, accounts: Span<ContractAddress>);
-    fn disable_legacy_role_reclaim(ref self: TContractState);
 }
 
 #[derive(Copy, Drop, PartialEq, starknet::Event)]
@@ -208,9 +204,9 @@ pub(crate) struct UpgradeAgentRemoved {
 }
 
 // ─── CommonRoles types
-// ────────────────────────────────────────────────────────
+// ──────────────────────────────────
 
-#[derive(Copy, Drop, PartialEq, Serde)]
+#[derive(Copy, Drop, PartialEq)]
 pub enum Role {
     AppGovernor,
     AppRoleAdmin,
@@ -222,6 +218,48 @@ pub enum Role {
     SecurityAdmin,
     SecurityAgent,
     SecurityGovernor,
+}
+
+pub impl RoleSerde of Serde<Role> {
+    fn serialize(self: @Role, ref output: Array<felt252>) {
+        let role_id: RoleId = (*self).into();
+        role_id.serialize(ref output);
+    }
+
+    fn deserialize(ref serialized: Span<felt252>) -> Option<Role> {
+        let role_id: RoleId = Serde::deserialize(ref serialized)?;
+        if role_id == APP_GOVERNOR {
+            return Option::Some(Role::AppGovernor);
+        }
+        if role_id == APP_ROLE_ADMIN {
+            return Option::Some(Role::AppRoleAdmin);
+        }
+        if role_id == GOVERNANCE_ADMIN {
+            return Option::Some(Role::GovernanceAdmin);
+        }
+        if role_id == OPERATOR {
+            return Option::Some(Role::Operator);
+        }
+        if role_id == TOKEN_ADMIN {
+            return Option::Some(Role::TokenAdmin);
+        }
+        if role_id == UPGRADE_AGENT {
+            return Option::Some(Role::UpgradeAgent);
+        }
+        if role_id == UPGRADE_GOVERNOR {
+            return Option::Some(Role::UpgradeGovernor);
+        }
+        if role_id == SECURITY_ADMIN {
+            return Option::Some(Role::SecurityAdmin);
+        }
+        if role_id == SECURITY_AGENT {
+            return Option::Some(Role::SecurityAgent);
+        }
+        if role_id == SECURITY_GOVERNOR {
+            return Option::Some(Role::SecurityGovernor);
+        }
+        Option::None
+    }
 }
 
 pub impl RoleIntoRoleId of Into<Role, RoleId> {
@@ -262,10 +300,13 @@ pub trait ICommonRoles<TState> {
     fn revoke_role(ref self: TState, role: Role, account: ContractAddress);
     fn has_role(self: @TState, role: Role, account: ContractAddress) -> bool;
     fn renounce(ref self: TState, role: Role);
+    // Always present — rescue path for contracts upgrading from legacy role storage.
+    fn reclaim_legacy_roles(ref self: TState);
+    fn reclaim_legacy_roles_for_accounts(ref self: TState, accounts: Span<ContractAddress>);
+    fn disable_legacy_role_reclaim(ref self: TState);
 }
 
-// ─── Category-scoped role interfaces
-// ─────────────────────────────────────────
+// ─── Category-scoped role interfaces ─────
 
 #[starknet::interface]
 pub trait ISecurityRoles<TState> {

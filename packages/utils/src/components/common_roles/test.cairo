@@ -3,7 +3,7 @@ use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 use starknet::ContractAddress;
 use starkware_utils::components::common_roles::mock_contract::{
     IGuardTestDispatcher, IGuardTestDispatcherTrait, IGuardTestSafeDispatcher,
-    IGuardTestSafeDispatcherTrait,
+    IGuardTestSafeDispatcherTrait, ILegacySetupDispatcher, ILegacySetupDispatcherTrait,
 };
 use starkware_utils::components::roles::errors::AccessErrors;
 use starkware_utils::components::roles::interface::{
@@ -28,7 +28,7 @@ fn deploy_safe() -> (ContractAddress, ICommonRolesSafeDispatcher) {
 }
 
 // ─── initialize
-// ──────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────
 
 #[test]
 fn test_initialize_grants_governance_admin() {
@@ -43,7 +43,7 @@ fn test_initialize_grants_security_admin() {
 }
 
 // ─── grant_role / has_role
-// ────────────────────────────────────────────────────
+// ──────────────────────────
 
 #[test]
 fn test_grant_role_authorized() {
@@ -78,7 +78,7 @@ fn test_grant_role_zero_address() {
 }
 
 // ─── revoke_role
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 #[test]
 fn test_revoke_role() {
@@ -95,8 +95,49 @@ fn test_revoke_role() {
     assert!(!dispatcher.has_role(Role::AppRoleAdmin, account));
 }
 
+#[test]
+#[feature("safe_dispatcher")]
+fn test_revoke_role_self_governance_admin_panics() {
+    let (address, safe) = deploy_safe();
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    let result = safe.revoke_role(Role::GovernanceAdmin, constants::INITIAL_ROOT_ADMIN);
+    assert_panic_with_error(
+        :result, expected_error: AccessErrors::ROLE_CANNOT_BE_RENOUNCED.describe(),
+    );
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn test_revoke_role_self_security_admin_panics() {
+    let (address, safe) = deploy_safe();
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    let result = safe.revoke_role(Role::SecurityAdmin, constants::INITIAL_ROOT_ADMIN);
+    assert_panic_with_error(
+        :result, expected_error: AccessErrors::ROLE_CANNOT_BE_RENOUNCED.describe(),
+    );
+}
+
+#[test]
+fn test_revoke_role_other_account_governance_admin_succeeds() {
+    let (address, dispatcher) = deploy();
+    let gov_admin = constants::INITIAL_ROOT_ADMIN;
+    let other_gov_admin = constants::GOVERNANCE_ADMIN;
+
+    cheat_caller_address_once(contract_address: address, caller_address: gov_admin);
+    dispatcher.grant_role(Role::GovernanceAdmin, other_gov_admin);
+    assert!(dispatcher.has_role(Role::GovernanceAdmin, other_gov_admin));
+
+    cheat_caller_address_once(contract_address: address, caller_address: gov_admin);
+    dispatcher.revoke_role(Role::GovernanceAdmin, other_gov_admin);
+    assert!(!dispatcher.has_role(Role::GovernanceAdmin, other_gov_admin));
+}
+
 // ─── renounce
-// ────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────
 
 #[test]
 fn test_renounce_renounceable_role() {
@@ -139,7 +180,7 @@ fn test_renounce_security_admin_panics() {
 }
 
 // ─── only_X guards
-// ────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────
 
 fn setup_guard_test() -> (ContractAddress, ICommonRolesDispatcher, IGuardTestSafeDispatcher) {
     let (address, dispatcher) = deploy();
@@ -372,5 +413,182 @@ fn test_only_security_governor_unauthorized() {
     let result = guard.assert_only_security_governor();
     assert_panic_with_error(
         :result, expected_error: AccessErrors::ONLY_SECURITY_GOVERNOR.describe(),
+    );
+}
+
+// ─── legacy role reclaim
+// ──────────────────────────────
+
+fn deploy_legacy() -> (ContractAddress, ICommonRolesDispatcher, ILegacySetupDispatcher) {
+    let contract = *declare("LegacyCommonRolesMock").unwrap().contract_class();
+    let (address, _) = contract.deploy(@array![constants::INITIAL_ROOT_ADMIN.into()]).unwrap();
+    (
+        address,
+        ICommonRolesDispatcher { contract_address: address },
+        ILegacySetupDispatcher { contract_address: address },
+    )
+}
+
+fn deploy_legacy_safe() -> (ContractAddress, ICommonRolesSafeDispatcher, ILegacySetupDispatcher) {
+    let (address, _, setup) = deploy_legacy();
+    (address, ICommonRolesSafeDispatcher { contract_address: address }, setup)
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn test_reclaim_legacy_roles_disabled_after_initialize() {
+    // Fresh contracts that called initialize() must NOT allow reclaim.
+    let (_, safe) = deploy_safe();
+    let result = safe.reclaim_legacy_roles();
+    assert_panic_with_error(
+        :result, expected_error: AccessErrors::LEGACY_ROLE_RECLAIM_DISABLED.describe(),
+    );
+}
+
+#[test]
+fn test_reclaim_legacy_roles_restores_membership() {
+    use starkware_utils::components::roles::interface::OPERATOR;
+    let (address, dispatcher, setup) = deploy_legacy();
+    let account = constants::OPERATOR;
+
+    assert!(!dispatcher.has_role(Role::Operator, account));
+    setup.set_legacy_role(OPERATOR, account);
+    cheat_caller_address_once(contract_address: address, caller_address: account);
+    dispatcher.reclaim_legacy_roles();
+    assert!(dispatcher.has_role(Role::Operator, account));
+}
+
+#[test]
+fn test_reclaim_legacy_roles_clears_legacy_entry() {
+    use starkware_utils::components::roles::interface::OPERATOR;
+    let (address, dispatcher, setup) = deploy_legacy();
+    let account = constants::OPERATOR;
+
+    setup.set_legacy_role(OPERATOR, account);
+    cheat_caller_address_once(contract_address: address, caller_address: account);
+    dispatcher.reclaim_legacy_roles();
+    // Second reclaim should be a no-op (legacy entry cleared).
+    cheat_caller_address_once(contract_address: address, caller_address: account);
+    dispatcher.reclaim_legacy_roles();
+    assert!(dispatcher.has_role(Role::Operator, account));
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn test_reclaim_legacy_roles_for_accounts_requires_security_governor() {
+    let (address, _, _) = deploy_legacy();
+    let safe = ICommonRolesSafeDispatcher { contract_address: address };
+    cheat_caller_address_once(contract_address: address, caller_address: constants::WRONG_ADMIN);
+    let result = safe.reclaim_legacy_roles_for_accounts(array![constants::OPERATOR].span());
+    assert_panic_with_error(
+        :result, expected_error: AccessErrors::ONLY_SECURITY_GOVERNOR.describe(),
+    );
+}
+
+#[test]
+fn test_reclaim_legacy_roles_for_accounts_restores_membership() {
+    use starkware_utils::components::roles::interface::OPERATOR;
+    let (address, dispatcher, setup) = deploy_legacy();
+    let account = constants::OPERATOR;
+
+    assert!(!dispatcher.has_role(Role::Operator, account));
+    setup.set_legacy_role(OPERATOR, account);
+
+    // Grant security_governor role to INITIAL_ROOT_ADMIN so they can call the function.
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    dispatcher.grant_role(Role::SecurityGovernor, constants::INITIAL_ROOT_ADMIN);
+
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    dispatcher.reclaim_legacy_roles_for_accounts(array![account].span());
+    assert!(dispatcher.has_role(Role::Operator, account));
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn test_disable_legacy_role_reclaim_requires_upgrade_governor() {
+    let (address, _, _) = deploy_legacy();
+    let safe = ICommonRolesSafeDispatcher { contract_address: address };
+    cheat_caller_address_once(contract_address: address, caller_address: constants::WRONG_ADMIN);
+    let result = safe.disable_legacy_role_reclaim();
+    assert_panic_with_error(
+        :result, expected_error: AccessErrors::ONLY_UPGRADE_GOVERNOR.describe(),
+    );
+}
+
+#[test]
+fn test_reclaim_legacy_roles_noop_when_no_legacy_roles() {
+    let (address, dispatcher, _) = deploy_legacy();
+    // No legacy roles set — reclaim should succeed without granting anything.
+    cheat_caller_address_once(contract_address: address, caller_address: constants::OPERATOR);
+    dispatcher.reclaim_legacy_roles();
+    assert!(!dispatcher.has_role(Role::Operator, constants::OPERATOR));
+}
+
+#[test]
+fn test_revoke_then_regrant_role() {
+    let (address, dispatcher) = deploy();
+    let account = constants::APP_ROLE_ADMIN;
+    let gov_admin = constants::INITIAL_ROOT_ADMIN;
+
+    cheat_caller_address_once(contract_address: address, caller_address: gov_admin);
+    dispatcher.grant_role(Role::AppRoleAdmin, account);
+    assert!(dispatcher.has_role(Role::AppRoleAdmin, account));
+
+    cheat_caller_address_once(contract_address: address, caller_address: gov_admin);
+    dispatcher.revoke_role(Role::AppRoleAdmin, account);
+    assert!(!dispatcher.has_role(Role::AppRoleAdmin, account));
+
+    cheat_caller_address_once(contract_address: address, caller_address: gov_admin);
+    dispatcher.grant_role(Role::AppRoleAdmin, account);
+    assert!(dispatcher.has_role(Role::AppRoleAdmin, account));
+}
+
+#[test]
+fn test_disable_legacy_role_reclaim_idempotent() {
+    let (address, dispatcher, _) = deploy_legacy();
+
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    dispatcher.grant_role(Role::UpgradeGovernor, constants::INITIAL_ROOT_ADMIN);
+
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    dispatcher.disable_legacy_role_reclaim();
+    // Second call should succeed (idempotent write).
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    dispatcher.disable_legacy_role_reclaim();
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn test_disable_legacy_role_reclaim_prevents_reclaim() {
+    let (address, dispatcher, _) = deploy_legacy();
+    let safe = ICommonRolesSafeDispatcher { contract_address: address };
+
+    // Grant upgrade_governor to INITIAL_ROOT_ADMIN.
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    dispatcher.grant_role(Role::UpgradeGovernor, constants::INITIAL_ROOT_ADMIN);
+
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    dispatcher.disable_legacy_role_reclaim();
+
+    cheat_caller_address_once(
+        contract_address: address, caller_address: constants::INITIAL_ROOT_ADMIN,
+    );
+    let result = safe.reclaim_legacy_roles();
+    assert_panic_with_error(
+        :result, expected_error: AccessErrors::LEGACY_ROLE_RECLAIM_DISABLED.describe(),
     );
 }

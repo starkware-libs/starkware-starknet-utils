@@ -35,6 +35,8 @@ pub mod MockContract {
 
     #[abi(embed_v0)]
     impl RolesImpl = RolesComponent::RolesImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl CommonRolesImpl = CommonRolesComponent::CommonRolesImpl<ContractState>;
 
     #[constructor]
     fn constructor(ref self: ContractState, governance_admin: ContractAddress) {

@@ -1,0 +1,2 @@
+starknet-py>=0.28.0
+marshmallow>=3.0.0

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Starknet role discovery — extract role owners from contracts using the CommonRoles component.
 

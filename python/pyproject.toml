@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["test_utils"]
+packages = ["test_utils", "utils"]
 
 [tool.setuptools.package-dir]
 "" = "."

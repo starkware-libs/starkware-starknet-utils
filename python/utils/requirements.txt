@@ -1,0 +1,4 @@
+starknet-py>=0.28.0
+marshmallow>=3.0.0
+pytest>=7.0
+pytest-asyncio

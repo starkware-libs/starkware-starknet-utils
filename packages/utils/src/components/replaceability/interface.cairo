@@ -1,5 +1,9 @@
 use starknet::class_hash::ClassHash;
 
+/// Sentinel panic value used by `validate_upgradeability` to signal a successful dry-run.
+/// Any other panic from a dry-run is treated as a real failure.
+pub(crate) const UPGRADEABILITY_VALIDATION_SUCCESS: felt252 = 'UPGRADEABILITY_OK';
+
 /// Holds EIC data.
 /// * eic_hash is the EIC class hash.
 /// * eic_init_data is a span of the EIC init args.
@@ -39,8 +43,12 @@ pub trait IReplaceable<TContractState> {
         self: @TContractState, implementation_data: ImplementationData,
     ) -> u64;
     fn add_new_implementation(ref self: TContractState, implementation_data: ImplementationData);
+    fn add_new_implementation_unsafe(
+        ref self: TContractState, implementation_data: ImplementationData,
+    );
     fn remove_implementation(ref self: TContractState, implementation_data: ImplementationData);
     fn replace_to(ref self: TContractState, implementation_data: ImplementationData);
+    fn validate_upgradeability(ref self: TContractState, impl_hash: ClassHash);
 }
 
 #[derive(Copy, Drop, PartialEq, starknet::Event)]

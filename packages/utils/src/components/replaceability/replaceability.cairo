@@ -4,18 +4,23 @@ pub(crate) mod ReplaceabilityComponent {
     use core::poseidon;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
-    use starknet::get_block_timestamp;
+    use starknet::class_hash::ClassHash;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
-    use starknet::syscalls::{library_call_syscall, replace_class_syscall};
+    use starknet::syscalls::{
+        get_class_hash_at_syscall, library_call_syscall, replace_class_syscall,
+    };
+    use starknet::{SyscallResultTrait, get_block_timestamp, get_contract_address};
     use starkware_utils::components::common_roles::CommonRolesComponent;
     use starkware_utils::components::common_roles::CommonRolesComponent::InternalTrait;
     use starkware_utils::components::replaceability::errors::ReplaceErrors;
     use starkware_utils::components::replaceability::interface::{
-        EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION, IReplaceable, ImplementationAdded,
+        EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION, IReplaceable,
+        IReplaceableDispatcherTrait, IReplaceableLibraryDispatcher, ImplementationAdded,
         ImplementationData, ImplementationFinalized, ImplementationRemoved, ImplementationReplaced,
+        UPGRADEABILITY_VALIDATION_SUCCESS,
     };
 
 
@@ -69,17 +74,39 @@ pub(crate) mod ReplaceabilityComponent {
             self.impl_activation_time.read(impl_key)
         }
 
+        // Schedules a new implementation and validates that it is upgradeable. If the new
+        // implementation cannot itself perform a full upgrade cycle (add + replace), the entire
+        // transaction reverts. Finalized implementations (`final = true`) skip the validation.
         fn add_new_implementation(
             ref self: ComponentState<TContractState>, implementation_data: ImplementationData,
         ) {
-            // The call is restricted to the upgrade governor.
+            // The auth check exists in two places. Here it is fail-fast: bail before paying the
+            // library_call cost of validation. The check inside `_unsafe` below is the one that
+            // actually enforces the role on direct callers and exercises the target's role
+            // wiring during the validation dispatch.
+            let common_roles = get_dep_component!(@self, CommonRoles);
+            common_roles.only_upgrade_governor();
+
+            if (!implementation_data.final) {
+                self.invoke_upgradeability_validation(implementation_data.impl_hash);
+            }
+            self.add_new_implementation_unsafe(implementation_data);
+        }
+
+        // Schedules a new implementation without running upgradeability validation. Bypassing
+        // this check can permanently brick the contract if the new code lacks a working upgrade
+        // path — only use when the target has been validated through some other means.
+        fn add_new_implementation_unsafe(
+            ref self: ComponentState<TContractState>, implementation_data: ImplementationData,
+        ) {
+            // Authoritative auth check for direct callers. Also load-bearing during validation:
+            // when `validate_upgradeability` dispatches this on the target class, this check is
+            // what proves the target's upgrade_governor role is wired correctly.
             let common_roles = get_dep_component!(@self, CommonRoles);
             common_roles.only_upgrade_governor();
 
             let activation_time = get_block_timestamp() + self.get_upgrade_delay();
             let expiration_time = activation_time + IMPLEMENTATION_EXPIRATION;
-            // TODO(Yaniv, 01/08/2024) -  add an assertion that the `implementation_data.impl_hash`
-            // is declared.
             self.set_impl_activation_time(:implementation_data, :activation_time);
             self.set_impl_expiration_time(:implementation_data, :expiration_time);
             self.emit(ImplementationAdded { implementation_data });
@@ -102,8 +129,8 @@ pub(crate) mod ReplaceabilityComponent {
             }
         }
 
-        // Replaces the non-finalized current implementation to one that was previously added and
-        // whose activation time had passed.
+        // Replaces the class hash to a previously-added implementation whose activation time
+        // has passed.
         fn replace_to(
             ref self: ComponentState<TContractState>, implementation_data: ImplementationData,
         ) {
@@ -159,6 +186,40 @@ pub(crate) mod ReplaceabilityComponent {
             self.set_impl_activation_time(:implementation_data, activation_time: 0);
             self.set_impl_expiration_time(:implementation_data, expiration_time: 0);
         }
+
+        // Dry-run validation that the target class can perform a full upgrade cycle (add +
+        // replace). Always panics — `UPGRADEABILITY_VALIDATION_SUCCESS` on success, or the
+        // underlying failure otherwise. Callers wrap this in a library_call so the panic
+        // reverts all side effects.
+        //
+        // Both stages are dispatched to the target class explicitly so this function tests the
+        // target's own `add_new_implementation_unsafe` and `replace_to` — `_unsafe` is used
+        // for the add stage to avoid re-invoking validation (recursion).
+        //
+        // Coverage is partial: validation only exercises the (add + replace) path with
+        // `eic_data: None` and `final: false`. Targets that require EIC initialization, or
+        // whose `remove_implementation` is broken, are not covered.
+        //
+        // Threat model: this guards against an upgrade_governor accidentally scheduling a
+        // non-upgradeable class. It is not a defense against a malicious governor.
+        fn validate_upgradeability(ref self: ComponentState<TContractState>, impl_hash: ClassHash) {
+            let implementation_data = ImplementationData {
+                impl_hash, eic_data: Option::None, final: false,
+            };
+            let dispatcher = IReplaceableLibraryDispatcher { class_hash: impl_hash };
+
+            // Zero the delay so the dispatched add yields `activation_time = block_timestamp`,
+            // which then satisfies `replace_to`'s `activation_time <= now` check. Relies on the
+            // production invariant that `block_timestamp > 0`; tests cheat the timestamp in
+            // `deploy_replaceability_mock` to bridge snforge's zero default.
+            self.upgrade_delay.write(0);
+            dispatcher.add_new_implementation_unsafe(:implementation_data);
+            dispatcher.replace_to(:implementation_data);
+
+            // Load-bearing: the panic is what reverts `upgrade_delay.write(0)` above and the
+            // dispatchers' side effects. A normal return here would silently zero the delay.
+            core::panic_with_felt252(UPGRADEABILITY_VALIDATION_SUCCESS);
+        }
     }
     #[generate_trait]
     pub impl InternalReplaceabilityImpl<
@@ -175,6 +236,41 @@ pub(crate) mod ReplaceabilityComponent {
     impl PrivateReplaceabilityImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of PrivateReplaceabilityTrait<TContractState> {
+        // Runs `validate_upgradeability` against `new_class_hash` via library_call. Must be
+        // called while the contract's active class hash is still trusted (i.e., before the
+        // class replacement happens) — the validation logic itself comes from this active
+        // class, not the untrusted target.
+        //
+        // Returns silently on `UPGRADABILITY_VALIDATION_SUCCESS` (the library call's side
+        // effects are reverted by the runtime). Any other panic is propagated, reverting the
+        // caller's transaction.
+        fn invoke_upgradeability_validation(
+            ref self: ComponentState<TContractState>, new_class_hash: ClassHash,
+        ) {
+            let current_class_hash = get_class_hash_at_syscall(get_contract_address())
+                .unwrap_syscall();
+
+            let mut calldata = array![];
+            new_class_hash.serialize(ref calldata);
+            let result = library_call_syscall(
+                class_hash: current_class_hash,
+                function_selector: selector!("validate_upgradeability"),
+                calldata: calldata.span(),
+            );
+
+            match result {
+                Result::Ok(_) => core::panic_with_felt252('VALIDATION_DID_NOT_PANIC'),
+                Result::Err(panic_data) => {
+                    // The runtime appends 'ENTRYPOINT_FAILED' to panic data from a failed entry
+                    // point, so match on element 0 rather than the whole array.
+                    if panic_data.is_empty()
+                        || *panic_data.at(0) != UPGRADEABILITY_VALIDATION_SUCCESS {
+                        core::panics::panic(panic_data);
+                    }
+                },
+            }
+        }
+
         fn is_finalized(self: @ComponentState<TContractState>) -> bool {
             self.finalized.read()
         }

@@ -182,7 +182,7 @@ async def _has_role(
 
 def _is_missing_entrypoint_error(error: Exception) -> bool:
     msg = str(error).lower()
-    return "entry point" in msg and "not found" in msg
+    return "entry" in msg and "not found" in msg
 
 
 async def _call_bool_entrypoint(

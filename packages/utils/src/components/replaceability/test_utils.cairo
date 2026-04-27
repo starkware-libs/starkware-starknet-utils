@@ -1,5 +1,7 @@
 use snforge_std::cheatcodes::events::{Event, Events};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, load};
+use snforge_std::{
+    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_block_timestamp, declare, load,
+};
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
 use starkware_utils::components::replaceability::ReplaceabilityComponent;
@@ -48,7 +50,17 @@ pub(crate) fn deploy_replaceability_mock() -> IReplaceableDispatcher {
             @array![Constants::DEFAULT_UPGRADE_DELAY.into(), Constants::GOVERNANCE_ADMIN.into()],
         )
         .unwrap();
+    // Pin block_timestamp to a non-zero baseline so the upgradeability validation dry-run
+    // (which sets upgrade_delay to 0 internally) yields a non-zero activation_time. Tests
+    // can override by calling `cheat_block_timestamp` again.
+    cheat_block_timestamp(:contract_address, block_timestamp: 1, span: CheatSpan::Indefinite);
     return IReplaceableDispatcher { contract_address: contract_address };
+}
+
+// Returns the class hash of `ReplaceabilityMockV2` — a valid upgrade target distinct from
+// `ReplaceabilityMock`'s class hash.
+pub(crate) fn get_replaceability_mock_v2_class_hash() -> ClassHash {
+    *declare("ReplaceabilityMockV2").unwrap().contract_class().class_hash
 }
 
 #[starknet::contract]

@@ -14,6 +14,9 @@ mod eic_test_contract;
 pub(crate) mod mock;
 
 #[cfg(test)]
+pub(crate) mod mock_v2;
+
+#[cfg(test)]
 mod test;
 
 #[cfg(test)]

@@ -48,7 +48,11 @@ pub trait IReplaceable<TContractState> {
     );
     fn remove_implementation(ref self: TContractState, implementation_data: ImplementationData);
     fn replace_to(ref self: TContractState, implementation_data: ImplementationData);
-    fn validate_upgradeability(ref self: TContractState, impl_hash: ClassHash);
+    // Always panics by design — Should be invoked only via library_call from
+    // `add_new_implementation`, never directly.
+    // It must live in `IReplaceable` so every contract embedding
+    // `ReplaceabilityImpl` exports the selector; otherwise the library_call dispatch fails.
+    fn validate_upgradeability(ref self: TContractState, implementation_data: ImplementationData);
 }
 
 #[derive(Copy, Drop, PartialEq, starknet::Event)]

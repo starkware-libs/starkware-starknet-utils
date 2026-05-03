@@ -16,6 +16,7 @@ mod ReplaceabilityTests {
         assert_finalized_status, assert_implementation_finalized_event_emitted,
         assert_implementation_replaced_event_emitted, deploy_dummy_contract,
         deploy_replaceability_mock, dummy_final_implementation_data_with_class_hash,
+        dummy_nonfinal_broken_eic_implementation_data_with_class_hash,
         dummy_nonfinal_eic_implementation_data_with_class_hash,
         dummy_nonfinal_implementation_data_with_class_hash, get_replaceability_mock_v2_class_hash,
         get_upgrade_governor_account,
@@ -107,8 +108,8 @@ mod ReplaceabilityTests {
     fn test_add_new_implementation_not_upgrade_governor() {
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;
-        // class_hash = 0 is intentional: the auth check fires before validation, so the
-        // placeholder class is never dispatched into. If the order ever flips, this would
+        // class_hash = 0 is intentional: the auth check inside validation's first call fires
+        // before anything dereferences the class hash. If that order ever flips, this would
         // surface as "class not declared" instead of ONLY_UPGRADE_GOVERNOR.
         let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
 
@@ -388,10 +389,11 @@ mod ReplaceabilityTests {
             span: CheatSpan::TargetCalls(8),
         );
 
-        // Add implementations.
+        // Add implementations. The "other" impl is final and points to a placeholder
+        // class_hash, so it must go through `_unsafe` to bypass the FINALIZE_IS_UNSAFE assert.
         replaceable_dispatcher.add_new_implementation(:implementation_data);
         replaceable_dispatcher
-            .add_new_implementation(implementation_data: other_implementation_data);
+            .add_new_implementation_unsafe(implementation_data: other_implementation_data);
         assert!(
             replaceable_dispatcher.get_impl_activation_time(:implementation_data).is_non_zero(),
         );
@@ -444,7 +446,9 @@ mod ReplaceabilityTests {
             span: CheatSpan::TargetCalls(2),
         );
         let mut spy = spy_events();
-        replaceable_dispatcher.add_new_implementation(:implementation_data);
+        // Final adds must go through `_unsafe` — the safe path rejects with
+        // FINALIZE_IS_UNSAFE.
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
 
         // Advance time to enable implementation.
         cheat_block_timestamp(
@@ -490,7 +494,9 @@ mod ReplaceabilityTests {
             caller_address: get_upgrade_governor_account(:contract_address),
             span: CheatSpan::TargetCalls(3),
         );
-        replaceable_dispatcher.add_new_implementation(:implementation_data);
+        // Final adds must go through `_unsafe` — the safe path rejects with
+        // FINALIZE_IS_UNSAFE.
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
 
         // Advance time to enable implementation.
         cheat_block_timestamp(contract_address, DEFAULT_UPGRADE_DELAY + 1, CheatSpan::Indefinite);
@@ -554,29 +560,34 @@ mod ReplaceabilityTests {
     }
 
     #[test]
-    fn test_add_new_implementation_final_skips_validation() {
-        // Adding a final implementation skips validation — even if the target lacks a working
-        // upgrade path. Final implementations intentionally surrender upgradeability.
+    #[feature("safe_dispatcher")]
+    fn test_add_new_implementation_rejects_final() {
+        // Final adds via the safe path are rejected with FINALIZE_IS_UNSAFE — bricking the
+        // upgrade path is intentional and must go through `_unsafe` to prove intent. The
+        // class hash never matters here; the assert fires before validation runs.
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;
+        let safe_dispatcher = IReplaceableSafeDispatcher { contract_address };
 
-        let new_class_hash = get_class_hash(contract_address: deploy_dummy_contract());
         let implementation_data = dummy_final_implementation_data_with_class_hash(
-            class_hash: new_class_hash,
+            class_hash: get_replaceability_mock_v2_class_hash(),
         );
 
         cheat_caller_address(
             :contract_address,
             caller_address: get_upgrade_governor_account(:contract_address),
-            span: CheatSpan::TargetCalls(2),
+            span: CheatSpan::Indefinite,
         );
-        // Add succeeds despite non-upgradeable target — final=true skips validation.
-        replaceable_dispatcher.add_new_implementation(:implementation_data);
-        cheat_block_timestamp(contract_address, DEFAULT_UPGRADE_DELAY + 1, CheatSpan::Indefinite);
+        match safe_dispatcher.add_new_implementation(:implementation_data) {
+            Result::Ok(_) => panic!("Should fail: final adds must use `_unsafe`"),
+            Result::Err(_) => (),
+        }
 
-        replaceable_dispatcher.replace_to(:implementation_data);
-        assert_eq!(get_class_hash(:contract_address), new_class_hash);
-        assert_finalized_status(expected: true, :contract_address);
+        // Migration path: same data via `_unsafe` succeeds.
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
+        assert!(
+            replaceable_dispatcher.get_impl_activation_time(:implementation_data).is_non_zero(),
+        );
     }
 
     #[test]
@@ -597,6 +608,29 @@ mod ReplaceabilityTests {
         replaceable_dispatcher.add_new_implementation(:implementation_data);
 
         assert_eq!(replaceable_dispatcher.get_upgrade_delay(), DEFAULT_UPGRADE_DELAY);
+    }
+
+    #[test]
+    #[feature("safe_dispatcher")]
+    fn test_add_new_implementation_blocks_broken_eic() {
+        // Validation runs the user's EIC during step 1's `replace_to`. An EIC that panics
+        // on init must surface as a rejected add. The broken EIC here is the test EIC
+        // called with empty init_data, which trips its own length-check assert.
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+        let safe_dispatcher = IReplaceableSafeDispatcher { contract_address };
+
+        let implementation_data = dummy_nonfinal_broken_eic_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
+
+        cheat_caller_address_once(
+            :contract_address, caller_address: get_upgrade_governor_account(:contract_address),
+        );
+        match safe_dispatcher.add_new_implementation(:implementation_data) {
+            Result::Ok(_) => panic!("Should fail: EIC init panics"),
+            Result::Err(_) => (),
+        }
     }
 
     #[test]
@@ -641,15 +675,15 @@ mod ReplaceabilityTests {
     #[test]
     #[feature("safe_dispatcher")]
     fn test_add_new_implementation_blocked_when_finalized() {
-        // After finalization, add_new_implementation rejects — validation dispatches replace_to
-        // on the target class, which (since it shares this contract's storage) reads the
-        // `finalized` flag and panics FINALIZED. add_new_implementation_unsafe still succeeds
-        // because it bypasses validation entirely.
+        // After finalization, add_new_implementation rejects — validation step 1's
+        // self.replace_to reads the finalized flag and panics. add_new_implementation_unsafe
+        // still succeeds because it bypasses validation entirely.
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;
         let safe_dispatcher = IReplaceableSafeDispatcher { contract_address };
 
-        // Finalize: schedule a final impl pointing to self, then apply it.
+        // Finalize: schedule a final impl pointing to self (via `_unsafe` since the safe path
+        // rejects final adds), then apply it.
         let final_data = dummy_final_implementation_data_with_class_hash(
             class_hash: get_class_hash(:contract_address),
         );
@@ -658,13 +692,13 @@ mod ReplaceabilityTests {
             caller_address: get_upgrade_governor_account(:contract_address),
             span: CheatSpan::Indefinite,
         );
-        replaceable_dispatcher.add_new_implementation(implementation_data: final_data);
+        replaceable_dispatcher.add_new_implementation_unsafe(implementation_data: final_data);
         cheat_block_timestamp(contract_address, DEFAULT_UPGRADE_DELAY + 2, CheatSpan::Indefinite);
         replaceable_dispatcher.replace_to(implementation_data: final_data);
         assert_finalized_status(expected: true, :contract_address);
 
-        // add_new_implementation must now fail — the dispatched replace_to inside validation
-        // hits the finalized flag.
+        // add_new_implementation must now fail — validation step 1's self.replace_to hits the
+        // finalized flag.
         let nonfinal_data = dummy_nonfinal_implementation_data_with_class_hash(
             class_hash: get_replaceability_mock_v2_class_hash(),
         );

@@ -111,6 +111,16 @@ pub(crate) fn dummy_nonfinal_eic_implementation_data_with_class_hash(
     ImplementationData { impl_hash: class_hash, eic_data: Option::Some(eic_data), final: false }
 }
 
+// Returns implementation_data wired to `EICTestContract` with empty init_data — the EIC
+// asserts `eic_init_data.len() == 1` and panics with EIC_INIT_DATA_LEN_MISMATCH on init.
+pub(crate) fn dummy_nonfinal_broken_eic_implementation_data_with_class_hash(
+    class_hash: ClassHash,
+) -> ImplementationData {
+    let eic_contract = declare("EICTestContract").unwrap().contract_class();
+    let eic_data = EICData { eic_hash: *eic_contract.class_hash, eic_init_data: array![].span() };
+    ImplementationData { impl_hash: class_hash, eic_data: Option::Some(eic_data), final: false }
+}
+
 pub(crate) fn assert_implementation_replaced_event_emitted(
     mut spied_event: @(ContractAddress, Event), implementation_data: ImplementationData,
 ) {

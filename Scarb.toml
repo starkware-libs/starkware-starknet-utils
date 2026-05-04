@@ -17,16 +17,16 @@ repository = "https://github.com/starkware-libs/starkware-starknet-utils"
 version = "1.0.0"
 
 [workspace.dependencies]
-assert_macros = "2.15.1"
+assert_macros = "2.18.0"
 openzeppelin = "3.0.0"
-snforge_std = "0.55.0"
-starknet = "2.15.1"
+snforge_std = "0.60.0"
+starknet = "2.18.0"
 
 [workspace.tool.fmt]
 sort-module-level-items = true
 
 [workspace.tool.scarb]
-allow-prebuilt-plugins = ["snforge_std"]
+allow-prebuilt-plugins = ["snforge_std", "snforge_scarb_plugin"]
 
 [profile.dev.cairo]
 inlining-strategy = "avoid"

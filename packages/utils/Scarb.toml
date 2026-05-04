@@ -27,7 +27,9 @@ name = "starkware_utils_unittest"
 
 [tool]
 fmt.workspace = true
-scarb.workspace = true
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std", "snforge_scarb_plugin"]
 
 [profile.dev.cairo]
 unstable-add-statements-functions-debug-info = true

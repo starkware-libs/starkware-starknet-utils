@@ -1,6 +1,6 @@
 use snforge_std::cheatcodes::events::{Event, Events};
 use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_block_timestamp, declare, load,
+    ContractClassTrait, DeclareResultTrait, declare, load, start_cheat_block_timestamp_global,
 };
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
@@ -50,15 +50,12 @@ pub(crate) fn deploy_replaceability_mock() -> IReplaceableDispatcher {
             @array![Constants::DEFAULT_UPGRADE_DELAY.into(), Constants::GOVERNANCE_ADMIN.into()],
         )
         .unwrap();
-    // Pin block_timestamp to a non-zero baseline so the upgradeability validation dry-run
-    // (which sets upgrade_delay to 0 internally) yields a non-zero activation_time. Tests
-    // can override by calling `cheat_block_timestamp` again.
-    cheat_block_timestamp(:contract_address, block_timestamp: 1, span: CheatSpan::Indefinite);
+    // Pin block_timestamp > 0 so the validation dry-run yields a non-zero activation_time.
+    // Global cheat so the test runner and the contract observe the same clock.
+    start_cheat_block_timestamp_global(block_timestamp: 1);
     return IReplaceableDispatcher { contract_address: contract_address };
 }
 
-// Returns the class hash of `ReplaceabilityMockV2` — a valid upgrade target distinct from
-// `ReplaceabilityMock`'s class hash.
 pub(crate) fn get_replaceability_mock_v2_class_hash() -> ClassHash {
     *declare("ReplaceabilityMockV2").unwrap().contract_class().class_hash
 }
@@ -111,8 +108,7 @@ pub(crate) fn dummy_nonfinal_eic_implementation_data_with_class_hash(
     ImplementationData { impl_hash: class_hash, eic_data: Option::Some(eic_data), final: false }
 }
 
-// Returns implementation_data wired to `EICTestContract` with empty init_data — the EIC
-// asserts `eic_init_data.len() == 1` and panics with EIC_INIT_DATA_LEN_MISMATCH on init.
+// Empty init_data trips the EIC's length-check assert.
 pub(crate) fn dummy_nonfinal_broken_eic_implementation_data_with_class_hash(
     class_hash: ClassHash,
 ) -> ImplementationData {

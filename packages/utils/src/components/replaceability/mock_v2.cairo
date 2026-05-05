@@ -1,16 +1,11 @@
-// Functionally identical to `ReplaceabilityMock` but compiles to a different class hash
-// (via the unused `_v2_marker` field). Used as a valid upgrade target in tests where the
-// target must include the replaceability component yet differ from the deployed contract.
-//
-// IMPORTANT: keep this in lockstep with `mock.cairo`. The validation tests assume the two
-// classes share the same upgrade machinery; any change to the components, storage layout, or
-// constructor of `ReplaceabilityMock` must be mirrored here.
+// Variant of `ReplaceabilityMock` with a class hash distinctly different than `mock.cairo`.
 #[starknet::contract]
 pub(crate) mod ReplaceabilityMockV2 {
     use CommonRolesComponent::InternalTrait as CommonRolesInternalTrait;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::ContractAddress;
+    use starknet::storage::StoragePointerWriteAccess;
     use starkware_utils::components::common_roles::CommonRolesComponent;
     use starkware_utils::components::replaceability::ReplaceabilityComponent;
     use starkware_utils::components::replaceability::ReplaceabilityComponent::InternalReplaceabilityTrait;
@@ -47,6 +42,8 @@ pub(crate) mod ReplaceabilityMockV2 {
     fn constructor(ref self: ContractState, upgrade_delay: u64, governance_admin: ContractAddress) {
         self.common_roles.initialize(:governance_admin);
         self.replaceability.initialize(:upgrade_delay);
+        // Make good use of the extra field.
+        self._v2_marker.write(true);
     }
 
     #[abi(embed_v0)]

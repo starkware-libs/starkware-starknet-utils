@@ -1,10 +1,4 @@
-// Functionally identical to `ReplaceabilityMock` but compiles to a different class hash
-// (via the unused `_v2_marker` field). Used as a valid upgrade target in tests where the
-// target must include the replaceability component yet differ from the deployed contract.
-//
-// IMPORTANT: keep this in lockstep with `mock.cairo`. The validation tests assume the two
-// classes share the same upgrade machinery; any change to the components, storage layout, or
-// constructor of `ReplaceabilityMock` must be mirrored here.
+// Variant of `ReplaceabilityMock` with a class hash distinctly different than `mock.cairo`.
 #[starknet::contract]
 pub(crate) mod ReplaceabilityMockV2 {
     use CommonRolesComponent::InternalTrait as CommonRolesInternalTrait;

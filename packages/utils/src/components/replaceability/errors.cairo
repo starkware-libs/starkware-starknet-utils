@@ -10,6 +10,7 @@ pub(crate) enum ReplaceErrors {
     IMPLEMENTATION_EXPIRED,
     EIC_LIB_CALL_FAILED,
     REPLACE_CLASS_HASH_FAILED,
+    FAILED_REPLACE_CLASS_HASH_A2B,
     FAILED_REPLACE_CLASS_HASH_B2A,
 }
 
@@ -24,6 +25,7 @@ impl DescribableError of Describable<ReplaceErrors> {
             ReplaceErrors::IMPLEMENTATION_EXPIRED => "IMPLEMENTATION_EXPIRED",
             ReplaceErrors::EIC_LIB_CALL_FAILED => "EIC_LIB_CALL_FAILED",
             ReplaceErrors::REPLACE_CLASS_HASH_FAILED => "REPLACE_CLASS_HASH_FAILED",
+            ReplaceErrors::FAILED_REPLACE_CLASS_HASH_A2B => "FAILED_REPLACE_CLASS_HASH_A2B",
             ReplaceErrors::FAILED_REPLACE_CLASS_HASH_B2A => "FAILED_REPLACE_CLASS_HASH_B2A",
         }
     }

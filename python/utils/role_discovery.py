@@ -182,7 +182,7 @@ async def _has_role(
 
 def _is_missing_entrypoint_error(error: Exception) -> bool:
     msg = str(error).lower()
-    return "entry point" in msg and "not found" in msg
+    return "entry" in msg and "point" in msg
 
 
 async def _call_bool_entrypoint(
@@ -225,7 +225,7 @@ async def _supports_has_role(
             return False
         # Non-interface errors shouldn't force a fallback mode.
         logger.warning("Failed probing has_role support: %s", e)
-        return True
+        return False
 
 
 async def _has_legacy_role(

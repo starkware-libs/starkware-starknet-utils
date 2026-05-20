@@ -9,20 +9,24 @@ mod ReplaceabilityTests {
     };
     use replaceability::mock::ReplaceabilityMock;
     use replaceability::test_utils::Constants::{
-        DEFAULT_UPGRADE_DELAY, DUMMY_FINAL_IMPLEMENTATION_DATA, DUMMY_NONFINAL_IMPLEMENTATION_DATA,
-        EIC_UPGRADE_DELAY_ADDITION, GOVERNANCE_ADMIN, NOT_UPGRADE_GOVERNOR_ACCOUNT,
+        DEFAULT_UPGRADE_DELAY, DUMMY_NONFINAL_IMPLEMENTATION_DATA, EIC_UPGRADE_DELAY_ADDITION,
+        GOVERNANCE_ADMIN, NOT_UPGRADE_GOVERNOR_ACCOUNT,
     };
     use replaceability::test_utils::{
         assert_finalized_status, assert_implementation_finalized_event_emitted,
         assert_implementation_replaced_event_emitted, deploy_dummy_contract,
         deploy_replaceability_mock, dummy_final_implementation_data_with_class_hash,
+        dummy_nonfinal_broken_eic_implementation_data_with_class_hash,
         dummy_nonfinal_eic_implementation_data_with_class_hash,
-        dummy_nonfinal_implementation_data_with_class_hash, get_upgrade_governor_account,
+        dummy_nonfinal_implementation_data_with_class_hash, get_replaceability_mock_v2_class_hash,
+        get_upgrade_governor_account,
     };
+    use snforge_std::byte_array::try_deserialize_bytearray_error;
     use snforge_std::{
-        CheatSpan, EventSpyAssertionsTrait, EventSpyTrait, EventsFilterTrait, cheat_block_timestamp,
-        cheat_caller_address, get_class_hash, spy_events,
+        CheatSpan, EventSpyAssertionsTrait, EventSpyTrait, EventsFilterTrait, cheat_caller_address,
+        get_class_hash, spy_events, start_cheat_block_timestamp_global,
     };
+    use starknet::get_block_timestamp;
     use starkware_utils::components::replaceability;
     use starkware_utils::components::roles::interface::{
         ICommonRolesDispatcher, ICommonRolesDispatcherTrait, Role,
@@ -65,7 +69,9 @@ mod ReplaceabilityTests {
     fn test_add_new_implementation() {
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;
-        let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
+        let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
 
         // Check implementation time pre addition.
         assert!(replaceable_dispatcher.get_impl_activation_time(:implementation_data).is_zero());
@@ -74,10 +80,11 @@ mod ReplaceabilityTests {
             :contract_address, caller_address: get_upgrade_governor_account(:contract_address),
         );
         let mut spy = spy_events();
+        let now = get_block_timestamp();
         replaceable_dispatcher.add_new_implementation(:implementation_data);
         assert!(
-            replaceable_dispatcher
-                .get_impl_activation_time(:implementation_data) == DEFAULT_UPGRADE_DELAY,
+            replaceable_dispatcher.get_impl_activation_time(:implementation_data) == now
+                + DEFAULT_UPGRADE_DELAY,
         );
 
         // Validate event emission.
@@ -112,7 +119,9 @@ mod ReplaceabilityTests {
     fn test_remove_implementation() {
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;
-        let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
+        let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
 
         cheat_caller_address(
             :contract_address,
@@ -180,25 +189,25 @@ mod ReplaceabilityTests {
         );
 
         // Add implementation.
+        let now = get_block_timestamp();
         replaceable_dispatcher.add_new_implementation(:implementation_data);
         assert!(
             replaceable_dispatcher.get_impl_activation_time(:implementation_data).is_non_zero(),
         );
 
         // Advance time to enable implementation.
-        cheat_block_timestamp(contract_address, DEFAULT_UPGRADE_DELAY + 1, CheatSpan::Indefinite);
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
         replaceable_dispatcher.replace_to(:implementation_data);
 
         // Check enabled timestamp zeroed for replaced to impl, and non-zero for other.
         assert!(replaceable_dispatcher.get_impl_activation_time(:implementation_data).is_zero());
 
         // Add implementation for 2nd time.
+        let now = get_block_timestamp();
         replaceable_dispatcher.add_new_implementation(:implementation_data);
 
-        cheat_block_timestamp(
-            contract_address,
-            DEFAULT_UPGRADE_DELAY + 1 + DEFAULT_UPGRADE_DELAY + 14 * 3600 * 24 + 2,
-            CheatSpan::Indefinite,
+        start_cheat_block_timestamp_global(
+            block_timestamp: now + DEFAULT_UPGRADE_DELAY + 14 * 3600 * 24 + 1,
         );
 
         // Should revert on expired_impl.
@@ -217,7 +226,8 @@ mod ReplaceabilityTests {
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;
 
-        let new_class_hash = get_class_hash(contract_address: deploy_dummy_contract());
+        // new_class_hash is explicitly different than the current class hash.
+        let new_class_hash = get_replaceability_mock_v2_class_hash();
         assert_ne!(get_class_hash(:contract_address), new_class_hash);
 
         let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
@@ -233,12 +243,9 @@ mod ReplaceabilityTests {
         let mut spy = spy_events();
 
         // Add implementation and advance time to enable it.
+        let now = get_block_timestamp();
         replaceable_dispatcher.add_new_implementation(:implementation_data);
-        cheat_block_timestamp(
-            :contract_address,
-            block_timestamp: DEFAULT_UPGRADE_DELAY + 1,
-            span: CheatSpan::Indefinite,
-        );
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
 
         replaceable_dispatcher.replace_to(:implementation_data);
 
@@ -304,8 +311,9 @@ mod ReplaceabilityTests {
         );
 
         // Add implementation and advance time to enable it.
+        let now = get_block_timestamp();
         replaceable_dispatcher.add_new_implementation(:implementation_data);
-        cheat_block_timestamp(contract_address, DEFAULT_UPGRADE_DELAY + 1, CheatSpan::Indefinite);
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
 
         replaceable_dispatcher.replace_to(:implementation_data);
         assert!(
@@ -319,7 +327,9 @@ mod ReplaceabilityTests {
     fn test_replace_to_not_upgrade_governor() {
         let replaceable_dispatcher = deploy_replaceability_mock();
         let contract_address = replaceable_dispatcher.contract_address;
-        let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
+        let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
 
         // Invoke not as an Upgrade Governor.
         cheat_caller_address_once(:contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT);
@@ -336,7 +346,9 @@ mod ReplaceabilityTests {
         cheat_caller_address_once(
             :contract_address, caller_address: get_upgrade_governor_account(:contract_address),
         );
-        let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
+        let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
 
         // Calling replace_to without previously adding the implementation.
         replaceable_dispatcher.replace_to(:implementation_data);
@@ -360,7 +372,9 @@ mod ReplaceabilityTests {
         let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
             class_hash: get_class_hash(contract_address),
         );
-        let other_implementation_data = DUMMY_FINAL_IMPLEMENTATION_DATA();
+        let other_implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
 
         // Invoke as an Upgrade Governor.
         cheat_caller_address(
@@ -369,7 +383,7 @@ mod ReplaceabilityTests {
             span: CheatSpan::TargetCalls(8),
         );
 
-        // Add implementations.
+        let now = get_block_timestamp();
         replaceable_dispatcher.add_new_implementation(:implementation_data);
         replaceable_dispatcher
             .add_new_implementation(implementation_data: other_implementation_data);
@@ -383,7 +397,7 @@ mod ReplaceabilityTests {
         );
 
         // Advance time to enable implementation.
-        cheat_block_timestamp(contract_address, DEFAULT_UPGRADE_DELAY + 1, CheatSpan::Indefinite);
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
 
         replaceable_dispatcher.replace_to(:implementation_data);
 
@@ -425,14 +439,12 @@ mod ReplaceabilityTests {
             span: CheatSpan::TargetCalls(2),
         );
         let mut spy = spy_events();
-        replaceable_dispatcher.add_new_implementation(:implementation_data);
+        let now = get_block_timestamp();
+        // Finalization is supported only by the `*_unsafe` variant.
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
 
         // Advance time to enable implementation.
-        cheat_block_timestamp(
-            :contract_address,
-            block_timestamp: DEFAULT_UPGRADE_DELAY + 1,
-            span: CheatSpan::Indefinite,
-        );
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
         replaceable_dispatcher.replace_to(:implementation_data);
 
         // Validate new class hash.
@@ -471,10 +483,11 @@ mod ReplaceabilityTests {
             caller_address: get_upgrade_governor_account(:contract_address),
             span: CheatSpan::TargetCalls(3),
         );
-        replaceable_dispatcher.add_new_implementation(:implementation_data);
+        let now = get_block_timestamp();
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
 
         // Advance time to enable implementation.
-        cheat_block_timestamp(contract_address, DEFAULT_UPGRADE_DELAY + 1, CheatSpan::Indefinite);
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
 
         // Should NOT revert with FINALIZED as there is no finalized implementation yet.
         match replaceable_safe_dispatcher.replace_to(:implementation_data) {
@@ -503,6 +516,171 @@ mod ReplaceabilityTests {
         // Verify the granted account can call add_new_implementation.
         cheat_caller_address_once(:contract_address, caller_address: account);
         replaceable_dispatcher
-            .add_new_implementation(implementation_data: DUMMY_NONFINAL_IMPLEMENTATION_DATA());
+            .add_new_implementation(
+                implementation_data: dummy_nonfinal_implementation_data_with_class_hash(
+                    class_hash: get_replaceability_mock_v2_class_hash(),
+                ),
+            );
+    }
+
+    #[test]
+    #[feature("safe_dispatcher")]
+    fn test_add_new_implementation_blocks_non_upgradeable() {
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+        let safe_dispatcher = IReplaceableSafeDispatcher { contract_address };
+
+        let new_class_hash = get_class_hash(contract_address: deploy_dummy_contract());
+        let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: new_class_hash,
+        );
+
+        cheat_caller_address(
+            :contract_address,
+            caller_address: get_upgrade_governor_account(:contract_address),
+            span: CheatSpan::Indefinite,
+        );
+        let now = get_block_timestamp();
+
+        // We can't add the impl as it's not upgradeable.
+        let result = safe_dispatcher.add_new_implementation(:implementation_data);
+        let panic_data = result.expect_err('VALIDATION_DID_NOT_PANIC');
+        if panic_data != array!['ENTRYPOINT_NOT_FOUND'] {
+            core::panics::panic(panic_data);
+        }
+
+        // We can add it using the `*_unsafe` variant.
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
+
+        replaceable_dispatcher.replace_to(:implementation_data);
+        assert_eq!(get_class_hash(:contract_address), new_class_hash);
+
+        // Ensures we're now not upgradable.
+        let result = safe_dispatcher.add_new_implementation_unsafe(:implementation_data);
+        let panic_data = result.expect_err('SHOULD_FAIL');
+        if panic_data != array!['ENTRYPOINT_NOT_FOUND'] {
+            core::panics::panic(panic_data);
+        }
+    }
+
+    #[test]
+    #[feature("safe_dispatcher")]
+    fn test_add_new_implementation_rejects_final() {
+        // add_new_implementation intentional reverts a final impl with FINALIZE_IS_UNSAFE.
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+        let safe_dispatcher = IReplaceableSafeDispatcher { contract_address };
+
+        let implementation_data = dummy_final_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
+
+        cheat_caller_address(
+            :contract_address,
+            caller_address: get_upgrade_governor_account(:contract_address),
+            span: CheatSpan::Indefinite,
+        );
+        match safe_dispatcher.add_new_implementation(:implementation_data) {
+            Result::Ok(_) => panic!("Should fail: final adds must use `_unsafe`"),
+            Result::Err(_) => (),
+        }
+
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
+        assert!(
+            replaceable_dispatcher.get_impl_activation_time(:implementation_data).is_non_zero(),
+        );
+    }
+
+    #[test]
+    fn test_upgradeability_validation_no_side_effects() {
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+
+        let implementation_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
+
+        cheat_caller_address_once(
+            :contract_address, caller_address: get_upgrade_governor_account(:contract_address),
+        );
+        replaceable_dispatcher.add_new_implementation(:implementation_data);
+
+        assert_eq!(replaceable_dispatcher.get_upgrade_delay(), DEFAULT_UPGRADE_DELAY);
+    }
+
+    #[test]
+    #[feature("safe_dispatcher")]
+    fn test_add_new_implementation_blocks_broken_eic() {
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+        let safe_dispatcher = IReplaceableSafeDispatcher { contract_address };
+
+        let implementation_data = dummy_nonfinal_broken_eic_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
+        cheat_caller_address(
+            :contract_address,
+            caller_address: get_upgrade_governor_account(:contract_address),
+            span: CheatSpan::Indefinite,
+        );
+
+        let now = get_block_timestamp();
+        safe_dispatcher.add_new_implementation(:implementation_data).expect_err('SHOULD_FAIL');
+        safe_dispatcher.add_new_implementation_unsafe(:implementation_data).expect('OK_EXPECTED');
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
+        let err = safe_dispatcher.replace_to(:implementation_data).expect_err('SHOULD_FAIL');
+        let err_msg = try_deserialize_bytearray_error(err.span()).expect('NOT_BYTEARRAY');
+        assert!(err_msg == "EIC_LIB_CALL_FAILED", "{}", err_msg)
+    }
+
+    #[test]
+    #[should_panic(expected: "ONLY_UPGRADE_GOVERNOR")]
+    fn test_add_new_implementation_unsafe_not_upgrade_governor() {
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+        let implementation_data = DUMMY_NONFINAL_IMPLEMENTATION_DATA();
+
+        cheat_caller_address_once(:contract_address, caller_address: NOT_UPGRADE_GOVERNOR_ACCOUNT);
+        replaceable_dispatcher.add_new_implementation_unsafe(:implementation_data);
+    }
+
+    #[test]
+    #[feature("safe_dispatcher")]
+    fn test_add_new_implementation_blocked_when_finalized() {
+        let replaceable_dispatcher = deploy_replaceability_mock();
+        let contract_address = replaceable_dispatcher.contract_address;
+        let safe_dispatcher = IReplaceableSafeDispatcher { contract_address };
+
+        // Finalize the contract.
+        let final_data = dummy_final_implementation_data_with_class_hash(
+            class_hash: get_class_hash(:contract_address),
+        );
+        cheat_caller_address(
+            :contract_address,
+            caller_address: get_upgrade_governor_account(:contract_address),
+            span: CheatSpan::Indefinite,
+        );
+        let now = get_block_timestamp();
+        replaceable_dispatcher.add_new_implementation_unsafe(implementation_data: final_data);
+        start_cheat_block_timestamp_global(block_timestamp: now + DEFAULT_UPGRADE_DELAY);
+        replaceable_dispatcher.replace_to(implementation_data: final_data);
+        assert_finalized_status(expected: true, :contract_address);
+
+        let nonfinal_data = dummy_nonfinal_implementation_data_with_class_hash(
+            class_hash: get_replaceability_mock_v2_class_hash(),
+        );
+        match safe_dispatcher.add_new_implementation(implementation_data: nonfinal_data) {
+            Result::Ok(_) => panic!("Should fail: contract is finalized"),
+            Result::Err(_) => (),
+        }
+
+        // _unsafe bypasses validation.
+        replaceable_dispatcher.add_new_implementation_unsafe(implementation_data: nonfinal_data);
+        assert!(
+            replaceable_dispatcher
+                .get_impl_activation_time(implementation_data: nonfinal_data)
+                .is_non_zero(),
+        );
     }
 }

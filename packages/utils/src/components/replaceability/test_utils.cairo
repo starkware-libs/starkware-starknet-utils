@@ -1,5 +1,7 @@
 use snforge_std::cheatcodes::events::{Event, Events};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, load};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, load, start_cheat_block_timestamp_global,
+};
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
 use starkware_utils::components::replaceability::ReplaceabilityComponent;
@@ -48,7 +50,14 @@ pub(crate) fn deploy_replaceability_mock() -> IReplaceableDispatcher {
             @array![Constants::DEFAULT_UPGRADE_DELAY.into(), Constants::GOVERNANCE_ADMIN.into()],
         )
         .unwrap();
+    // Pin block_timestamp > 0 so the validation dry-run yields a non-zero activation_time.
+    // Global cheat so the test runner and the contract observe the same clock.
+    start_cheat_block_timestamp_global(block_timestamp: 1);
     return IReplaceableDispatcher { contract_address: contract_address };
+}
+
+pub(crate) fn get_replaceability_mock_v2_class_hash() -> ClassHash {
+    *declare("ReplaceabilityMockV2").unwrap().contract_class().class_hash
 }
 
 #[starknet::contract]
@@ -96,6 +105,15 @@ pub(crate) fn dummy_nonfinal_eic_implementation_data_with_class_hash(
     let eic_contract = declare("EICTestContract").unwrap().contract_class();
     let eic_data = EICData { eic_hash: *eic_contract.class_hash, eic_init_data: calldata.span() };
 
+    ImplementationData { impl_hash: class_hash, eic_data: Option::Some(eic_data), final: false }
+}
+
+// Empty init_data trips the EIC's length-check assert.
+pub(crate) fn dummy_nonfinal_broken_eic_implementation_data_with_class_hash(
+    class_hash: ClassHash,
+) -> ImplementationData {
+    let eic_contract = declare("EICTestContract").unwrap().contract_class();
+    let eic_data = EICData { eic_hash: *eic_contract.class_hash, eic_init_data: array![].span() };
     ImplementationData { impl_hash: class_hash, eic_data: Option::Some(eic_data), final: false }
 }
 

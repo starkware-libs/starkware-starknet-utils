@@ -3,8 +3,9 @@ use openzeppelin::interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherT
 use snforge_std::byte_array::try_deserialize_bytearray_error;
 use snforge_std::cheatcodes::events::Event;
 use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, Token, TokenTrait as SnforgeTokenTrait,
-    cheat_caller_address, load, set_balance, start_cheat_block_number_global,
+    CheatSpan, ContractClassTrait, CustomToken, DeclareResultTrait, Token,
+    TokenTrait as SnforgeTokenTrait, cheat_caller_address, load, set_balance,
+    start_cheat_block_number_global,
 };
 use starknet::{ContractAddress, Store};
 use starkware_utils::byte_array::short_string_to_byte_array;
@@ -245,6 +246,18 @@ pub fn deploy_mock_erc20_contract(
     token_address
 }
 
+/// Deploys a `DualCaseERC20Mock` and returns it as an snforge `Token`, ready for use with
+/// `TokenHelperTrait` (`supply`/`balance_of`/`set_balance`/`allowance`/...).
+pub fn deploy_mock_erc20_token(
+    name: ByteArray, symbol: ByteArray, decimals: u8, initial_supply: u256, owner: ContractAddress,
+) -> Token {
+    let contract_address = deploy_mock_erc20_contract(
+        :initial_supply, owner_address: owner, :name, :symbol, :decimals,
+    );
+    Token::Custom(
+        CustomToken { contract_address, balances_variable_selector: selector!("ERC20_balances") },
+    )
+}
 
 pub impl TokenDeployImpl of Deployable<TokenConfig, TokenState> {
     fn deploy(self: @TokenConfig) -> TokenState {

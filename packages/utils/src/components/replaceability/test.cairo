@@ -545,7 +545,9 @@ mod ReplaceabilityTests {
         // We can't add the impl as it's not upgradeable.
         let result = safe_dispatcher.add_new_implementation(:implementation_data);
         let panic_data = result.expect_err('VALIDATION_DID_NOT_PANIC');
-        if panic_data != array!['ENTRYPOINT_NOT_FOUND'] {
+        if panic_data != array![
+            'ENTRYPOINT_NOT_FOUND', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED',
+        ] {
             core::panics::panic(panic_data);
         }
 
@@ -559,7 +561,7 @@ mod ReplaceabilityTests {
         // Ensures we're now not upgradable.
         let result = safe_dispatcher.add_new_implementation_unsafe(:implementation_data);
         let panic_data = result.expect_err('SHOULD_FAIL');
-        if panic_data != array!['ENTRYPOINT_NOT_FOUND'] {
+        if panic_data != array!['ENTRYPOINT_NOT_FOUND', 'ENTRYPOINT_FAILED'] {
             core::panics::panic(panic_data);
         }
     }

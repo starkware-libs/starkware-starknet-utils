@@ -84,7 +84,7 @@ mod SubAccountTests {
         cheat_caller_address_once(
             contract_address: sub_account.contract_address, caller_address: OWNER,
         );
-        sub_account.sub_account_execute(array![call]);
+        sub_account.owner_execute(array![call]);
 
         assert!(target.get_value() == 42);
     }
@@ -101,7 +101,7 @@ mod SubAccountTests {
         cheat_caller_address_once(
             contract_address: sub_account.contract_address, caller_address: OWNER,
         );
-        let mut results = sub_account.sub_account_execute(array![call]);
+        let mut results = sub_account.owner_execute(array![call]);
 
         assert!(results.len() == 1);
         let mut ret = *results.at(0);
@@ -128,7 +128,7 @@ mod SubAccountTests {
         cheat_caller_address_once(
             contract_address: sub_account.contract_address, caller_address: OWNER,
         );
-        sub_account.sub_account_execute(array![first, second]);
+        sub_account.owner_execute(array![first, second]);
 
         // The last call wins, proving calls run sequentially in the given order.
         assert!(target.get_value() == 2);
@@ -141,7 +141,7 @@ mod SubAccountTests {
         cheat_caller_address_once(
             contract_address: sub_account.contract_address, caller_address: OWNER,
         );
-        let results = sub_account.sub_account_execute(array![]);
+        let results = sub_account.owner_execute(array![]);
 
         assert!(results.len() == 0);
     }
@@ -164,9 +164,9 @@ mod SubAccountTests {
         cheat_caller_address_once(
             contract_address: sub_account.contract_address, caller_address: OTHER,
         );
-        match safe_sub_account.sub_account_execute(array![call]) {
+        match safe_sub_account.owner_execute(array![call]) {
             Result::Ok(_) => panic!(
-                "Expected sub_account_execute to panic for unauthorized caller",
+                "Expected owner_execute to panic for unauthorized caller",
             ),
             Result::Err(panic_data) => { assert!(*panic_data.at(0) == 'SUB_ACCOUNT: NOT OWNER'); },
         }

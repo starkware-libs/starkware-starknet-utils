@@ -1,0 +1,32 @@
+[package]
+name = "starkware_delayed_executor"
+readme = "README.md"
+version.workspace = true
+keywords.workspace = true
+edition.workspace = true
+description.workspace = true
+
+[dependencies]
+starknet.workspace = true
+openzeppelin.workspace = true
+
+[dev-dependencies]
+snforge_std.workspace = true
+assert_macros.workspace = true
+
+[scripts]
+test = "SNFORGE_BACKTRACE=1 snforge test"
+
+[lib]
+
+[[target.starknet-contract]]
+
+[tool]
+fmt.workspace = true
+scarb.workspace = true
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"
+panic-backtrace = true

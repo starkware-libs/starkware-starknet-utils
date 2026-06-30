@@ -1,16 +1,12 @@
-# Isolated, toolchain-pinned package — NOT a member of the root sn-utils workspace.
-#
-# This package exists solely to preserve the cemented on-chain class hash of `Primer`:
+# Isolated package preserving the cemented on-chain class hash of `Primer`:
 #   0x00123e6bc1c14ae9934e933d3f64916a6116dd6b036a922b2b1f0815e0d1d300
-# That hash is reproducible ONLY with scarb 2.14.0 + starknet 2.12.2 + edition 2024_07 +
-# the release profile (sierra-replace-ids) + crate name `contracts` + module path
-# `contracts::primer::primer::Primer`. The root workspace runs scarb 2.15.1, which would
-# produce a different hash — so this package is isolated via the member-less [workspace]
-# stanza below (which makes Scarb treat it as its own single-package workspace and keeps the
-# root `scarb build -w` from compiling it) plus its own .tool-versions pinning scarb 2.14.0.
+# Reproducible only with scarb 2.14.0 + starknet 2.12.2 + edition 2024_07 + the release profile
+# (sierra-replace-ids) + crate name `contracts` + module path `contracts::primer::primer::Primer`.
+# The member-less [workspace] stanza + local .tool-versions keep it on scarb 2.14.0 and out of the
+# root (2.15.1) workspace build.
 #
-# DO NOT change the crate name, module paths, starknet/edition pins, or profile settings —
-# any of those would break PRIMER_CLASS_HASH. Verify with scripts/verify_primer_class_hash.sh.
+# DO NOT change the crate name, module paths, starknet/edition pins, or profile settings — any of
+# these would break the class hash. Verify with scripts/verify_primer_class_hash.sh.
 
 [workspace]
 

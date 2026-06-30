@@ -1,4 +1,4 @@
-    use core::num::traits::Bounded;
+use core::num::traits::Bounded;
 use snforge_std::{
     CheatSpan, ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait,
     cheat_block_timestamp, cheat_caller_address, declare, spy_events,

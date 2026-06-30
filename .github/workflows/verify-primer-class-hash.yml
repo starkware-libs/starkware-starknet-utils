@@ -1,0 +1,29 @@
+name: Verify Primer Class Hash
+
+# The Primer contract (packages/primer, crate `contracts`) must keep its cemented on-chain
+# class hash 0x00123e6b…, which is reproducible ONLY with scarb 2.14.0 + the release profile.
+# This job is intentionally separate from the main 2.15.1 CI and pins the legacy toolchain.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/primer/**"
+      - ".github/workflows/verify-primer-class-hash.yml"
+
+jobs:
+  verify-primer-class-hash:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          starknet-foundry-version: "0.54.1"
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.14.0"
+
+      - name: Verify Primer class hash (scarb 2.14.0, release profile)
+        working-directory: packages/primer
+        run: ./scripts/verify_primer_class_hash.sh

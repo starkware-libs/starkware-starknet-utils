@@ -165,15 +165,15 @@ pub mod MultiExecutor {
             let owner_index = self.multi_owned.get_owner_index(caller);
             let call_set_key = compute_call_set_key(calls);
 
-            // Idempotent: if already signed, return early.
-            if self.call_set_approvers.read((call_set_key, owner_index)) {
-                return call_set_key;
-            }
-
             let status = self.get_call_set_status(call_set_key);
 
             // Cannot sign an expired call set.
             assert(status != CallSetStatus::Expired, Errors::CALL_SET_EXPIRED);
+
+            // If already signed, return early.
+            if self.call_set_approvers.read((call_set_key, owner_index)) {
+                return call_set_key;
+            }
 
             // If previously executed, reset state so it can be re-signed.
             if status == CallSetStatus::Executed {

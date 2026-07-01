@@ -225,8 +225,8 @@ Registers a call set for delayed execution.
 
 **MultiExecutor behavior:**
 - Caller must be an owner.
-- If the caller's slot already has a signature for this call set, returns early (idempotent).
 - Reverts with `CALL_SET_EXPIRED` if the call set is Expired.
+- Otherwise, if the caller's slot already has a signature for this call set, returns early (idempotent).
 - If Executed, resets `call_set_allowed_time` to 0 to allow re-signing.
 - Adds the caller's approval. Increments `n_approvals`.
 - If `n_approvals` reaches `delay_start_threshold`, sets `call_set_allowed_time = now + execution_delay`.

@@ -1260,7 +1260,8 @@ fn test_executed_tx_doesnt_expire() {
 }
 
 #[test]
-fn test_register_same_signer_on_expired_idempotent() {
+#[should_panic(expected: 'CALL_SET_EXPIRED')]
+fn test_register_same_signer_on_expired_fails() {
     let (delayed, multi, _) = deploy_default();
 
     cheat_block_timestamp(delayed.contract_address, INITIAL_TIMESTAMP, CheatSpan::Indefinite);
@@ -1280,12 +1281,9 @@ fn test_register_same_signer_on_expired_idempotent() {
         CheatSpan::Indefinite,
     );
 
-    // OWNER1 (who already signed) re-registers - should be idempotent (no revert).
+    // OWNER1 (who already signed) re-registers - reverts on the expired call set,
+    // same as a new signer would.
     delayed.submit_calls(calls);
-
-    // Approval count unchanged (idempotent).
-    assert_eq!(multi.get_n_approvals(call_set_key), 1);
-    assert_eq!(delayed.get_call_set_status(call_set_key), CallSetStatus::Expired);
 }
 
 #[test]

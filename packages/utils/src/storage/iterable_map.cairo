@@ -3,8 +3,8 @@ use core::iter::{IntoIterator, Iterator};
 use core::pedersen::HashState;
 use starknet::Store;
 use starknet::storage::{
-    IntoIterRange, Map, Mutable, MutableVecTrait, PendingStoragePathTrait, StorageAsPath,
-    StorageAsPointer, StorageMapReadAccess, StorageMapWriteAccess, StoragePath, StoragePathEntry,
+    IntoIterRange, Map, Mutable, MutableVecTrait, StorageAsPath, StorageAsPointer,
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePath, StoragePathEntry,
     StoragePathMutableConversion, StoragePointer0Offset, StoragePointerReadAccess,
     StoragePointerWriteAccess, Vec, VecIter, VecTrait,
 };
@@ -163,7 +163,6 @@ struct MapIterator<K, V> {
     _inner_map: StoragePath<Map<K, Option<V>>>,
     _keys: StoragePath<Vec<K>>,
     _next_index: u64,
-    _remaining: u64,
 }
 
 pub impl IterableMapIteratorImpl<
@@ -171,16 +170,7 @@ pub impl IterableMapIteratorImpl<
 > of Iterator<MapIterator<K, V>> {
     type Item = (K, V);
     fn next(ref self: MapIterator<K, V>) -> Option<Self::Item> {
-        if self._remaining == 0 {
-            return Option::None;
-        } else {
-            self._remaining -= 1;
-        }
-        let entry = PendingStoragePathTrait::<
-            K, Vec<K>,
-        >::new(storage_path: @(self._keys), pending_key: self._next_index.into())
-            .as_path();
-        let key = entry.read();
+        let key = self._keys.get(self._next_index)?.read();
         self._next_index += 1;
         let value: V = self._inner_map.read(key).unwrap();
         Option::Some((key, value))
@@ -193,10 +183,7 @@ impl StoragePathIterableMapIntoIteratorImpl<
     type IntoIter = MapIterator<K, V>;
     fn into_iter(self: StoragePath<IterableMap<K, V>>) -> Self::IntoIter {
         MapIterator {
-            _inner_map: self._inner_map.as_path(),
-            _keys: self._keys.as_path(),
-            _next_index: 0,
-            _remaining: self._keys.len(),
+            _inner_map: self._inner_map.as_path(), _keys: self._keys.as_path(), _next_index: 0,
         }
     }
 }
@@ -206,7 +193,6 @@ struct MapIteratorMut<K, V> {
     _inner_map: StoragePath<Mutable<Map<K, Option<V>>>>,
     _keys: StoragePath<Mutable<Vec<K>>>,
     _next_index: u64,
-    _remaining: u64,
 }
 
 pub impl IterableMapIteratorMutImpl<
@@ -214,16 +200,7 @@ pub impl IterableMapIteratorMutImpl<
 > of Iterator<MapIteratorMut<K, V>> {
     type Item = (K, V);
     fn next(ref self: MapIteratorMut<K, V>) -> Option<Self::Item> {
-        if self._remaining == 0 {
-            return Option::None;
-        } else {
-            self._remaining -= 1;
-        }
-        let entry = PendingStoragePathTrait::<
-            K, Mutable<Vec<K>>,
-        >::new(storage_path: @(self._keys), pending_key: self._next_index.into())
-            .as_path();
-        let key = entry.read();
+        let key = self._keys.get(self._next_index)?.read();
         self._next_index += 1;
         let value: V = self._inner_map.read(key).unwrap();
         Option::Some((key, value))
@@ -236,10 +213,7 @@ impl StoragePathMutableIterableMapIntoIteratorImpl<
     type IntoIter = MapIteratorMut<K, V>;
     fn into_iter(self: StoragePath<Mutable<IterableMap<K, V>>>) -> Self::IntoIter {
         MapIteratorMut {
-            _inner_map: self._inner_map.as_path(),
-            _keys: self._keys.as_path(),
-            _next_index: 0,
-            _remaining: self._keys.len(),
+            _inner_map: self._inner_map.as_path(), _keys: self._keys.as_path(), _next_index: 0,
         }
     }
 }

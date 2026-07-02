@@ -5,7 +5,8 @@ use starknet::ContractAddress;
 pub trait IIterableMapTestContract<TContractState> {
     fn get_value(ref self: TContractState, key: u8) -> Option<i32>;
     fn set_value(ref self: TContractState, key: u8, value: i32);
-    fn get_all_values(ref self: TContractState) -> Span<(u8, i32)>;
+    fn get_all_values(self: @TContractState) -> Span<(u8, i32)>;
+    fn get_all_values_mut(ref self: TContractState) -> Span<(u8, i32)>;
     fn get_len(self: @TContractState) -> u64;
     fn clear(ref self: TContractState);
     fn get_all_keys(self: @TContractState) -> Span<u8>;
@@ -35,7 +36,18 @@ mod IterableMapTestContract {
             self.iterable_map.write(key, value);
         }
 
-        fn get_all_values(ref self: ContractState) -> Span<(u8, i32)> {
+        // Iterates over a non-mutable (`@self`) path, exercising the non-mutable `MapIterator`.
+        fn get_all_values(self: @ContractState) -> Span<(u8, i32)> {
+            let mut array = array![];
+            for (key, value) in self.iterable_map {
+                array.append((key, value));
+            }
+
+            array.span()
+        }
+
+        // Iterates over a mutable (`ref self`) path, exercising the mutable `MapIteratorMut`.
+        fn get_all_values_mut(ref self: ContractState) -> Span<(u8, i32)> {
             let mut array = array![];
             for (key, value) in self.iterable_map {
                 array.append((key, value));
@@ -134,6 +146,53 @@ fn test_iterator() {
     assert_eq!(read_pairs.len(), inserted_pairs.len());
     for i in 0..read_pairs.len() {
         assert_eq!(inserted_pairs.at(i), read_pairs.at(i));
+    }
+}
+
+#[test]
+fn test_iterator_mut() {
+    let dispatcher = IIterableMapTestContractDispatcher {
+        contract_address: deploy_iterable_map_test_contract(),
+    };
+
+    let inserted_pairs = array![(1_u8, -10_i32), (2_u8, -20_i32), (3_u8, -30_i32)].span();
+
+    for (key, value) in inserted_pairs {
+        dispatcher.set_value(*key, *value);
+    }
+
+    let mut read_pairs = array![];
+    for (key, value) in dispatcher.get_all_values_mut() {
+        read_pairs.append((*key, *value));
+    }
+
+    let read_pairs = read_pairs.span();
+    assert_eq!(read_pairs.len(), inserted_pairs.len());
+    for i in 0..read_pairs.len() {
+        assert_eq!(inserted_pairs.at(i), read_pairs.at(i));
+    }
+}
+
+#[test]
+fn test_iterator_view_matches_mut() {
+    let dispatcher = IIterableMapTestContractDispatcher {
+        contract_address: deploy_iterable_map_test_contract(),
+    };
+
+    let inserted_pairs = array![(3_u8, -30_i32), (1_u8, -10_i32), (2_u8, -20_i32)].span();
+    for (key, value) in inserted_pairs {
+        dispatcher.set_value(*key, *value);
+    }
+
+    // The non-mutable iterator (`@self`) must yield exactly the same pairs, in the same order, as
+    // the mutable one (`ref self`).
+    let view_pairs = dispatcher.get_all_values();
+    let mut_pairs = dispatcher.get_all_values_mut();
+    assert_eq!(view_pairs.len(), inserted_pairs.len());
+    assert_eq!(view_pairs.len(), mut_pairs.len());
+    for i in 0..view_pairs.len() {
+        assert_eq!(inserted_pairs.at(i), view_pairs.at(i));
+        assert_eq!(view_pairs.at(i), mut_pairs.at(i));
     }
 }
 

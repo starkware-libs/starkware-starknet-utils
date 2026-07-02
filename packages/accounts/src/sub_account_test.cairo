@@ -37,10 +37,13 @@ pub mod MockTarget {
 mod SubAccountTests {
     use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
     use starknet::account::Call;
-    use starknet::{ContractAddress, SyscallResultTrait};
+    use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
     use starkware_accounts::sub_account::{
         ISubAccountDispatcher, ISubAccountDispatcherTrait, ISubAccountSafeDispatcher,
         ISubAccountSafeDispatcherTrait,
+    };
+    use starkware_utils::components::eic_upgradable::interface::{
+        IEICUpgradableSafeDispatcher, IEICUpgradableSafeDispatcherTrait,
     };
     use starkware_utils_testing::test_utils::cheat_caller_address_once;
     use super::{IMockTargetDispatcher, IMockTargetDispatcherTrait};
@@ -166,6 +169,25 @@ mod SubAccountTests {
         );
         match safe_sub_account.execute(array![call]) {
             Result::Ok(_) => panic!("Expected execute to panic for unauthorized caller"),
+            Result::Err(panic_data) => { assert!(*panic_data.at(0) == 'SUB_ACCOUNT: NOT OWNER'); },
+        }
+    }
+
+    #[test]
+    #[feature("safe_dispatcher")]
+    fn test_upgrade_unauthorized_caller_panics() {
+        let sub_account = deploy_sub_account();
+        let safe_upgradable = IEICUpgradableSafeDispatcher {
+            contract_address: sub_account.contract_address,
+        };
+        // Any class hash works: the owner check runs before the hash is ever used.
+        let new_class_hash: ClassHash = 'CLASS_HASH'.try_into().unwrap();
+
+        cheat_caller_address_once(
+            contract_address: sub_account.contract_address, caller_address: OTHER,
+        );
+        match safe_upgradable.upgrade(new_class_hash, Option::None) {
+            Result::Ok(_) => panic!("Expected upgrade to panic for unauthorized caller"),
             Result::Err(panic_data) => { assert!(*panic_data.at(0) == 'SUB_ACCOUNT: NOT OWNER'); },
         }
     }

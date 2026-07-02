@@ -7,11 +7,14 @@ use starknet::{ClassHash, EthAddress};
 /// 0x002eb9faa4ce06e09879e93803798b87d22877b73964334356bf9e0d8cc22ded
 pub const ICUSTOM_SIGNATURE_VALIDATION_ID: felt252 = selector!("is_custom_signature_valid");
 
-/// Checks for account's confirmation that its owner authorized a given set of `calls`,
-/// WITHOUT executing them.
-/// Validation is over the EIP-712 `CallSet { calls }` message,
+/// Checks for account's confirmation that its owner authorized a given set of `calls` together
+/// with `additional_data`, WITHOUT executing them.
+/// Validation is over the EIP-712 `CallSet { calls, additional_data }` message,
 /// independent of any specific transaction context (`tx_info`, version, resource bounds, nonce)
 /// so a browser EVM wallet can produce the signature.
+///
+/// `additional_data` is opaque to this predicate: it is bound into the signed message but not
+/// interpreted here. A caller can use it to carry a nonce or other binding data.
 ///
 /// Returns `VALIDATED` for a valid 6-felt signature and `0` for an invalid one
 /// Reverts on a malformed signature.
@@ -20,11 +23,15 @@ pub const ICUSTOM_SIGNATURE_VALIDATION_ID: felt252 = selector!("is_custom_signat
 /// does not revert — the caller decides how to treat the result.
 ///
 /// This is a stateless predicate: it provides no replay protection. A caller that authorizes
-/// actions off this result is responsible for binding/replay protection of its own.
+/// actions off this result is responsible for binding/replay protection of its own (e.g. via
+/// `additional_data`).
 #[starknet::interface]
 pub trait ICustomSignatureValidation<TContractState> {
     fn is_custom_signature_valid(
-        self: @TContractState, calls: Span<Call>, signature: Span<felt252>,
+        self: @TContractState,
+        calls: Span<Call>,
+        additional_data: Span<felt252>,
+        signature: Span<felt252>,
     ) -> felt252;
 }
 

@@ -400,16 +400,24 @@ pub fn get_validate_wrong_chain_signature() -> Array<felt252> {
 /// CallSet signature: empty calls.
 pub fn get_call_set_empty_calls_signature() -> Array<felt252> {
     array![
-        0x11cee778b1a3ba866a439382d6b26b35, 0x1cab2f50409c7c0d6187913368bdee83,
-        0x190d7ea7ed02b507d88e80ddb00226f2, 0x2d619a590aa9ca7cf9a95dc3f67a6003, 27, 1,
+        0xae3eb6ab4fdb8a51ceeb5c40e51be3ca, 0xf74187ba31cd3f349f8109bbee43b6b0,
+        0x005515473f842966cb900e454245deb5, 0xaa9326d942984ea22e545c9ab2dcc3b3, 28, 1,
     ]
 }
 
 /// CallSet signature: approve(0x1234, 500).
 pub fn get_call_set_with_approve_signature() -> Array<felt252> {
     array![
-        0x58f230103442642a871a95169721238e, 0x01073d1bc0d10e0380a893535feed316,
-        0x2524d9747aa3d60b1b927d3e0cf0bd33, 0x749f0c51d940dbb3368f9a92dc762d87, 27, 1,
+        0x278778484aaed07e7aedfde9d083a8ef, 0x887154c31481c204416d3d323bcb108c,
+        0x25eed52af478ac87dcf1dd528475af22, 0xfd39cb55c54d25904c96ff0d079b89b6, 28, 1,
+    ]
+}
+
+/// CallSet signature: approve(0x1234, 500) with additional_data=[10, 11].
+pub fn get_call_set_with_additional_data_signature() -> Array<felt252> {
+    array![
+        0xcefcd06a012378cceb1bfa5b2831ef0d, 0xa5424ce854f5a39bf61df96013f21f94,
+        0x390242713792f83e134ccabc69a153ca, 0x8916d2267a20441a5a60b0b565735d03, 27, 1,
     ]
 }
 

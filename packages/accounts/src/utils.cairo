@@ -4,7 +4,6 @@ use core::pedersen::PedersenTrait;
 use starknet::secp256_trait::Signature;
 use starknet::syscalls::get_class_hash_at_syscall;
 use starknet::{ClassHash, ContractAddress, EthAddress, SyscallResultTrait, get_contract_address};
-pub(crate) const CONTRACT_ADDRESS_SALT: felt252 = 0;
 
 // Test builds deploy `PrimerTestMock`, whose class hash differs from the on-chain one; the guard
 // test in `primer_invariants_test` asserts this matches it (update here if that test reports a new

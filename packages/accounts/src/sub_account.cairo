@@ -13,15 +13,30 @@ pub trait ISubAccount<TContractState> {
 
 #[starknet::contract]
 pub mod SubAccount {
+    use openzeppelin::interfaces::upgrades::IUpgradeable;
+    use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::utils::execution::execute_calls;
     use starknet::account::Call;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::{ClassHash, ContractAddress, get_caller_address};
     use super::ISubAccount;
+
+    component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
+
+    impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
+        #[substorage(v0)]
+        upgradeable: UpgradeableComponent::Storage,
         owner: ContractAddress,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {
+        #[flat]
+        UpgradeableEvent: UpgradeableComponent::Event,
     }
 
     #[constructor]
@@ -32,12 +47,29 @@ pub mod SubAccount {
     #[abi(embed_v0)]
     impl SubAccountImpl of ISubAccount<ContractState> {
         fn execute(ref self: ContractState, calls: Array<Call>) -> Array<Span<felt252>> {
-            assert(get_caller_address() == self.owner(), 'SUB_ACCOUNT: NOT OWNER');
+            self.assert_only_owner();
             execute_calls(calls.span())
         }
 
         fn owner(self: @ContractState) -> ContractAddress {
             self.owner.read()
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl UpgradeableImpl of IUpgradeable<ContractState> {
+        /// Replaces the contract's class hash with `new_class_hash`, upgrading its implementation.
+        /// Only the owner is authorized to call this entrypoint.
+        fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
+            self.assert_only_owner();
+            self.upgradeable.upgrade(new_class_hash);
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn assert_only_owner(self: @ContractState) {
+            assert(get_caller_address() == self.owner(), 'SUB_ACCOUNT: NOT OWNER');
         }
     }
 }

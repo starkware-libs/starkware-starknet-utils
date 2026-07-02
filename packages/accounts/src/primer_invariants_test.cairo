@@ -1,4 +1,4 @@
-use snforge_std::{ContractClassTrait, DeclareResultTrait};
+use snforge_std::DeclareResultTrait;
 use starknet::{ContractAddress, SyscallResultTrait};
 use starkware_accounts::utils::{PRIMER_CLASS_HASH, compute_contract_address};
 

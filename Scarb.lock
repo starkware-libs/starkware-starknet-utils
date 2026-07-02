@@ -155,6 +155,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "starkware_accounts"
+version = "1.0.0"
+dependencies = [
+ "openzeppelin",
+ "snforge_std",
+ "starkware_utils",
+ "starkware_utils_testing",
+]
+
+[[package]]
 name = "starkware_delayed_executor"
 version = "1.0.0"
 dependencies = [

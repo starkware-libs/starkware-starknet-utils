@@ -1,7 +1,6 @@
 pub mod byte_array;
 pub mod components;
 pub mod constants;
-pub mod contracts;
 pub mod erc20;
 pub mod errors;
 pub mod hash;

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "packages/accounts",
   "packages/delayed_executor",
   "packages/testing",
   "packages/utils",

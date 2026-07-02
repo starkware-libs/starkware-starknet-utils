@@ -1,0 +1,30 @@
+# Isolated package preserving the cemented on-chain class hash of `Primer`:
+#   0x00123e6bc1c14ae9934e933d3f64916a6116dd6b036a922b2b1f0815e0d1d300
+# Reproducible only with scarb 2.14.0 + starknet 2.12.2 + edition 2024_07 + the release profile
+# (sierra-replace-ids) + crate name `contracts` + module path `contracts::primer::primer::Primer`.
+# The member-less [workspace] stanza + local .tool-versions keep it on scarb 2.14.0 and out of the
+# root (2.15.1) workspace build.
+#
+# DO NOT change the crate name, module paths, starknet/edition pins, or profile settings — any of
+# these would break the class hash. Verify with scripts/verify_primer_class_hash.sh.
+
+[workspace]
+
+[package]
+name = "contracts"
+edition = "2024_07"
+version = "0.1.0"
+
+[dependencies]
+starknet = "2.12.2"
+
+[[target.starknet-contract]]
+sierra = true
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"
+
+[profile.release.cairo]
+sierra-replace-ids = true

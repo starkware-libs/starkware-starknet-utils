@@ -38,7 +38,7 @@ mod SubAccountTests {
     use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
     use starknet::account::Call;
     use starknet::{ContractAddress, SyscallResultTrait};
-    use starkware_utils::contracts::sub_account::{
+    use starkware_accounts::sub_account::{
         ISubAccountDispatcher, ISubAccountDispatcherTrait, ISubAccountSafeDispatcher,
         ISubAccountSafeDispatcherTrait,
     };

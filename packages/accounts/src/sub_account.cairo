@@ -16,12 +16,27 @@ pub mod SubAccount {
     use openzeppelin::utils::execution::execute_calls;
     use starknet::account::Call;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::{ClassHash, ContractAddress, get_caller_address};
+    use starkware_utils::components::eic_upgradable::EICUpgradableComponent;
+    use starkware_utils::components::eic_upgradable::interface::IEICUpgradable;
     use super::ISubAccount;
+
+    component!(path: EICUpgradableComponent, storage: upgradable, event: UpgradableEvent);
+
+    impl UpgradableInternalImpl = EICUpgradableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
+        #[substorage(v0)]
+        upgradable: EICUpgradableComponent::Storage,
         owner: ContractAddress,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {
+        #[flat]
+        UpgradableEvent: EICUpgradableComponent::Event,
     }
 
     #[constructor]
@@ -32,12 +47,34 @@ pub mod SubAccount {
     #[abi(embed_v0)]
     impl SubAccountImpl of ISubAccount<ContractState> {
         fn execute(ref self: ContractState, calls: Array<Call>) -> Array<Span<felt252>> {
-            assert(get_caller_address() == self.owner(), 'SUB_ACCOUNT: NOT OWNER');
+            self.assert_only_owner();
             execute_calls(calls.span())
         }
 
         fn owner(self: @ContractState) -> ContractAddress {
             self.owner.read()
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl UpgradableImpl of IEICUpgradable<ContractState> {
+        /// Replaces the contract's class hash with `new_class_hash`, upgrading its implementation,
+        /// optionally running an External Initializer Contract (EIC) for state migration.
+        /// Only the owner is authorized to call this entrypoint.
+        fn upgrade(
+            ref self: ContractState,
+            new_class_hash: ClassHash,
+            eic_data: Option<(ClassHash, Span<felt252>)>,
+        ) {
+            self.assert_only_owner();
+            self.upgradable.upgrade(:new_class_hash, :eic_data);
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn assert_only_owner(self: @ContractState) {
+            assert(get_caller_address() == self.owner(), 'SUB_ACCOUNT: NOT OWNER');
         }
     }
 }

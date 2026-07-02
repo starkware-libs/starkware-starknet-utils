@@ -1,0 +1,4 @@
+eth-account>=0.13.0
+web3>=7.0.0
+aiohttp>=3.9.0
+starknet-py>=0.24.0

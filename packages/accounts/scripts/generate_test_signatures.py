@@ -92,11 +92,14 @@ def sign_transaction(
 def sign_call_set(
     calls: list[dict],
     contract_address: int,
+    additional_data: list[int] = None,
     evm_chain_id: int = ETH_CHAIN_ID,
     sn_chain_name: str = SN_CHAIN_ID,
 ) -> dict:
     """Sign a CallSet and return 6-felt signature dict."""
-    msg_hash = call_set_msg_hash(calls, sn_chain_name, contract_address, evm_chain_id)
+    msg_hash = call_set_msg_hash(
+        calls, additional_data or [], sn_chain_name, contract_address, evm_chain_id,
+    )
     return sign_and_split(msg_hash, PRIVATE_KEY, evm_chain_id)
 
 
@@ -261,6 +264,14 @@ def generate_call_set_with_approve(
     return sign_call_set([call], contract_address)
 
 
+def generate_call_set_with_additional_data(
+    contract_address: int, token: int, spender: int, amount: int, additional_data: list[int],
+) -> dict:
+    """CallSet signature over a single approve call plus non-empty additional_data."""
+    call = _approve_call(token, spender, amount)
+    return sign_call_set([call], contract_address, additional_data=additional_data)
+
+
 def generate_validate_with_approve(
     contract_address: int, token: int, spender: int, amount: int, nonce: int = VALIDATE_NONCE,
 ) -> dict:
@@ -326,6 +337,7 @@ def generate_all_signatures() -> list[str]:
     APPROVE_AMOUNT = 500
     TRANSFER_AMOUNT = 100
     INITIAL_SUPPLY = 1000
+    CALL_SET_ADDITIONAL_DATA = [0xA, 0xB]
 
     blocks: list[str] = []
 
@@ -417,6 +429,14 @@ def generate_all_signatures() -> list[str]:
     blocks.append(format_signature_cairo(
         sig, "get_call_set_with_approve_signature",
         "CallSet signature: approve(0x1234, 500).",
+    ))
+
+    sig = generate_call_set_with_additional_data(
+        addr, token, spender, APPROVE_AMOUNT, CALL_SET_ADDITIONAL_DATA,
+    )
+    blocks.append(format_signature_cairo(
+        sig, "get_call_set_with_additional_data_signature",
+        f"CallSet signature: approve(0x1234, 500) with additional_data={CALL_SET_ADDITIONAL_DATA}.",
     ))
 
     # --- Upgrade ---

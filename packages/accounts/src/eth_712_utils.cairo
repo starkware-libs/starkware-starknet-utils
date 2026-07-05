@@ -33,10 +33,12 @@ const TRANSACTION_METADATA_TYPE_HASH: u256 =
 const TRANSACTION_TYPE_HASH: u256 =
     0x1dc45489b8d4418703686ca441c4ea8ead534ff02815a47b9059490edf3a0c68_u256;
 
-// EIP-712 encodeType hash for CallSet (a standalone authorization over just the calls).
-// keccak256("CallSet(Call[] calls)Call(uint256 address,uint256 selector,uint256[] data)")
+// EIP-712 encodeType hash for CallSet (a standalone authorization over the calls plus opaque
+// additional_data, e.g. a nonce for replay protection).
+// keccak256("CallSet(Call[] calls,uint256[]
+// additional_data)Call(uint256 address,uint256 selector,uint256[] data)")
 const CALL_SET_TYPE_HASH: u256 =
-    0x00e0d1180501b61e32e630264491a7c9a611d81184f8a1cf1e41e1343bb396df_u256;
+    0xa6b8079d8aedb3bfd5ee9effaf1c1d19c1514c55ed0dc439faf8aabe5460582f_u256;
 
 // keccak("2") (version of the EIP-712 domain).
 const VERSION_HASH: u256 = 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5_u256;
@@ -165,18 +167,21 @@ pub fn get_transaction_hash(transaction: @Transaction, chain_id: felt252) -> u25
 // CallSet hashing
 // ================================
 
-/// EIP-712 `hashStruct` of a `CallSet { calls }`: the type hash followed by the hash of the
-/// call array.
-fn call_set_hash_struct(calls: Span<Call>) -> u256 {
+/// EIP-712 `hashStruct` of a `CallSet { calls, additional_data }`: the type hash followed by the
+/// hash of the call array and the hash of the `additional_data` felt array.
+fn call_set_hash_struct(calls: Span<Call>, additional_data: Span<felt252>) -> u256 {
     let mut byte_array: ByteArray = "";
     push_u256(ref byte_array, CALL_SET_TYPE_HASH);
     push_call_array(ref byte_array, calls);
+    push_felt_array(ref byte_array, additional_data);
     reverse_u256(compute_keccak_byte_array(@byte_array))
 }
 
 /// EIP-712 message hash of a `CallSet`.
-pub fn get_call_set_hash(calls: Span<Call>, chain_id: felt252) -> u256 {
-    eip712_message_hash(:chain_id, struct_hash: call_set_hash_struct(calls))
+pub fn get_call_set_hash(
+    calls: Span<Call>, additional_data: Span<felt252>, chain_id: felt252,
+) -> u256 {
+    eip712_message_hash(:chain_id, struct_hash: call_set_hash_struct(calls, additional_data))
 }
 
 pub fn push_domain_separator(ref res: ByteArray, chain_id: felt252) {

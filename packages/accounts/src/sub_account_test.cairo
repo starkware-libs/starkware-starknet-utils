@@ -37,10 +37,10 @@ pub mod MockTarget {
 mod SubAccountTests {
     use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
     use starknet::account::Call;
-    use starknet::{ContractAddress, SyscallResultTrait};
-    use starkware_accounts::sub_account::{
-        ISubAccountDispatcher, ISubAccountDispatcherTrait, ISubAccountSafeDispatcher,
-        ISubAccountSafeDispatcherTrait,
+    use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
+    use starkware_accounts::sub_account::{ISubAccountDispatcher, ISubAccountDispatcherTrait};
+    use starkware_utils::components::eic_upgradable::interface::{
+        IEICUpgradableDispatcher, IEICUpgradableDispatcherTrait,
     };
     use starkware_utils_testing::test_utils::cheat_caller_address_once;
     use super::{IMockTargetDispatcher, IMockTargetDispatcherTrait};
@@ -147,13 +147,10 @@ mod SubAccountTests {
     }
 
     #[test]
-    #[feature("safe_dispatcher")]
+    #[should_panic(expected: 'SUB_ACCOUNT: NOT OWNER')]
     fn test_execute_unauthorized_caller_panics() {
         let sub_account = deploy_sub_account();
         let target = deploy_target();
-        let safe_sub_account = ISubAccountSafeDispatcher {
-            contract_address: sub_account.contract_address,
-        };
 
         let call = Call {
             to: target.contract_address,
@@ -164,9 +161,22 @@ mod SubAccountTests {
         cheat_caller_address_once(
             contract_address: sub_account.contract_address, caller_address: OTHER,
         );
-        match safe_sub_account.execute(array![call]) {
-            Result::Ok(_) => panic!("Expected execute to panic for unauthorized caller"),
-            Result::Err(panic_data) => { assert!(*panic_data.at(0) == 'SUB_ACCOUNT: NOT OWNER'); },
-        }
+        sub_account.execute(array![call]);
+    }
+
+    #[test]
+    #[should_panic(expected: 'SUB_ACCOUNT: NOT OWNER')]
+    fn test_upgrade_unauthorized_caller_panics() {
+        let sub_account = deploy_sub_account();
+        let upgradable = IEICUpgradableDispatcher {
+            contract_address: sub_account.contract_address,
+        };
+        // Any class hash works: the owner check runs before the hash is ever used.
+        let new_class_hash: ClassHash = 'CLASS_HASH'.try_into().unwrap();
+
+        cheat_caller_address_once(
+            contract_address: sub_account.contract_address, caller_address: OTHER,
+        );
+        upgradable.upgrade(new_class_hash, Option::None);
     }
 }

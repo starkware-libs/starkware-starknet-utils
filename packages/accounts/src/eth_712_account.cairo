@@ -109,15 +109,19 @@ pub mod StarknetEth712Account {
 
     #[abi(embed_v0)]
     impl CustomSignatureValidationImpl of ICustomSignatureValidation<ContractState> {
-        /// Validates owner signature over the EIP-712 `CallSet { calls }` message.
+        /// Validates owner signature over the EIP-712 `CallSet { calls, additional_data }` message.
         /// Independent of the tx's metadata (version/resource-bounds/nonce etc.).
+        /// `additional_data` is bound into the signed message but not interpreted here.
         /// Returns `VALIDATED` for a valid 6-felt signature and 0 for an invalid one.
         /// Reverts on a malformed signature.
         fn is_custom_signature_valid(
-            self: @ContractState, calls: Span<Call>, signature: Span<felt252>,
+            self: @ContractState,
+            calls: Span<Call>,
+            additional_data: Span<felt252>,
+            signature: Span<felt252>,
         ) -> felt252 {
             let (signature, evm_chain_id) = extract_signature(signature);
-            let msg_hash = get_call_set_hash(calls, chain_id: evm_chain_id);
+            let msg_hash = get_call_set_hash(calls, additional_data, chain_id: evm_chain_id);
             if is_valid_eth_signature(:msg_hash, :signature, eth_address: self.eth_address.read()) {
                 starknet::VALIDATED
             } else {

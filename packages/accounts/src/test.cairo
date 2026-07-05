@@ -22,15 +22,15 @@ use starkware_accounts::test_utils::{
     build_outside_execution_with_calls, build_outside_execution_with_specific_caller,
     build_transfer_call, declare_register_interfaces_eic, deploy_eth712_account, deploy_mock_erc20,
     get_approve_call, get_atomicity_test_signature, get_call_set_empty_calls_signature,
-    get_call_set_with_approve_signature, get_efo_upgrade_signature,
-    get_invalid_outside_execution_signature, get_invalid_signature, get_multi_call_signature,
-    get_outside_execution_signature, get_ownership_signature, get_signature_evm_chain_id_2,
-    get_signature_wrong_contract_address, get_signature_wrong_sn_chain_name,
-    get_single_call_approve_signature, get_specific_caller_signature, get_test_outside_execution,
-    get_validate_empty_calls_signature, get_validate_upgrade_signature,
-    get_validate_with_approve_signature, get_validate_wrong_chain_signature, setup_efo_test,
-    setup_efo_test_with_erc20, setup_efo_test_with_timestamp, setup_initialized_account,
-    setup_validate_test,
+    get_call_set_with_additional_data_signature, get_call_set_with_approve_signature,
+    get_efo_upgrade_signature, get_invalid_outside_execution_signature, get_invalid_signature,
+    get_multi_call_signature, get_outside_execution_signature, get_ownership_signature,
+    get_signature_evm_chain_id_2, get_signature_wrong_contract_address,
+    get_signature_wrong_sn_chain_name, get_single_call_approve_signature,
+    get_specific_caller_signature, get_test_outside_execution, get_validate_empty_calls_signature,
+    get_validate_upgrade_signature, get_validate_with_approve_signature,
+    get_validate_wrong_chain_signature, setup_efo_test, setup_efo_test_with_erc20,
+    setup_efo_test_with_timestamp, setup_initialized_account, setup_validate_test,
 };
 use starkware_utils_testing::test_utils::cheat_caller_address_once;
 
@@ -594,7 +594,7 @@ fn test_is_custom_signature_valid_empty_calls_success() {
     let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
 
     let sig = get_call_set_empty_calls_signature();
-    let result = custom.is_custom_signature_valid(array![].span(), sig.span());
+    let result = custom.is_custom_signature_valid(array![].span(), array![].span(), sig.span());
     assert!(result == starknet::VALIDATED, "Expected VALIDATED");
 }
 
@@ -605,7 +605,8 @@ fn test_is_custom_signature_valid_with_calls_success() {
     let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
 
     let sig = get_call_set_with_approve_signature();
-    let result = custom.is_custom_signature_valid(array![get_approve_call()].span(), sig.span());
+    let result = custom
+        .is_custom_signature_valid(array![get_approve_call()].span(), array![].span(), sig.span());
     assert!(result == starknet::VALIDATED, "Expected VALIDATED");
 }
 
@@ -616,8 +617,54 @@ fn test_is_custom_signature_valid_wrong_calls_returns_zero() {
     let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
 
     let sig = get_call_set_empty_calls_signature();
-    let result = custom.is_custom_signature_valid(array![get_approve_call()].span(), sig.span());
+    let result = custom
+        .is_custom_signature_valid(array![get_approve_call()].span(), array![].span(), sig.span());
     assert!(result == 0, "Expected 0 for a mismatched call set");
+}
+
+#[test]
+fn test_is_custom_signature_valid_with_additional_data_success() {
+    // The signature binds `additional_data`: a `CallSet` over [approve(...)] with
+    // additional_data=[0xA, 0xB] must validate when the same additional_data is supplied.
+    let (_, account_address) = setup_validate_test();
+    let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
+
+    let sig = get_call_set_with_additional_data_signature();
+    let result = custom
+        .is_custom_signature_valid(
+            array![get_approve_call()].span(), array![0xA, 0xB].span(), sig.span(),
+        );
+    assert!(result == starknet::VALIDATED, "Expected VALIDATED");
+}
+
+#[test]
+fn test_is_custom_signature_valid_wrong_additional_data_returns_zero() {
+    // `additional_data` is bound into the message: the same calls/signature with different
+    // additional_data must NOT validate.
+    let (_, account_address) = setup_validate_test();
+    let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
+
+    let sig = get_call_set_with_additional_data_signature();
+    let result = custom
+        .is_custom_signature_valid(
+            array![get_approve_call()].span(), array![0xA, 0xC].span(), sig.span(),
+        );
+    assert!(result == 0, "Expected 0 for mismatched additional_data");
+}
+
+#[test]
+fn test_is_custom_signature_valid_additional_data_binds_empty() {
+    // A signature made with empty additional_data must NOT validate when non-empty
+    // additional_data is supplied (and vice versa) — the field is part of the signed message.
+    let (_, account_address) = setup_validate_test();
+    let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
+
+    let sig = get_call_set_with_approve_signature();
+    let result = custom
+        .is_custom_signature_valid(
+            array![get_approve_call()].span(), array![0xA, 0xB].span(), sig.span(),
+        );
+    assert!(result == 0, "empty-additional_data signature must not validate with non-empty data");
 }
 
 #[test]
@@ -628,7 +675,7 @@ fn test_is_custom_signature_valid_rejects_transaction_signature() {
     let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
 
     let tx_sig = get_validate_empty_calls_signature();
-    let result = custom.is_custom_signature_valid(array![].span(), tx_sig.span());
+    let result = custom.is_custom_signature_valid(array![].span(), array![].span(), tx_sig.span());
     assert!(result == 0, "Transaction-message signature must not validate as a CallSet");
 }
 
@@ -639,7 +686,8 @@ fn test_is_custom_signature_valid_invalid_returns_zero() {
     let custom = ICustomSignatureValidationDispatcher { contract_address: account_address };
 
     let garbage_sig = array![0x1, 0x2, 0x3, 0x4, 28, 1];
-    let result = custom.is_custom_signature_valid(array![].span(), garbage_sig.span());
+    let result = custom
+        .is_custom_signature_valid(array![].span(), array![].span(), garbage_sig.span());
     assert!(result == 0, "Expected 0 for invalid signature");
 }
 

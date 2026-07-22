@@ -18,9 +18,9 @@ jobs:
     env:
       SCARB_REGISTRY_AUTH_TOKEN: ${{ secrets.SCARB_REGISTRY_AUTH_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         
-      - uses: software-mansion/setup-scarb@v1
+      - uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd # v1
         with:
           scarb-version: "2.11.4"
 
@@ -35,7 +35,7 @@ jobs:
         run: scarb publish -p starkware_utils
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           name: v${{ env.CURRENT_VERSION }}
           tag_name: v${{ env.CURRENT_VERSION }}

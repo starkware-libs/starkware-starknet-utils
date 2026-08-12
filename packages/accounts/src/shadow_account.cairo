@@ -1,7 +1,7 @@
 use starknet::account::Call;
 
 #[starknet::interface]
-pub trait ISubAccount<TContractState> {
+pub trait IShadowAccount<TContractState> {
     /// Executes the given `calls` exactly as an account contract would, and returns the
     /// return value of each call. Only the owner (the deployer) is authorized to call this
     /// entrypoint.
@@ -12,14 +12,14 @@ pub trait ISubAccount<TContractState> {
 }
 
 #[starknet::contract]
-pub mod SubAccount {
+pub mod ShadowAccount {
     use openzeppelin::utils::execution::execute_calls;
     use starknet::account::Call;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress, get_caller_address};
     use starkware_utils::components::eic_upgradable::EICUpgradableComponent;
     use starkware_utils::components::eic_upgradable::interface::IEICUpgradable;
-    use super::ISubAccount;
+    use super::IShadowAccount;
 
     component!(path: EICUpgradableComponent, storage: upgradable, event: UpgradableEvent);
 
@@ -45,7 +45,7 @@ pub mod SubAccount {
     }
 
     #[abi(embed_v0)]
-    impl SubAccountImpl of ISubAccount<ContractState> {
+    impl ShadowAccountImpl of IShadowAccount<ContractState> {
         fn execute(ref self: ContractState, calls: Array<Call>) -> Array<Span<felt252>> {
             self.assert_only_owner();
             execute_calls(calls.span())
@@ -74,7 +74,7 @@ pub mod SubAccount {
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn assert_only_owner(self: @ContractState) {
-            assert(get_caller_address() == self.owner(), 'SUB_ACCOUNT: NOT OWNER');
+            assert(get_caller_address() == self.owner(), 'SHADOW_ACCOUNT: NOT OWNER');
         }
     }
 }

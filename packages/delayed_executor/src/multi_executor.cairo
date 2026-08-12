@@ -7,8 +7,14 @@
 //!
 //! - Multiple owners can sign call sets (approvals accumulate).
 //! - Execution requires the CallSet to be signed by a quorum of owners.
-//! - The delay timer only starts after `delay_start_threshold` approvals.
-//! - Each call set has its own expiration countdown starting from the first signature.
+//! - The delay timer starts when the call_set's n_approvals reaches `delay_start_threshold`.
+//!   it does not reset even if n_approvals drops below the threshold, and does not restart.
+//! - A `MultiExecutor` call_set has more dynamic deadlines than in the DelayedExecutor.
+//!   1. A call_set expires if it doesn't cross threshold in `execution_expiration` seconds.
+//!   2. Once it crossed that threshold - it has to complete signature collection and execute
+//!      in `execution_expiration` seconds, or it expires.
+//!   3. Execution of a call_set is allowed only after `execution_delay` seconds pass
+//!      since threshold crossing.
 //! - `retract_call_set` withdraws only the caller's signature, not the entire call set.
 //!
 //! ## Workflow
@@ -73,8 +79,8 @@ pub mod MultiExecutor {
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use starkware_delayed_executor::common::{
         ApprovalChange, CALL_SET_EXECUTED, CallSetExecuted, CallSetSignaturesUpdated, CallSetStatus,
-        Errors, ExpiredCallSetCleared, MAX_DELAY, MAX_EXPIRATION, MIN_EXPIRATION,
-        compute_call_set_key,
+        CallSetTimerStarted, Errors, ExpiredCallSetCleared, MAX_DELAY, MAX_EXPIRATION,
+        MIN_EXPIRATION, compute_call_set_key,
     };
     use starkware_delayed_executor::delayed_executor::IDelayedExecutor;
     use starkware_delayed_executor::multi_executor::IMultiExecutor;
@@ -93,14 +99,13 @@ pub mod MultiExecutor {
         multi_owned: MultiOwnedComponent::Storage,
         /// Delay (seconds) from threshold reached until execution is allowed.
         execution_delay: u64,
-        /// Window (seconds) from first signature until call set expires.
+        /// Proposal lifetime (seconds).
         execution_expiration: u64,
         /// Minimum approvals required to execute a call set.
         quorum_size: u32,
         /// Number of approvals needed to start the delay timer.
         delay_start_threshold: u32,
-        /// Maps call_set_key to the timestamp after which it is allowed to be executed (time-wise).
-        /// 0 = not yet reached threshold, CALL_SET_EXECUTED = already executed.
+        /// Maps call_set_key to the timestamp after which it is allowed to be executed.
         call_set_allowed_time: Map<felt252, u64>,
         /// Maps call_set_key to the expiration timestamp.
         call_set_expiration: Map<felt252, u64>,
@@ -116,6 +121,7 @@ pub mod MultiExecutor {
         #[flat]
         MultiOwnedEvent: MultiOwnedComponent::Event,
         CallSetSignaturesUpdated: CallSetSignaturesUpdated,
+        CallSetTimerStarted: CallSetTimerStarted,
         CallSetExecuted: CallSetExecuted,
         ExpiredCallSetCleared: ExpiredCallSetCleared,
     }
@@ -128,7 +134,8 @@ pub mod MultiExecutor {
     /// * `delay_start_threshold` - Approvals needed to start delay timer (1 to quorum_size).
     /// * `owner_acceptance_delay` - Delay for ownership transfers (see MultiOwnedComponent).
     /// * `execution_delay` - Delay from threshold to execution eligibility (max: 28 days).
-    /// * `execution_expiration` - Window from first signature to expiration (1 hour to 52 weeks).
+    /// * `execution_expiration` - Proposal lifetime from the current anchor.
+    ///    Must exceed `execution_delay`.
     #[constructor]
     fn constructor(
         ref self: ContractState,
@@ -148,6 +155,9 @@ pub mod MultiExecutor {
         assert(execution_delay <= MAX_DELAY, Errors::DELAY_TOO_LONG);
         assert(execution_expiration >= MIN_EXPIRATION, Errors::EXPIRATION_TOO_SHORT);
         assert(execution_expiration <= MAX_EXPIRATION, Errors::EXPIRATION_TOO_LONG);
+        // The executable window is `execution_expiration` - `execution_delay` wide,
+        // ergo `expiration` > `delay` is a must.
+        assert(execution_expiration > execution_delay, Errors::EXPIRATION_BELOW_DELAY);
 
         self.multi_owned.initializer(owners, owner_acceptance_delay);
         self.quorum_size.write(quorum_size);
@@ -158,12 +168,12 @@ pub mod MultiExecutor {
 
     #[abi(embed_v0)]
     impl DelayedExecutorImpl of IDelayedExecutor<ContractState> {
-        fn submit_calls(ref self: ContractState, calls: Span<Call>) -> felt252 {
+        fn submit_calls(ref self: ContractState, calls: Span<Call>, salt: felt252) -> felt252 {
             self.multi_owned.assert_only_owner();
 
             let caller = get_caller_address();
             let owner_index = self.multi_owned.get_owner_index(caller);
-            let call_set_key = compute_call_set_key(calls);
+            let call_set_key = compute_call_set_key(calls, salt);
 
             let status = self.get_call_set_status(call_set_key);
 
@@ -185,14 +195,19 @@ pub mod MultiExecutor {
             let n_approvals = self.call_set_n_approvals.read(call_set_key) + 1;
             self.call_set_n_approvals.write(call_set_key, n_approvals);
 
-            // If threshold reached, start the delay timer.
-            if n_approvals == self.delay_start_threshold.read() {
-                let allowed_time = get_block_timestamp() + self.execution_delay.read();
+            // On the FIRST threshold crossing, start the delay timer and re-anchor the
+            // deadline.
+            if n_approvals >= self.delay_start_threshold.read()
+                && self.call_set_allowed_time.read(call_set_key) == 0 {
+                let now = get_block_timestamp();
+                let allowed_time = now + self.execution_delay.read();
+                // Reaching the threshold re-anchors the call_set expiration.
+                let expiration = now + self.execution_expiration.read();
                 self.call_set_allowed_time.write(call_set_key, allowed_time);
-            }
-
-            // If first signer, set expiration time.
-            if n_approvals == 1 {
+                self.call_set_expiration.write(call_set_key, expiration);
+                self.emit(CallSetTimerStarted { call_set_key, allowed_time, expiration });
+            } else if n_approvals == 1 {
+                // First signature: call_set is introduced & expiration time is set.
                 let expiration = get_block_timestamp() + self.execution_expiration.read();
                 self.call_set_expiration.write(call_set_key, expiration);
             }
@@ -211,10 +226,10 @@ pub mod MultiExecutor {
             call_set_key
         }
 
-        fn exec_calls(ref self: ContractState, calls: Span<Call>) {
+        fn exec_calls(ref self: ContractState, calls: Span<Call>, salt: felt252) {
             self.multi_owned.assert_only_owner();
 
-            let call_set_key = compute_call_set_key(calls);
+            let call_set_key = compute_call_set_key(calls, salt);
             let status = self.get_call_set_status(call_set_key);
 
             assert(status == CallSetStatus::Ready, Errors::CALL_SET_NOT_EXECUTABLE);
@@ -251,13 +266,10 @@ pub mod MultiExecutor {
             let n_approvals = self.call_set_n_approvals.read(call_set_key) - 1;
             self.call_set_n_approvals.write(call_set_key, n_approvals);
 
-            // If dropped below threshold, clear allowed_time.
-            if n_approvals == self.delay_start_threshold.read() - 1 {
-                self.call_set_allowed_time.write(call_set_key, 0);
-            }
-
-            // If all approvals withdrawn, clear expiration to return to Unknown.
+            // Full withdrawal ends the call set's life, clearing
+            // both timers together and returning it to Unknown.
             if n_approvals == 0 {
+                self.call_set_allowed_time.write(call_set_key, 0);
                 self.call_set_expiration.write(call_set_key, 0);
             }
 

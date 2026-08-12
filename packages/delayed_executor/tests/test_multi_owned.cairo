@@ -16,6 +16,8 @@ const OWNER3: felt252 = 0x3333;
 const NEW_OWNER: felt252 = 0x4444;
 const ACCEPTANCE_DELAY: u64 = 3600; // 1 hour.
 const INITIAL_TIMESTAMP: u64 = 10000;
+/// Fixed deploy address, so a test can pass a contract its own address in the constructor.
+const SELF_DEPLOY_ADDRESS: felt252 = 0xDEAD;
 
 fn deploy_multi_owned(
     owners: Span<ContractAddress>, owner_acceptance_delay: u64,
@@ -203,6 +205,40 @@ fn test_transfer_to_self_fails() {
 
     cheat_caller_address(contract.contract_address, addr(OWNER1), CheatSpan::Indefinite);
     contract.transfer_ownership(addr(OWNER1));
+}
+
+/// The no-self-ownership rule, closed at the nomination chokepoint. Without it an owner could
+/// nominate the executor, and a quorum-approved call set self-calling `accept_ownership` would
+/// install the contract into a slot — making every `assert_only_owner` entry point reachable from
+/// inside `execute_calls`.
+#[test]
+#[should_panic(expected: 'SELF_AS_OWNER')]
+fn test_transfer_to_contract_address_fails() {
+    let contract = deploy_with_three_owners();
+
+    cheat_caller_address(contract.contract_address, addr(OWNER1), CheatSpan::Indefinite);
+    contract.transfer_ownership(contract.contract_address);
+}
+
+/// The same rule at construction. Infeasible in production — a deploy address is a hash over the
+/// constructor calldata, so embedding it would need a hash fixed point — but `deploy_at` pins the
+/// address so the guard itself can be exercised.
+#[test]
+fn test_constructor_rejects_contract_address_as_owner() {
+    let self_address = addr(SELF_DEPLOY_ADDRESS);
+    let owners = array![addr(OWNER1), self_address].span();
+
+    let contract = declare("MockMultiOwned").unwrap().contract_class();
+    let mut constructor_args: Array<felt252> = array![];
+    Serde::serialize(@owners, ref constructor_args);
+    Serde::serialize(@ACCEPTANCE_DELAY, ref constructor_args);
+
+    // A constructor panic comes back inside the Result rather than unwinding into the test, so
+    // assert on the error data instead of using should_panic.
+    match contract.deploy_at(@constructor_args, self_address) {
+        Result::Ok(_) => panic!("deploy_at should have reverted on self-as-owner"),
+        Result::Err(panic_data) => assert_eq!(*panic_data.at(0), 'SELF_AS_OWNER'),
+    }
 }
 
 #[test]

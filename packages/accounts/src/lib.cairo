@@ -8,9 +8,9 @@ pub mod interface;
 #[cfg(test)]
 mod primer_invariants_test;
 pub mod register_interfaces_eic;
-pub mod sub_account;
+pub mod shadow_account;
 #[cfg(test)]
-mod sub_account_test;
+mod shadow_account_test;
 #[cfg(test)]
 mod test;
 #[cfg(test)]

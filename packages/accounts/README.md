@@ -8,7 +8,7 @@ Deployable account contracts.
 - **`AccountFactory`** — deploys an account for a given Ethereum address at a deterministic
   Starknet address. On first use it deploys a `Primer` at that address and upgrades it to the
   configured account class.
-- **`SubAccount`** — a minimal contract whose owner (the deployer) can batch-execute arbitrary
+- **`ShadowAccount`** — a minimal contract whose owner (the deployer) can batch-execute arbitrary
   `Call`s through it, exactly as an account would. Only the owner may call `execute`.
 
 ## Deterministic addresses

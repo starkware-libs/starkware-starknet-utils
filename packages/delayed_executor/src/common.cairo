@@ -9,10 +9,11 @@ use starknet::account::Call;
 
 // ============== Utility Functions ==============
 
-/// Computes the call set key as the Poseidon hash of serialized calls.
-pub fn compute_call_set_key(calls: Span<Call>) -> felt252 {
+/// Computes the call set key as the Poseidon hash of the serialized calls and a salt.
+pub fn compute_call_set_key(calls: Span<Call>, salt: felt252) -> felt252 {
     let mut serialized: Array<felt252> = array![];
     calls.serialize(ref serialized);
+    serialized.append(salt);
     poseidon_hash_span(serialized.span())
 }
 
@@ -164,6 +165,18 @@ pub struct CallSetSignaturesUpdated {
     pub n_approvals: u32,
 }
 
+/// Emitted when the delay timer starts
+#[derive(Drop, starknet::Event)]
+pub struct CallSetTimerStarted {
+    /// Poseidon hash identifying the call set.
+    #[key]
+    pub call_set_key: felt252,
+    /// Timestamp after which the call set is allowed to be executed.
+    pub allowed_time: u64,
+    /// Deadline for call set execution. re-anchored to threshold crossing.
+    pub expiration: u64,
+}
+
 /// Emitted when an expired call set is cleared to free storage.
 #[derive(Drop, starknet::Event)]
 pub struct ExpiredCallSetCleared {
@@ -183,6 +196,8 @@ pub mod Errors {
     pub const EXPIRATION_TOO_SHORT: felt252 = 'EXPIRATION_TOO_SHORT';
     /// Expiration window exceeds MAX_EXPIRATION.
     pub const EXPIRATION_TOO_LONG: felt252 = 'EXPIRATION_TOO_LONG';
+    /// Expiration delay must exceed execution delay.
+    pub const EXPIRATION_BELOW_DELAY: felt252 = 'EXPIRATION_BELOW_DELAY';
     /// Call set is not in Pending/Ready state (cannot be retracted).
     pub const CALL_SET_NOT_RETRACTABLE: felt252 = 'CALL_SET_NOT_RETRACTABLE';
     /// Call set is not in Ready state (cannot be executed).

@@ -76,19 +76,20 @@ MultiExecutor uses two independent timers per call set. Understanding these is e
 
 #### Expiration Timer (`call_set_expiration`)
 
-- **Triggers on**: The **first signature** (`n_approvals` goes from 0 to 1).
-- **Value**: `block_timestamp + execution_expiration` at the time of that first signature.
+- **Triggers on**: The **first signature** (`n_approvals` goes from 0 to 1), and again — once only — on the first threshold crossing.
+- **Value**: `block_timestamp + execution_expiration`, measured from whichever of those two events last wrote it. Writing `T0` for the first signature and `Td` for the threshold crossing: the deadline is `T0 + E` below threshold and `Td + E` from the crossing onward.
 - **Meaning**: The absolute deadline for the entire proposal. Once `block_timestamp > call_set_expiration`, the call set is Expired regardless of any other state.
-- **Immutable**: Once set, it is never updated or extended. Additional signatures do not affect it.
-- **Minimum window**: At least `MIN_EXPIRATION` (1 hour) from first signature.
+- **Re-anchored once**: reaching the threshold restores the execution window that an instantly-signed call set would have had, so the window does not shrink with the time spent collecting signatures up to the threshold. It is never shortened, since `Td >= T0`, and never moves again — a dip below threshold and a re-crossing do not push it.
+- **Consequence**: `execution_expiration` bounds a call set's life **per anchor**, not overall. Worst case, a call set crossing the threshold at the last admissible instant lives `2 * execution_expiration` from its first signature.
+- **Minimum window**: At least `MIN_EXPIRATION` (1 hour) from the current anchor.
 
 #### Delay Timer (`call_set_allowed_time`)
 
-- **Triggers on**: `n_approvals` reaching `delay_start_threshold`.
-- **Value**: `block_timestamp + execution_delay` at the time threshold is reached.
+- **Triggers on**: `n_approvals` first reaching `delay_start_threshold`.
+- **Value**: `block_timestamp + execution_delay` at the time threshold is first reached.
 - **Meaning**: The earliest timestamp at which execution is allowed (if quorum is also met).
-- **Reversible**: If approvals drop below threshold (via `retract_call_set`), `call_set_allowed_time` resets to 0. Re-reaching threshold restarts the timer from the current timestamp.
-- **May never start**: If threshold is never reached before expiration, the delay timer never starts and the call set expires in Proposed state.
+- **Write-once**: the delay runs once per call set. If approvals drop below threshold (via `retract_call_set`) the timer is **not** un-started, and re-reaching the threshold does **not** restart it. Only full withdrawal (`n_approvals == 0`) clears it, together with the deadline, returning the call set to `Unknown`. This is what prevents a signer sitting at the threshold boundary from postponing execution indefinitely by retracting and re-signing.
+- **May never start**: If threshold is never reached before the deadline, the delay timer never starts and the call set expires in Proposed state.
 
 #### Timeline
 
@@ -97,21 +98,23 @@ The following shows a typical timeline with `delay_start_threshold = 2` and `quo
 ```
 Time ──────────────────────────────────────────────────────────────────►
 
-│ 1st signature                                                       │
-│ ├── expiration timer starts ──────────────────────────► EXPIRATION   │
+│ 1st signature (T0)                                                  │
+│ ├── anti-rot deadline ────────────────► T0 + E  (superseded below)   │
 │                                                                     │
-│         2nd signature (threshold reached)                           │
-│         ├── delay timer starts ──► ALLOWED_TIME                     │
-│                                        │                            │
-│                                  3rd signature (quorum reached)     │
-│                                        │                            │
-│                                        ├── Ready window ──► EXPIRATION
-│                                        │                            │
-│                                   exec_calls possible here          │
+│         2nd signature — threshold reached (Td)                      │
+│         ├── delay timer starts ──► Td + D                           │
+│         └── deadline RE-ANCHORED ─────────────────────► Td + E      │
+│                                    │                        │       │
+│                              3rd signature (quorum)         │       │
+│                                    │                        │       │
+│                                    ├── executable window ───┤       │
+│                                        (always E - D wide)          │
 ```
 
 Key observations:
-- The expiration timer always starts first (on 1st signature). The delay timer starts later (at threshold).
+- The anti-rot deadline starts on the 1st signature and is re-anchored to the threshold crossing, which is also when the delay timer starts.
+- The executable window `[Td + D, Td + E]` is always exactly `E - D` wide, independent of how long the first-to-threshold signatures took. This is why the constructor requires `execution_expiration > execution_delay`.
+- **That window is shared**: collecting the remaining `quorum_size - delay_start_threshold` signatures and executing both draw on it. A call set whose quorum arrives after `Td + E` expires unexecuted — intended, and the anti-rot property working.
 - If quorum is reached before the delay timer elapses: status is `AwaitingTimelock`.
 - If the delay timer elapses before quorum is reached: status is `AwaitingQuorum`.
 - If neither quorum nor delay timer are met: status is `Pending`.
@@ -197,14 +200,12 @@ stateDiagram-v2
 
     Expired --> Unknown: clear_expired_call_set
 
-    Pending --> Proposed: unsign drops below threshold
     AwaitingTimelock --> Pending: unsign drops below quorum (timer running)
-    AwaitingQuorum --> Proposed: unsign drops below threshold
 ```
 
 Notes:
-- `retract_call_set` in MultiExecutor withdraws only the caller's signature. The call set transitions backward through states as approvals decrease.
-- All active states can transition to Expired because the expiration timer is set on the first signature and is independent of the delay timer and quorum status.
+- `retract_call_set` in MultiExecutor withdraws only the caller's signature. The call set transitions backward through the *quorum* dimension as approvals decrease, but **never back to `Proposed`**: the delay timer is write-once, so once started it stays started and a dip below threshold leaves the call set in `Pending`/`AwaitingQuorum`. `Proposed` is reachable only before the threshold is first reached.
+- All active states can transition to Expired because the deadline is independent of the delay timer and quorum status. Below threshold the deadline is `T0 + E`; from the threshold crossing onward it is `Td + E` (see 4.3).
 - The `Executed --> *` transitions mirror the `Unknown --> *` transitions because `submit_calls` resets the executed state before applying the first signature.
 
 ## 5. Interfaces
@@ -213,9 +214,17 @@ Notes:
 
 Implemented by both `DelayedExecutor` and `MultiExecutor`.
 
-#### `submit_calls(calls: Span<Call>) -> felt252`
+#### `submit_calls(calls: Span<Call>, salt: felt252) -> felt252`
 
-Registers a call set for delayed execution.
+Registers a call set for delayed execution. The call set key is
+`poseidon(serialize(calls) ++ [salt])`.
+
+The `salt` is a caller-supplied **disambiguator, not an authorization nonce**: authorization is
+re-established from scratch on every submission (full delay, full quorum), so the salt exists only so
+that two content-identical batches can be in flight at once. `salt = 0` is the conventional default
+and is what the governance path uses; a batch cannot be queued twice concurrently under the same
+salt. Note that the off-chain proposal artifact must therefore specify `(calls, salt)`, not calls
+alone.
 
 **DelayedExecutor behavior:**
 - Caller must be the owner.
@@ -235,7 +244,7 @@ Registers a call set for delayed execution.
 
 **Returns:** The call set key (`felt252`).
 
-#### `exec_calls(calls: Span<Call>)`
+#### `exec_calls(calls: Span<Call>, salt: felt252)`
 
 Executes a previously submitted call set.
 
@@ -307,6 +316,11 @@ Multi-owner specific functions. Only implemented by `MultiExecutor`.
 #### `get_call_set_expiration_time(call_set_key: felt252) -> u64`
 
 Returns the expiration timestamp for a call set. Returns 0 if not submitted.
+
+**Its value changes once per lifecycle.** It reports `T0 + E` below threshold and `Td + E` from the
+threshold crossing onward (see 4.3). A monitor that reads it before the threshold is reached holds a
+value that is later superseded, and must refresh on `CallSetTimerStarted`, which carries the new
+deadline. This is the only view in the contract whose answer is not stable for a live call set.
 
 #### `get_quorum_size() -> u32`
 
@@ -431,13 +445,15 @@ The following properties must hold at all times after construction:
    - If `owner_to_index[a] == i` and `i > 0`, then `index_to_owner[i] == a`.
    - If `index_to_owner[i] == a` and `a != 0`, then `owner_to_index[a] == i`.
 
-4. **Parameter ordering**: `1 <= delay_start_threshold <= quorum_size <= n_owners <= MAX_N_SIGNERS`.
+4. **Parameter ordering**: `1 <= delay_start_threshold <= quorum_size <= n_owners <= MAX_N_SIGNERS`, and `execution_delay < execution_expiration`. The latter is exactly the condition for the executable window `E - D` to be positive, i.e. for any call set to be executable at all.
 
 5. **Ready implies quorum** (MultiExecutor): If `get_call_set_status(key) == Ready`, then `call_set_n_approvals[key] >= quorum_size`. The explicit quorum check in `exec_calls` is a belt-and-suspenders defense.
 
-6. **Expiration set once**: `call_set_expiration[key]` is set when `n_approvals` goes from 0 to 1, and is never updated until the call set is cleared.
+6. **Expiration written at most twice**: `call_set_expiration[key]` is set when `n_approvals` goes from 0 to 1 (`T0 + E`), and re-anchored exactly once when `n_approvals` first reaches `delay_start_threshold` (`Td + E`). It is never written again until the call set is cleared, and is never shortened.
 
-7. **Timer reversibility**: If `n_approvals` drops below `delay_start_threshold`, `call_set_allowed_time` is reset to 0 (timer un-started). Re-reaching threshold restarts the timer from the current timestamp.
+7. **Delay timer write-once**: `call_set_allowed_time[key]` is set when `n_approvals` first reaches `delay_start_threshold` and is never restarted. Dropping below the threshold does not un-start it; only `n_approvals == 0` clears it, together with the deadline.
+
+7b. **Timer implies threshold was reached**: if `call_set_allowed_time[key] == 0` then `n_approvals[key] < delay_start_threshold`. Since `delay_start_threshold <= quorum_size`, a call set at or above quorum always has a started timer, so no call set can be stuck below `Ready` for want of a timer nobody can start.
 
 8. **Owner count immutability**: `n_owners` never changes after construction.
 
@@ -456,7 +472,8 @@ The following properties must hold at all times after construction:
 
 | Event | Fields | Emitted When |
 |-------|--------|-------------|
-| `CallSetSignaturesUpdated` | `call_set_key` (key), `owner_index`, `owner`, `change` (enum), `n_approvals` | An owner signs or unsigns a call set |
+| `CallSetSignaturesUpdated` | `call_set_key` (key), `owner_index`, `owner`, `change` (enum), `n_approvals` | An owner signs or unsigns a call set. `n_approvals` is the count *at emission* |
+| `CallSetTimerStarted` | `call_set_key` (key), `allowed_time`, `expiration` | The delay timer starts, i.e. the first threshold crossing. At most once per call-set lifecycle, and the only moment `call_set_expiration` changes |
 | `CallSetExecuted` | `call_set_key` (key) | A call set is executed |
 | `ExpiredCallSetCleared` | `call_set_key` (key) | An expired call set is cleared |
 
@@ -476,6 +493,7 @@ The following properties must hold at all times after construction:
 | `DELAY_TOO_LONG` | Both | `execution_delay > MAX_DELAY` |
 | `EXPIRATION_TOO_SHORT` | Both | `execution_expiration < MIN_EXPIRATION` |
 | `EXPIRATION_TOO_LONG` | Both | `execution_expiration > MAX_EXPIRATION` |
+| `EXPIRATION_BELOW_DELAY` | MultiExecutor | `execution_expiration <= execution_delay` (the executable window would be empty) |
 | `CALL_SET_NOT_RETRACTABLE` | DelayedExecutor | `retract_call_set` called on non-Pending/Ready call set |
 | `CALL_SET_NOT_EXECUTABLE` | Both | `exec_calls` called when status != Ready |
 | `TOO_MANY_SIGNERS` | MultiExecutor | `len(owners) > MAX_N_SIGNERS` |
@@ -506,6 +524,20 @@ The following properties must hold at all times after construction:
 - **Immutable parameters**: `execution_delay`, `execution_expiration`, `quorum_size`,
   `delay_start_threshold`, and `owner_acceptance_delay` are fixed at construction and cannot be
   updated on-chain. Changing them requires deploying a new contract.
+- **Lifetime is bounded per anchor, not per call set**: reaching the threshold re-anchors the
+  deadline, so a call set that crosses the threshold at the last admissible instant lives up to
+  `2 * execution_expiration` from its first signature (see 4.3).
+- **The post-threshold window is shared**: collecting the remaining
+  `quorum_size - delay_start_threshold` signatures and executing both draw on the same `E - D`
+  window. A call set whose quorum arrives after `Td + E` expires unexecuted. This is intended.
+- **A late threshold crossing extends the deadline**: a signer pivotal at the threshold can withhold
+  until just before `T0 + E` and then cross, which both starts the (non-restartable) delay timer and
+  pushes the deadline to nearly `T0 + 2E`. It costs them their own signature, and the remaining
+  signers recover by retracting to zero, which clears both timers.
+- **One in-flight instance per `(calls, salt)` pair**: two content-identical batches need distinct
+  salts to be queued concurrently. `salt = 0` is the conventional default.
+- **`delay_start_threshold == quorum_size == n_owners`** leaves no spare signature, so every signer
+  sits on the threshold boundary.
 - **Fixed owner count**: The number of owner slots (`n_owners`) is fixed at construction.
   Owners can be replaced but not added or removed.
 - **Approval erasure cost**: `_erase_approvals` iterates over all `n_owners` slots (O(n)) per

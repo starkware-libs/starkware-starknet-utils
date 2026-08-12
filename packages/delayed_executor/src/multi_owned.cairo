@@ -58,7 +58,7 @@ pub mod MultiOwnedComponent {
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
     use starkware_delayed_executor::common::{
         Errors, MAX_ACCEPTANCE_DELAY, MAX_N_SIGNERS, OwnershipAccepted, OwnershipNominated,
         OwnershipNominationCleared, OwnershipRevoked,
@@ -125,6 +125,7 @@ pub mod MultiOwnedComponent {
             while i < n {
                 let owner = *owners.at(i);
                 assert(owner.is_non_zero(), Errors::ZERO_OWNER_ADDRESS);
+                assert(owner != get_contract_address(), Errors::SELF_AS_OWNER);
                 assert(self.owner_to_index.read(owner) == 0, Errors::DUPLICATE_OWNER);
 
                 let index = i + 1; // 1-based indexing.
@@ -194,6 +195,7 @@ pub mod MultiOwnedComponent {
             let current_owner = get_caller_address();
             assert(self.is_owner(current_owner), Errors::ONLY_OWNER);
             assert(!self.is_owner(new_owner), Errors::ALREADY_OWNER);
+            assert(new_owner != get_contract_address(), Errors::SELF_AS_OWNER);
 
             // new_owner must not be pending for this or another owner.
             assert(self.pending_to_current.read(new_owner).is_zero(), Errors::ALREADY_PENDING);

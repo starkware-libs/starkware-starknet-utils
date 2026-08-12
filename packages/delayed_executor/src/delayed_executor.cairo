@@ -27,13 +27,13 @@ pub trait IDelayedExecutor<TState> {
     /// For multi-owner: Adds the caller's approval to the call set.
     ///
     /// Returns the call set key (Poseidon hash of serialized calls).
-    fn submit_calls(ref self: TState, calls: Span<Call>) -> felt252;
+    fn submit_calls(ref self: TState, calls: Span<Call>, salt: felt252) -> felt252;
 
     /// Executes a previously registered call set.
     ///
     /// Requires the call set to be in Ready status (delay elapsed, not expired).
     /// For multi-owner: Also requires quorum of approvals.
-    fn exec_calls(ref self: TState, calls: Span<Call>);
+    fn exec_calls(ref self: TState, calls: Span<Call>, salt: felt252);
 
     /// Retracts a call set.
     ///
@@ -53,6 +53,11 @@ pub trait IDelayedExecutor<TState> {
     fn get_execution_delay(self: @TState) -> u64;
 
     /// Returns the configured expiration window in seconds.
+    ///
+    /// Note - value meaning varies between implementations:
+    /// - `DelayedExecutor`: the width of the execution window, measured from `allowed_time`.
+    ///   A call set's deadline is `allowed_time + execution_expiration`.
+    /// - `MultiExecutor`: a call_set lifetime, measured from crossing execution delay threshold.
     fn get_execution_expiration(self: @TState) -> u64;
 }
 
@@ -134,10 +139,10 @@ pub mod DelayedExecutor {
 
     #[abi(embed_v0)]
     impl DelayedExecutorImpl of IDelayedExecutor<ContractState> {
-        fn submit_calls(ref self: ContractState, calls: Span<Call>) -> felt252 {
+        fn submit_calls(ref self: ContractState, calls: Span<Call>, salt: felt252) -> felt252 {
             self.ownable.assert_only_owner();
 
-            let call_set_key = compute_call_set_key(calls);
+            let call_set_key = compute_call_set_key(calls, salt);
             let status = self.get_call_set_status(call_set_key);
 
             match status {
@@ -161,10 +166,10 @@ pub mod DelayedExecutor {
             }
         }
 
-        fn exec_calls(ref self: ContractState, calls: Span<Call>) {
+        fn exec_calls(ref self: ContractState, calls: Span<Call>, salt: felt252) {
             self.ownable.assert_only_owner();
 
-            let call_set_key = compute_call_set_key(calls);
+            let call_set_key = compute_call_set_key(calls, salt);
             let status = self.get_call_set_status(call_set_key);
 
             assert(status == CallSetStatus::Ready, Errors::CALL_SET_NOT_EXECUTABLE);

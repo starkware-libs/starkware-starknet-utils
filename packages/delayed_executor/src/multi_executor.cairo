@@ -180,10 +180,12 @@ pub mod MultiExecutor {
             // Cannot sign an expired call set.
             assert(status != CallSetStatus::Expired, Errors::CALL_SET_EXPIRED);
 
-            // If already signed, return early.
-            if self.call_set_approvers.read((call_set_key, owner_index)) {
-                return call_set_key;
-            }
+            // Checked after the expiry assert above, deliberately,
+            // as an expired call set is the more fundamental problem.
+            assert(
+                !self.call_set_approvers.read((call_set_key, owner_index)),
+                Errors::ALREADY_SIGNED_BY_CALLER,
+            );
 
             // If previously executed, reset state so it can be re-signed.
             if status == CallSetStatus::Executed {

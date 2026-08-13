@@ -153,108 +153,79 @@ fn test_allowed_time() {
     assert_eq!(executor.get_call_set_status(call_set_key), CallSetStatus::Executed);
     assert_eq!(executor.get_call_set_allowed_time(call_set_key), Bounded::<u64>::MAX);
 
-    // Expired: register new, let it expire, returns MAX.
+    // Expired: register new, let it expire. Still returns the real allowed_time — expiry here is
+    // derived from it, so the value stays meaningful and the caller can reconstruct the window
+    // that closed. `get_call_set_status` is what distinguishes Expired from Ready.
+    let resubmit_time = INITIAL_TIMESTAMP + DELAY;
     executor.submit_calls(array![call].span(), 0);
     cheat_block_timestamp(
-        executor.contract_address,
-        INITIAL_TIMESTAMP + DELAY + DELAY + EXPIRATION + 100,
-        CheatSpan::Indefinite,
+        executor.contract_address, resubmit_time + DELAY + EXPIRATION + 100, CheatSpan::Indefinite,
     );
     assert_eq!(executor.get_call_set_status(call_set_key), CallSetStatus::Expired);
-    assert_eq!(executor.get_call_set_allowed_time(call_set_key), Bounded::<u64>::MAX);
+    assert_eq!(executor.get_call_set_allowed_time(call_set_key), resubmit_time + DELAY);
 }
 
 // ============== Register Behavior Tests ==============
 
+/// Re-submitting a call set that is still active reverts rather than returning the key unchanged.
+/// A no-op reporting success cannot be told apart at the call site from a real registration, and
+/// the timer must not be restartable this way either.
 #[test]
-fn test_register_pending_is_nop() {
+#[should_panic(expected: 'ALREADY_SUBMITTED')]
+fn test_register_pending_reverts() {
     let (executor, owner) = deploy_executor();
     let counter_address = deploy_counter().contract_address;
 
     cheat_block_timestamp(executor.contract_address, INITIAL_TIMESTAMP, CheatSpan::Indefinite);
     cheat_caller_address(executor.contract_address, owner, CheatSpan::Indefinite);
 
-    let call = increment_call(counter_address);
-    let calls: Span<Call> = array![call].span();
-
+    let calls: Span<Call> = array![increment_call(counter_address)].span();
     let call_set_key = executor.submit_calls(calls, 0);
     assert_eq!(executor.get_call_set_status(call_set_key), CallSetStatus::Pending);
 
-    // Advance time but stay in pending.
+    // Advance, but stay Pending.
     cheat_block_timestamp(executor.contract_address, INITIAL_TIMESTAMP + 50, CheatSpan::Indefinite);
-
-    // Spy to check no new event.
-    let mut spy = spy_events();
-
-    // Re-register same calls - should be NOP.
-    let call2 = increment_call(counter_address);
-    let calls2: Span<Call> = array![call2].span();
-    let call_set_key2 = executor.submit_calls(calls2, 0);
-
-    assert_eq!(call_set_key, call_set_key2);
-    assert_eq!(executor.get_call_set_status(call_set_key), CallSetStatus::Pending);
-
-    // No event should be emitted for NOP.
-    spy
-        .assert_not_emitted(
-            @array![
-                (
-                    executor.contract_address,
-                    DelayedExecutor::Event::CallSetSubmitted(
-                        CallSetSubmitted {
-                            call_set_key, allowed_time: INITIAL_TIMESTAMP + 50 + DELAY,
-                        },
-                    ),
-                ),
-            ],
-        );
+    executor.submit_calls(array![increment_call(counter_address)].span(), 0);
 }
 
+/// Same once Ready: the delay has elapsed but the set is still live, so re-submitting is an error
+/// rather than a way to restart the timer on an executable batch.
 #[test]
-fn test_register_ready_is_nop() {
+#[should_panic(expected: 'ALREADY_SUBMITTED')]
+fn test_register_ready_reverts() {
     let (executor, owner) = deploy_executor();
     let counter_address = deploy_counter().contract_address;
 
     cheat_block_timestamp(executor.contract_address, INITIAL_TIMESTAMP, CheatSpan::Indefinite);
     cheat_caller_address(executor.contract_address, owner, CheatSpan::Indefinite);
 
-    let call = increment_call(counter_address);
-    let calls: Span<Call> = array![call].span();
+    let call_set_key = executor.submit_calls(array![increment_call(counter_address)].span(), 0);
 
-    let call_set_key = executor.submit_calls(calls, 0);
-
-    // Advance to Ready status.
     cheat_block_timestamp(
         executor.contract_address, INITIAL_TIMESTAMP + DELAY, CheatSpan::Indefinite,
     );
     assert_eq!(executor.get_call_set_status(call_set_key), CallSetStatus::Ready);
 
-    // Spy to check no new event.
-    let mut spy = spy_events();
+    executor.submit_calls(array![increment_call(counter_address)].span(), 0);
+}
 
-    // Re-register same calls while Ready - should be NOP.
-    let call2 = increment_call(counter_address);
-    let call_set_key2 = executor.submit_calls(array![call2].span(), 0);
+/// The salt is the supported way to queue a second instance of an identical batch, and it stays
+/// available while the first is active — so ALREADY_SUBMITTED blocks the accident, not the use
+/// case.
+#[test]
+fn test_register_same_calls_different_salt_succeeds_while_pending() {
+    let (executor, owner) = deploy_executor();
+    let counter_address = deploy_counter().contract_address;
 
-    assert_eq!(call_set_key, call_set_key2);
-    assert_eq!(
-        executor.get_call_set_status(call_set_key), CallSetStatus::Ready,
-    ); // Still Ready, not reset to Pending.
+    cheat_block_timestamp(executor.contract_address, INITIAL_TIMESTAMP, CheatSpan::Indefinite);
+    cheat_caller_address(executor.contract_address, owner, CheatSpan::Indefinite);
 
-    // No event should be emitted for NOP.
-    spy
-        .assert_not_emitted(
-            @array![
-                (
-                    executor.contract_address,
-                    DelayedExecutor::Event::CallSetSubmitted(
-                        CallSetSubmitted {
-                            call_set_key, allowed_time: INITIAL_TIMESTAMP + DELAY + DELAY,
-                        },
-                    ),
-                ),
-            ],
-        );
+    let key_a = executor.submit_calls(array![increment_call(counter_address)].span(), 0);
+    let key_b = executor.submit_calls(array![increment_call(counter_address)].span(), 1);
+
+    assert!(key_a != key_b);
+    assert_eq!(executor.get_call_set_status(key_a), CallSetStatus::Pending);
+    assert_eq!(executor.get_call_set_status(key_b), CallSetStatus::Pending);
 }
 
 #[test]

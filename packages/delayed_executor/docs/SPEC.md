@@ -228,14 +228,20 @@ alone.
 
 **DelayedExecutor behavior:**
 - Caller must be the owner.
-- If the call set is already active (Pending or Ready), returns the key without resetting the timer (idempotent NOP).
+- Reverts with `ALREADY_SUBMITTED` if the call set is already active (Pending or Ready). Submission is
+  not idempotent: a call that changed nothing while returning the key cannot be distinguished at the
+  call site from one that registered something. To queue a second instance of an identical batch, use a
+  different `salt`.
 - If the call set is Unknown, Executed, or Expired, (re-)submits it: sets `call_set_allowed_time = now + execution_delay`.
 - Emits `CallSetSubmitted { call_set_key, allowed_time }`.
 
 **MultiExecutor behavior:**
 - Caller must be an owner.
 - Reverts with `CALL_SET_EXPIRED` if the call set is Expired.
-- Otherwise, if the caller's slot already has a signature for this call set, returns early (idempotent).
+- Reverts with `ALREADY_SIGNED_BY_CALLER` if the caller's slot already has a signature for this call
+  set. Checked *after* the expiry assert, so a prior signer re-signing an expired set still reports
+  `CALL_SET_EXPIRED` — the more fundamental problem. Note the check is keyed on the **slot**, so it also
+  fires for a new holder who inherited the slot's signature via `transfer_ownership`.
 - If Executed, resets `call_set_allowed_time` to 0 to allow re-signing.
 - Adds the caller's approval. Increments `n_approvals`.
 - If `n_approvals` reaches `delay_start_threshold`, sets `call_set_allowed_time = now + execution_delay`.
@@ -291,8 +297,17 @@ Returns the current status of a call set. Pure query, no state changes.
 Returns the timestamp after which the call set is allowed to be executed (time-wise).
 
 - For active states with a started timer (Pending, AwaitingTimelock, AwaitingQuorum, Ready): returns `call_set_allowed_time`.
-- For Proposed (timer not started): returns `u64::MAX`.
-- For Unknown, Executed, Expired: returns `u64::MAX`.
+The set of states returning the sentinel differs between the implementations, because their state
+models differ. Pair this with `get_call_set_status` rather than inferring status from the sentinel.
+
+- **DelayedExecutor** — returns `u64::MAX` for Unknown and Executed only. An **Expired** call set
+  returns its real `allowed_time`: expiry is derived as `allowed_time + execution_expiration` and the
+  slot is never cleared, so the value remains meaningful and is what a caller needs to reconstruct the
+  window that closed.
+- **MultiExecutor** — returns `u64::MAX` for Unknown, Proposed, Executed and Expired. Proposed and
+  Expired are included because a call set there can expire having never reached
+  `delay_start_threshold`, in which case no timer was ever started and there is no timestamp to
+  report.
 
 #### `get_execution_delay() -> u64`
 
@@ -501,6 +516,7 @@ The following properties must hold at all times after construction:
 | `NO_OWNERS` | MultiExecutor | `len(owners) == 0` |
 | `ZERO_OWNER_ADDRESS` | MultiExecutor | Zero address in owner list |
 | `SELF_AS_OWNER` | MultiExecutor | The executor's own address offered as an owner, at construction or via `transfer_ownership`/`accept_ownership` |
+| `ALREADY_SUBMITTED` | DelayedExecutor | `submit_calls` on a call set that is already Pending or Ready |
 | `DUPLICATE_OWNER` | MultiExecutor | Same address appears twice in owner list |
 | `ACCEPTANCE_DELAY_TOO_LONG` | MultiExecutor | `owner_acceptance_delay > MAX_ACCEPTANCE_DELAY` |
 | `ONLY_OWNER` | MultiExecutor | Caller is not an owner |
@@ -513,6 +529,7 @@ The following properties must hold at all times after construction:
 | `ILLEGAL_THRESHOLD` | MultiExecutor | `delay_start_threshold == 0` or `> quorum_size` |
 | `CALL_SET_EXPIRED` | MultiExecutor | Signing or unsigning an expired call set |
 | `NOT_SIGNED_BY_CALLER` | MultiExecutor | `retract_call_set` when caller has not signed |
+| `ALREADY_SIGNED_BY_CALLER` | MultiExecutor | `submit_calls` when the caller's slot has already signed |
 | `NOT_EXPIRED` | MultiExecutor | `clear_expired_call_set` on non-expired call set |
 | `QUORUM_NOT_REACHED` | MultiExecutor | `exec_calls` when `n_approvals < quorum_size` |
 | `UNREACHABLE_STATE` | DelayedExecutor | `submit_calls` observed a MultiExecutor-only status (defensive; should never trigger) |

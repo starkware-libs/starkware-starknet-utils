@@ -187,8 +187,12 @@ fn test_register_quorum_reached() {
     assert_eq!(delayed.get_call_set_status(call_set_key), CallSetStatus::AwaitingTimelock);
 }
 
+/// Re-signing reverts rather than returning the key unchanged. A submission that added no
+/// approval is indistinguishable at the call site from one that did, which is the least
+/// detectable shape for an operational mistake.
 #[test]
-fn test_register_idempotent() {
+#[should_panic(expected: 'ALREADY_SIGNED_BY_CALLER')]
+fn test_register_twice_by_same_owner_reverts() {
     let (delayed, multi, _) = deploy_default();
 
     cheat_block_timestamp(delayed.contract_address, INITIAL_TIMESTAMP, CheatSpan::Indefinite);
@@ -200,9 +204,7 @@ fn test_register_idempotent() {
     let call_set_key = delayed.submit_calls(calls, 0);
     assert_eq!(multi.get_n_approvals(call_set_key), 1);
 
-    // Register again - should be idempotent.
     delayed.submit_calls(calls, 0);
-    assert_eq!(multi.get_n_approvals(call_set_key), 1);
 }
 
 #[test]
@@ -1324,22 +1326,34 @@ fn test_register_same_signer_on_expired_fails() {
     delayed.submit_calls(calls, 0);
 }
 
+/// The slot-keyed nature of the revert: a new holder who inherited the slot's signature through
+/// `transfer_ownership` is told the slot already signed, rather than silently no-op'ing. Pinned
+/// separately from the same-owner case because the caller here never personally signed.
 #[test]
-fn test_register_idempotent_no_event() {
-    let (delayed, _, _) = deploy_default();
+#[should_panic(expected: 'ALREADY_SIGNED_BY_CALLER')]
+fn test_register_by_inherited_slot_reverts() {
+    let (delayed, multi, ownership) = deploy_default();
+    const HEIR: felt252 = 0x7777;
 
     cheat_block_timestamp(delayed.contract_address, INITIAL_TIMESTAMP, CheatSpan::Indefinite);
     cheat_caller_address(delayed.contract_address, addr(OWNER1), CheatSpan::Indefinite);
 
     let counter = deploy_counter();
     let calls = array![increment_call(counter.contract_address)].span();
+    let call_set_key = delayed.submit_calls(calls, 0);
+    assert_eq!(multi.get_n_approvals(call_set_key), 1);
 
-    // First registration emits event.
-    delayed.submit_calls(calls, 0);
+    // OWNER1 hands slot 1, and its outstanding approval, to HEIR.
+    cheat_caller_address(ownership.contract_address, addr(OWNER1), CheatSpan::Indefinite);
+    ownership.transfer_ownership(addr(HEIR));
+    cheat_block_timestamp(
+        delayed.contract_address, INITIAL_TIMESTAMP + ACCEPTANCE_DELAY, CheatSpan::Indefinite,
+    );
+    cheat_caller_address(ownership.contract_address, addr(HEIR), CheatSpan::Indefinite);
+    ownership.accept_ownership();
 
-    // Re-register (idempotent).
+    cheat_caller_address(delayed.contract_address, addr(HEIR), CheatSpan::Indefinite);
     delayed.submit_calls(calls, 0);
-    // Verify no additional approvals (idempotent behavior).
 }
 
 // ============== Owner Replacement and Signature Index Tests ==============
@@ -1382,9 +1396,10 @@ fn test_replaced_owner_inherits_signature() {
     assert!(multi.has_owner_signed(call_set_key, addr(NEW_OWNER)));
     assert!(!multi.has_owner_signed(call_set_key, addr(OWNER1))); // OWNER1 not owner anymore
 
-    // NEW_OWNER tries to register - should be idempotent (already signed via index).
-    delayed.submit_calls(calls, 0);
-    assert_eq!(multi.get_n_approvals(call_set_key), 1); // Still 1, not 2.
+    // The count is unchanged by the transfer: the slot's single approval moved holder, it did not
+    // duplicate. NEW_OWNER re-submitting now reverts — see
+    // test_register_by_inherited_slot_reverts.
+    assert_eq!(multi.get_n_approvals(call_set_key), 1);
 }
 
 #[test]
@@ -1502,9 +1517,7 @@ fn test_multiple_call_sets_with_owner_replacement() {
     assert!(multi.has_owner_signed(key1, addr(NEW_OWNER)));
     assert!(multi.has_owner_signed(key2, addr(NEW_OWNER)));
 
-    // Re-registering by NEW_OWNER is idempotent for both.
-    delayed.submit_calls(calls1, 0);
-    delayed.submit_calls(calls2, 0);
+    // One approval each, carried to the new holder rather than duplicated.
     assert_eq!(multi.get_n_approvals(key1), 1);
     assert_eq!(multi.get_n_approvals(key2), 1);
 }
@@ -2603,16 +2616,14 @@ fn test_five_owners_erase_approvals_clears_all_slots() {
     cheat_block_timestamp(delayed.contract_address, INITIAL_TIMESTAMP, CheatSpan::Indefinite);
     let mut i: u32 = 0;
     let owner_felts = array![OWNER1, OWNER2, OWNER3, OWNER4, OWNER5];
+    let mut key: felt252 = 0;
     while i < 5 {
         cheat_caller_address(
             delayed.contract_address, addr(*owner_felts.at(i)), CheatSpan::Indefinite,
         );
-        delayed.submit_calls(calls, 0);
+        key = delayed.submit_calls(calls, 0);
         i += 1;
     }
-    // Re-submitting from an owner who already signed is a no-op that returns the key.
-    cheat_caller_address(delayed.contract_address, addr(OWNER1), CheatSpan::Indefinite);
-    let key = delayed.submit_calls(calls, 0);
     assert_eq!(multi.get_n_approvals(key), 5);
 
     cheat_block_timestamp(

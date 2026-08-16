@@ -6,13 +6,15 @@ pub trait IShadowAccount<TContractState> {
     /// return value of each call. Only the owner (the deployer) is authorized to call this
     /// entrypoint.
     fn execute(ref self: TContractState, calls: Array<Call>) -> Array<Span<felt252>>;
+    /// Sets the caller as owner. Reverts if already set. Supports the primer pattern.
+    fn initialize(ref self: TContractState);
     /// Returns the address authorized to call `execute`.
     fn owner(self: @TContractState) -> starknet::ContractAddress;
-    // TODO: Consider adding ownership transfer entrypoint.
 }
 
 #[starknet::contract]
 pub mod ShadowAccount {
+    use core::num::traits::Zero;
     use openzeppelin::utils::execution::execute_calls;
     use starknet::account::Call;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -49,6 +51,11 @@ pub mod ShadowAccount {
         fn execute(ref self: ContractState, calls: Array<Call>) -> Array<Span<felt252>> {
             self.assert_only_owner();
             execute_calls(calls.span())
+        }
+
+        fn initialize(ref self: ContractState) {
+            assert(self.owner.read().is_zero(), 'SHADOW_ACCOUNT: INITIALIZED');
+            self.owner.write(get_caller_address());
         }
 
         fn owner(self: @ContractState) -> ContractAddress {

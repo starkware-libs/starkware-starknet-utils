@@ -35,6 +35,7 @@ pub mod MockTarget {
 
 #[cfg(test)]
 mod ShadowAccountTests {
+    use core::num::traits::Zero;
     use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
     use starknet::account::Call;
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
@@ -45,6 +46,7 @@ mod ShadowAccountTests {
         IEICUpgradableDispatcher, IEICUpgradableDispatcherTrait,
     };
     use starkware_utils_testing::test_utils::cheat_caller_address_once;
+    use crate::test_helpers::primer_mock::{IPrimerMockDispatcher, IPrimerMockDispatcherTrait};
     use super::{IMockTargetDispatcher, IMockTargetDispatcherTrait};
 
     const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
@@ -60,6 +62,25 @@ mod ShadowAccountTests {
         IShadowAccountDispatcher { contract_address }
     }
 
+    /// Deploys a `ShadowAccount` the way the primer pattern does: deploy a `Primer`, replace its
+    /// class hash with the `ShadowAccount`'s (so the constructor never runs), and leave it
+    /// uninitialized. Both steps run with OWNER as the caller, as the deployer does.
+    fn deploy_uninitialized_shadow_account() -> IShadowAccountDispatcher {
+        let shadow_account_class_hash = *declare("ShadowAccount")
+            .unwrap_syscall()
+            .contract_class()
+            .class_hash;
+        let primer = declare("PrimerTestMock").unwrap_syscall().contract_class();
+        let contract_address = primer.precalculate_address(@array![]);
+        cheat_caller_address_once(:contract_address, caller_address: OWNER);
+        let (contract_address, _) = primer.deploy(@array![]).unwrap_syscall();
+
+        cheat_caller_address_once(:contract_address, caller_address: OWNER);
+        IPrimerMockDispatcher { contract_address }.set_class_hash(shadow_account_class_hash);
+
+        IShadowAccountDispatcher { contract_address }
+    }
+
     fn deploy_target() -> IMockTargetDispatcher {
         let contract = declare("MockTarget").unwrap_syscall().contract_class();
         let (contract_address, _) = contract.deploy(@array![]).unwrap_syscall();
@@ -70,6 +91,70 @@ mod ShadowAccountTests {
     fn test_owner() {
         let shadow_account = deploy_shadow_account();
         assert!(shadow_account.owner() == OWNER);
+    }
+
+    #[test]
+    fn test_initialize_sets_owner_to_caller() {
+        let shadow_account = deploy_uninitialized_shadow_account();
+        assert!(shadow_account.owner().is_zero());
+
+        cheat_caller_address_once(
+            contract_address: shadow_account.contract_address, caller_address: OWNER,
+        );
+        shadow_account.initialize();
+
+        assert!(shadow_account.owner() == OWNER);
+    }
+
+    #[test]
+    fn test_initialized_account_executes() {
+        let shadow_account = deploy_uninitialized_shadow_account();
+        let target = deploy_target();
+
+        cheat_caller_address_once(
+            contract_address: shadow_account.contract_address, caller_address: OWNER,
+        );
+        shadow_account.initialize();
+
+        let call = Call {
+            to: target.contract_address,
+            selector: selector!("set_value"),
+            calldata: array![42].span(),
+        };
+        cheat_caller_address_once(
+            contract_address: shadow_account.contract_address, caller_address: OWNER,
+        );
+        shadow_account.execute(array![call]);
+
+        assert!(target.get_value() == 42);
+    }
+
+    #[test]
+    #[should_panic(expected: 'SHADOW_ACCOUNT: INITIALIZED')]
+    fn test_initialize_twice_panics() {
+        let shadow_account = deploy_uninitialized_shadow_account();
+
+        cheat_caller_address_once(
+            contract_address: shadow_account.contract_address, caller_address: OWNER,
+        );
+        shadow_account.initialize();
+
+        cheat_caller_address_once(
+            contract_address: shadow_account.contract_address, caller_address: OTHER,
+        );
+        shadow_account.initialize();
+    }
+
+    #[test]
+    #[should_panic(expected: 'SHADOW_ACCOUNT: INITIALIZED')]
+    fn test_initialize_after_constructor_panics() {
+        // The constructor already set the owner, so the deployed-directly path stays closed.
+        let shadow_account = deploy_shadow_account();
+
+        cheat_caller_address_once(
+            contract_address: shadow_account.contract_address, caller_address: OTHER,
+        );
+        shadow_account.initialize();
     }
 
     #[test]

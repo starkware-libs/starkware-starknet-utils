@@ -13,10 +13,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: foundry-rs/setup-snfoundry@bd5fc266ba0ce7e352b01dd7eaacc0fbb6145d17 # v3
         with:
-          starknet-foundry-version: "0.59.0"
+          starknet-foundry-version: "0.63.0"
       - uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd # v1
         with:
-          scarb-version: "2.15.1"
+          scarb-version: "2.18.0"
 
       - name: Install cairo-coverage
         run: |

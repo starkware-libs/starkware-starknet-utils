@@ -10,7 +10,7 @@ use starknet::{ClassHash, ContractAddress, EthAddress, SyscallResultTrait, get_c
 // value).
 #[cfg(target: "test")]
 pub const PRIMER_CLASS_HASH: ClassHash =
-    0x02346ff8858e38b91b583eb1b7f83a411eca302b28766cd68c348e5e82dbbe5b
+    0x008373698247604c71666f2d27ca2053f30c937d90e2ac39be80e6a7fdd77baf
     .try_into()
     .unwrap();
 

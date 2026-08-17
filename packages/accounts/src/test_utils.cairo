@@ -34,7 +34,7 @@ pub const PROTOCOL_ADDRESS: felt252 = 0;
 /// Must match FIXED_UPGRADE_TARGET_CLASS_HASH in generate_test_signatures.py.
 /// Re-run generate_test_signatures.py after recompiling if this contract changes.
 pub const FIXED_UPGRADE_TARGET_CLASS_HASH: felt252 =
-    0x116b817c8fd4d03b340edb899d0c074b1c36ba9b643af1422bd5ed6ee0d555d;
+    0x622545933023c6dedb4547e2e05e0a5f9c244df93a2fbf3222aff9615981a0f;
 
 /// Test Ethereum address corresponding to private key:
 /// 0xa6d86467b6ec9e161649b27edfd8519e75a2e1cf5f4c309c628706e6999780e8
@@ -424,16 +424,16 @@ pub fn get_call_set_with_additional_data_signature() -> Array<felt252> {
 /// EFO signature: upgrade(FIXED_UPGRADE_TARGET_CLASS_HASH, None), nonce=200.
 pub fn get_efo_upgrade_signature() -> Array<felt252> {
     array![
-        0x0310b2e62cbb8c63ac5cbb9e78f1712e, 0xc9d348904fd30995b7876a4fd585a067,
-        0x2bbe26757cf66b816f298d5fe559a2e5, 0x123af974f819a5c9238602f456cc9d6a, 27, 1,
+        0xb7809178abb54cbb3e3f2ef698269a79, 0x553ec5961d34e6e1ec22e720e7a29417,
+        0x62515face6feaff07bb8ee4d89859ad6, 0xf971cac769a71dac48a197e706bd7bf7, 27, 1,
     ]
 }
 
 /// __validate__ signature: upgrade(FIXED_UPGRADE_TARGET_CLASS_HASH, None), nonce=2.
 pub fn get_validate_upgrade_signature() -> Array<felt252> {
     array![
-        0x2aa44a28b178a7b635af3c7f13377c2c, 0xbb2407616673c54e374224a19fc53c79,
-        0x08cfcf1f2931d92f10c78f3b02572cfa, 0xcd3c2665bcc50041a268174db3563fb2, 28, 1,
+        0x05cb2893ff6409dbd8f6d21dc2159e94, 0x09b931fec27aa5f5f020851e75f2775c,
+        0x38ffa41384c473157e5d2a91357d7a9f, 0xb5711652e7b534fde4da9795463555d3, 27, 1,
     ]
 }
 // GENERATED-SIGNATURES-END

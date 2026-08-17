@@ -27,13 +27,13 @@ pub trait IDelayedExecutor<TState> {
     /// For multi-owner: Adds the caller's approval to the call set.
     ///
     /// Returns the call set key (Poseidon hash of serialized calls).
-    fn submit_calls(ref self: TState, calls: Span<Call>) -> felt252;
+    fn submit_calls(ref self: TState, calls: Span<Call>, salt: felt252) -> felt252;
 
     /// Executes a previously registered call set.
     ///
     /// Requires the call set to be in Ready status (delay elapsed, not expired).
     /// For multi-owner: Also requires quorum of approvals.
-    fn exec_calls(ref self: TState, calls: Span<Call>);
+    fn exec_calls(ref self: TState, calls: Span<Call>, salt: felt252);
 
     /// Retracts a call set.
     ///
@@ -46,13 +46,24 @@ pub trait IDelayedExecutor<TState> {
 
     /// Returns the timestamp after which the call set is allowed to be executed (time-wise).
     ///
-    /// Returns `u64::MAX` if the call set has no started timer.
+    /// Returns `u64::MAX` when no meaningful timestamp is stored. Which states those are differs
+    /// between implementations, because their state models differ — pair this with
+    /// `get_call_set_status` rather than inferring status from the sentinel:
+    /// - `DelayedExecutor`: `Unknown` and `Executed` only. An `Expired` set returns its real
+    ///   `allowed_time`, since expiry is derived from it and the slot is never cleared.
+    /// - `MultiExecutor`: also `Proposed` and `Expired`, because a call set there can expire
+    ///   having never reached `delay_start_threshold`, in which case no timer was ever started.
     fn get_call_set_allowed_time(self: @TState, call_set_key: felt252) -> u64;
 
     /// Returns the configured execution delay in seconds.
     fn get_execution_delay(self: @TState) -> u64;
 
     /// Returns the configured expiration window in seconds.
+    ///
+    /// Note - value meaning varies between implementations:
+    /// - `DelayedExecutor`: the width of the execution window, measured from `allowed_time`.
+    ///   A call set's deadline is `allowed_time + execution_expiration`.
+    /// - `MultiExecutor`: a call_set lifetime, measured from crossing execution delay threshold.
     fn get_execution_expiration(self: @TState) -> u64;
 }
 
@@ -134,17 +145,15 @@ pub mod DelayedExecutor {
 
     #[abi(embed_v0)]
     impl DelayedExecutorImpl of IDelayedExecutor<ContractState> {
-        fn submit_calls(ref self: ContractState, calls: Span<Call>) -> felt252 {
+        fn submit_calls(ref self: ContractState, calls: Span<Call>, salt: felt252) -> felt252 {
             self.ownable.assert_only_owner();
 
-            let call_set_key = compute_call_set_key(calls);
+            let call_set_key = compute_call_set_key(calls, salt);
             let status = self.get_call_set_status(call_set_key);
 
             match status {
-                CallSetStatus::Pending | CallSetStatus::Ready => {
-                    // NOP: already registered and active, don't reset timer.
-                    return call_set_key;
-                },
+                CallSetStatus::Pending |
+                CallSetStatus::Ready => core::panic_with_felt252(Errors::ALREADY_SUBMITTED),
                 CallSetStatus::Unknown | CallSetStatus::Executed |
                 CallSetStatus::Expired => {
                     // (Re-)register: set new allowed_time.
@@ -161,10 +170,10 @@ pub mod DelayedExecutor {
             }
         }
 
-        fn exec_calls(ref self: ContractState, calls: Span<Call>) {
+        fn exec_calls(ref self: ContractState, calls: Span<Call>, salt: felt252) {
             self.ownable.assert_only_owner();
 
-            let call_set_key = compute_call_set_key(calls);
+            let call_set_key = compute_call_set_key(calls, salt);
             let status = self.get_call_set_status(call_set_key);
 
             assert(status == CallSetStatus::Ready, Errors::CALL_SET_NOT_EXECUTABLE);
@@ -219,10 +228,11 @@ pub mod DelayedExecutor {
         fn get_call_set_allowed_time(self: @ContractState, call_set_key: felt252) -> u64 {
             let status = self.get_call_set_status(call_set_key);
             match status {
-                CallSetStatus::Pending |
-                CallSetStatus::Ready => self.call_set_allowed_time.read(call_set_key),
-                CallSetStatus::Unknown | CallSetStatus::Executed |
-                CallSetStatus::Expired => Bounded::<u64>::MAX,
+                // Expired returns the real timestamp stored in the slot.
+                // Disambiguate with `get_call_set_status`.
+                CallSetStatus::Pending | CallSetStatus::Ready |
+                CallSetStatus::Expired => self.call_set_allowed_time.read(call_set_key),
+                CallSetStatus::Unknown | CallSetStatus::Executed => Bounded::<u64>::MAX,
                 CallSetStatus::Proposed | CallSetStatus::AwaitingTimelock |
                 CallSetStatus::AwaitingQuorum => core::panic_with_felt252(
                     Errors::UNREACHABLE_STATE,

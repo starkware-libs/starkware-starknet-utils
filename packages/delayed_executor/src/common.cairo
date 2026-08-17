@@ -9,10 +9,11 @@ use starknet::account::Call;
 
 // ============== Utility Functions ==============
 
-/// Computes the call set key as the Poseidon hash of serialized calls.
-pub fn compute_call_set_key(calls: Span<Call>) -> felt252 {
+/// Computes the call set key as the Poseidon hash of the serialized calls and a salt.
+pub fn compute_call_set_key(calls: Span<Call>, salt: felt252) -> felt252 {
     let mut serialized: Array<felt252> = array![];
     calls.serialize(ref serialized);
+    serialized.append(salt);
     poseidon_hash_span(serialized.span())
 }
 
@@ -23,19 +24,19 @@ pub fn compute_call_set_key(calls: Span<Call>) -> felt252 {
 pub const CALL_SET_EXECUTED: u64 = 1;
 
 /// Maximum allowed execution delay (28 days in seconds).
-pub const MAX_DELAY: u64 = 2419200;
+pub const MAX_DELAY: u64 = 28 * 24 * 60 * 60;
 
 /// Minimum allowed expiration window (1 hour in seconds).
-pub const MIN_EXPIRATION: u64 = 3600;
+pub const MIN_EXPIRATION: u64 = 60 * 60;
 
 /// Maximum allowed expiration window (52 weeks in seconds).
-pub const MAX_EXPIRATION: u64 = 31449600;
+pub const MAX_EXPIRATION: u64 = 52 * 7 * 24 * 60 * 60;
 
 /// Maximum number of signers for multi-owner executor.
 pub const MAX_N_SIGNERS: u32 = 63;
 
 /// Maximum acceptance delay for ownership transfer (14 days in seconds).
-pub const MAX_ACCEPTANCE_DELAY: u64 = 1209600;
+pub const MAX_ACCEPTANCE_DELAY: u64 = 14 * 24 * 60 * 60;
 
 /// Status of a call set.
 ///
@@ -164,6 +165,18 @@ pub struct CallSetSignaturesUpdated {
     pub n_approvals: u32,
 }
 
+/// Emitted when the delay timer starts
+#[derive(Drop, starknet::Event)]
+pub struct CallSetTimerStarted {
+    /// Poseidon hash identifying the call set.
+    #[key]
+    pub call_set_key: felt252,
+    /// Timestamp after which the call set is allowed to be executed.
+    pub allowed_time: u64,
+    /// Deadline for call set execution. re-anchored to threshold crossing.
+    pub expiration: u64,
+}
+
 /// Emitted when an expired call set is cleared to free storage.
 #[derive(Drop, starknet::Event)]
 pub struct ExpiredCallSetCleared {
@@ -183,8 +196,12 @@ pub mod Errors {
     pub const EXPIRATION_TOO_SHORT: felt252 = 'EXPIRATION_TOO_SHORT';
     /// Expiration window exceeds MAX_EXPIRATION.
     pub const EXPIRATION_TOO_LONG: felt252 = 'EXPIRATION_TOO_LONG';
+    /// Expiration delay must exceed execution delay.
+    pub const EXPIRATION_BELOW_DELAY: felt252 = 'EXPIRATION_BELOW_DELAY';
     /// Call set is not in Pending/Ready state (cannot be retracted).
     pub const CALL_SET_NOT_RETRACTABLE: felt252 = 'CALL_SET_NOT_RETRACTABLE';
+    /// Re-submitting a call set that was already submitted and still active, reverts.
+    pub const ALREADY_SUBMITTED: felt252 = 'ALREADY_SUBMITTED';
     /// Call set is not in Ready state (cannot be executed).
     pub const CALL_SET_NOT_EXECUTABLE: felt252 = 'CALL_SET_NOT_EXECUTABLE';
     /// Reached a call set status that is unreachable for the single-owner executor.
@@ -219,6 +236,8 @@ pub mod Errors {
     pub const REPLACED_NOT_OWNER: felt252 = 'REPLACED_NOT_OWNER';
     /// Owner index is zero (invalid; indices are 1-based).
     pub const INVALID_OWNER_INDEX: felt252 = 'INVALID_OWNER_INDEX';
+    /// The executor's own address may never hold an owner slot.
+    pub const SELF_AS_OWNER: felt252 = 'SELF_AS_OWNER';
 
     // --- MultiExecutor errors ---
     /// Quorum size is zero.
@@ -231,6 +250,8 @@ pub mod Errors {
     pub const CALL_SET_EXPIRED: felt252 = 'CALL_SET_EXPIRED';
     /// Caller has not signed this call set.
     pub const NOT_SIGNED_BY_CALLER: felt252 = 'NOT_SIGNED_BY_CALLER';
+    /// Caller's owner slot has already signed this call set.
+    pub const ALREADY_SIGNED_BY_CALLER: felt252 = 'ALREADY_SIGNED_BY_CALLER';
     /// Call set is not expired (cannot clear).
     pub const NOT_EXPIRED: felt252 = 'NOT_EXPIRED';
     /// Not enough approvals to execute.
